@@ -68,7 +68,7 @@ SRC = OddsSource("propline")
 PORT = 8770  # the board's local preview uses 8765
 # Bump together with PAGE_VERSION in live/page.html. The engine serves page.html fresh from disk but
 # loads its own code once, so a mismatch means "the page was updated; restart the engine".
-ENGINE_VERSION = "2026-10-11.7"
+ENGINE_VERSION = "2026-10-11.8"
 ESPN_POLL = 7
 ODDS_MIN_GAP = 20
 ODDS_HEARTBEAT = 120
@@ -569,7 +569,7 @@ class GameRunner(threading.Thread):
                 # a price cannot spend the break's ROLLING_MAX_CHECKS before play resumes
                 wait = WINDOW_RETRY_S / speed if not W["rolling"] or W["retries"][kind] <= 3 else W["persist"]
                 W["due"][kind] = now_m + wait
-                notes.append(f"{what}: no prices posted after {after} yet, again in {wait * speed:.0f}s"
+                notes.append(f"{what}: {self._why_unpriced(kind, od, after)}, again in {wait * speed:.0f}s"
                              + ("" if W["rolling"] else f" ({W['retries'][kind]}/{WINDOW_RETRIES})"))
                 continue
             W["priced"] = True
@@ -680,6 +680,21 @@ class GameRunner(threading.Thread):
                            f"model {c.p:.0%} vs {c.fair:.0%} no-vig · EV {c.ev:+.1%} · the game's next-best "
                            f"{'prop' if kind == 'prop' else 'game-market'} play, kept off by the one-a-game cap")
 
+    @staticmethod
+    def _why_unpriced(kind: str, od: dict, after: str) -> str:
+        """Why a decision point priced nothing of this kind: no current quotes yet, or nothing to compare."""
+        if kind == "prop":
+            return f"no prices posted after {after} yet"
+        have = set(od["game"])
+        ours = have & {"draftkings", "fanduel"}
+        if not ours and "pinnacle" not in have:
+            return f"no prices posted after {after} yet"
+        if "pinnacle" not in have:
+            return f"waiting for Pinnacle to post after {after}"
+        if not ours:
+            return f"waiting for DK/FD to post after {after}"
+        return "DK/FD and Pinnacle have no line in common"
+
     def _close_window(self) -> None:
         if self.window and self.window["rolling"]:
             self.windows_done.add(self.window["name"])
@@ -705,13 +720,19 @@ class GameRunner(threading.Thread):
         now = time.monotonic()
         speed = self.feed.speed if self.demo else 1.0
         secs, pts = st["seconds_left"], sum(st["score"].values())
-        snap = any(p.get("type") in SCRIM for p in new)
+        # play resumed: a scrimmage play that did not score (a scoring play is what froze the game)
+        snap = any(p.get("type") in SCRIM and not p.get("scoring") for p in new)
         for p in new:
             w = _wall(p)
             if w and (self.last_wall is None or w > self.last_wall):
                 self.last_wall = w
+        scored = [w for w in (_wall(p) for p in new if p.get("scoring")) if w]
         if snap:
             self.dead = None
+        elif scored and self.dead and not self.dead["play"]:
+            # ESPN's score can lead its play list by a poll or more (2026-10-11, IND-PIT: 15 s); once the scoring play
+            # arrives, its own time starts the dead ball
+            self.dead["since"], self.dead["play"] = min(self.dead["since"], scored[-1]), True
         if (self.prev_secs is None and "half" in decide.PROP_WINDOWS and "half" not in self.windows_done
                 and secs is not None and secs < 1800 and "half" not in (st.get("detail") or "").lower()):
             self.windows_done.add("half")   # joined in the second half: the halftime decision is behind us
@@ -728,7 +749,8 @@ class GameRunner(threading.Thread):
             self._close_window()
         jump = pts - self.prev_points if self.prev_points is not None else 0
         W = self.window
-        if W and W.get("await_try") and (pts != W["pts"] or new or now - W["opened"] >= TRY_WAIT_S / speed):
+        others = [p for p in new if not p.get("scoring")]   # a late-arriving touchdown play is not the try
+        if W and W.get("await_try") and (pts != W["pts"] or others or now - W["opened"] >= TRY_WAIT_S / speed):
             # the try is in (ESPN folds it into the touchdown play) or play moved on: decide on the settled score
             if pts - W["pts"] != 1 and self.dead and self.last_wall and self.last_wall > self.dead["since"]:
                 self.dead["since"] = self.last_wall   # a missed kick or a two-point try: earlier prices priced another score
@@ -737,14 +759,26 @@ class GameRunner(threading.Thread):
             W["next_check"] = W["due"]["game"] = now
             jump = 0   # the try belongs to the touchdown's dead ball
         elif jump > 0:
-            scored = [w for w in (_wall(p) for p in new if p.get("scoring")) if w]
-            since = scored[-1] if scored else self.last_wall
+            # the scoring play's time; when ESPN's score is ahead of its play list, the time we saw the score (later
+            # than the play, so prices posted before the score never count)
+            since = scored[-1] if scored else _now()
             # a catch-up batch can hold the score and the next drive's first snap: then play has already resumed
-            resumed = since and any(p.get("type") in SCRIM and not p.get("scoring") and (_wall(p) or since) > since for p in new)
-            self.dead = {"since": since, "kinds": ("game",)} if since and not resumed else None
+            resumed = bool(scored) and any(p.get("type") in SCRIM and not p.get("scoring") and (_wall(p) or since) > since
+                                           for p in new)
+            if self.dead and "prop" in self.dead["kinds"]:
+                # a score as the half ends: halftime decides on it, starting over from the new score
+                self.dead.update(since=max(self.dead["since"], since), play=bool(scored))
+                if W and W["rolling"]:
+                    W["first"], W["due"], W["next_check"] = {k: None for k in W["kinds"]}, {k: now for k in W["kinds"]}, now
+            else:
+                self.dead = None if resumed else {"since": since, "kinds": ("game",), "play": bool(scored)}
+                if W and not W["rolling"]:
+                    self.say("info", f"{W['label']}: another score before play resumed; deciding on the new one")
+                    self._close_window()
         brk = _break_name(st.get("detail"), secs, self.prev_secs)
         if brk == "half" and not snap and self.last_wall and not (self.dead and "prop" in self.dead["kinds"]):
-            self.dead = {"since": self.last_wall, "kinds": ("prop", "game")}
+            since = max(x for x in (self.last_wall, self.dead and self.dead["since"]) if x)
+            self.dead = {"since": since, "kinds": ("prop", "game"), "play": True}
         n_prop, n_game = self._counts()
         kinds = [k for k, n, cap in (("prop", n_prop, decide.PROP_PER_GAME), ("game", n_game, decide.GAME_PER_GAME)) if n < cap]
         if (brk in decide.PROP_WINDOWS and brk not in self.windows_done and kinds
