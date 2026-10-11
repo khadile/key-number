@@ -179,6 +179,7 @@ details[open] .chev { transform: rotate(90deg); }
   const clockOf = (s) => { if (s == null) return ""; const q = Math.min(4, 4 - Math.floor((s - 1) / 900)), r = Math.max(0, s - (4 - q) * 900); return `Q${q} ${Math.floor(r / 60)}:${String(Math.round(r % 60)).padStart(2, "0")}`; };
   const store = { get(k, d) { try { const v = localStorage.getItem("kn-live-" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
                   set(k, v) { try { localStorage.setItem("kn-live-" + k, JSON.stringify(v)); } catch (e) { /* private window */ } } };
+  const PAGE_VERSION = "2026-10-11.4";   // must match ENGINE_VERSION in live/engine.py
   let S = null, G = {}, editing = null, busy = false, lastSeq = 0, lastOk = null, failed = false, started = null;
   let open = new Set(store.get("open", [])), shut = new Set(), slateView = store.get("view", "all"), logKind = "all";
   const allEvents = [];           // every log line this page has seen, any game
@@ -195,6 +196,20 @@ details[open] .chev { transform: rotate(90deg); }
     return s < 60 ? s + "s ago" : s < 3600 ? Math.round(s / 60) + "m ago" : Math.round(s / 3600) + "h ago";
   }
   function phaseOf(g) { return g.phase === "live" ? "live" : g.phase === "final" ? "final" : "pre"; }
+  const KICK = store.get("kick", {});
+  function kickoffOf(g) {
+    if (g.kickoff) return Date.parse(g.kickoff);
+    const m = /(\d{1,2})\/(\d{1,2})\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)\s*(EDT|EST)?/i.exec(g.detail || "");
+    if (m) {
+      const now = new Date(), mon = +m[1];
+      const y = now.getFullYear() + (mon < now.getMonth() + 1 - 6 ? 1 : 0);      // a January game seen in December
+      const h = (+m[3] % 12) + (m[5].toUpperCase() === "PM" ? 12 : 0);
+      const off = (m[6] || "EDT").toUpperCase() === "EST" ? "-05:00" : "-04:00";
+      const t = Date.parse(`${y}-${String(mon).padStart(2, "0")}-${String(+m[2]).padStart(2, "0")}T${String(h).padStart(2, "0")}:${m[4]}:00${off}`);
+      if (!Number.isNaN(t)) { if (KICK[g.game_id] !== t) { KICK[g.game_id] = t; store.set("kick", KICK); } return t; }
+    }
+    return KICK[g.game_id] || null;
+  }
 
   // ---------- the status light
   function status() {
@@ -272,7 +287,7 @@ details[open] .chev { transform: rotate(90deg); }
     const have = [...logGame.options].slice(1).map((o) => o.value);
     if (want.join() === have.join()) return;
     const cur = logGame.value;
-    logGame.innerHTML = '<option value="">All games</option>' + want.map((id) => `<option value="${esc(id)}">${esc(matchup(id))} · ${esc(etTime(G[id].kickoff || Date.now()))}</option>`).join("");
+    logGame.innerHTML = '<option value="">All games</option>' + want.map((id) => { const ko = kickoffOf(G[id]); return `<option value="${esc(id)}">${esc(matchup(id))}${ko ? " · " + esc(etTime(ko)) : ""}</option>`; }).join("");
     logGame.value = want.includes(cur) ? cur : "";
   }
 
@@ -306,7 +321,8 @@ details[open] .chev { transform: rotate(90deg); }
 
   // ---------- the slate
   function sortedGames() {
-    return [...(S.games || [])].sort((a, b) => (Date.parse(a.kickoff || 0) - Date.parse(b.kickoff || 0)) || a.game_id.localeCompare(b.game_id));
+    const k = (g) => kickoffOf(g) ?? Infinity;
+    return [...(S.games || [])].sort((a, b) => (k(a) - k(b)) || a.game_id.localeCompare(b.game_id));
   }
   function gameCard(g) {
     const ph = phaseOf(g), mine = S.cards.filter((c) => c.game_id === g.game_id).sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
@@ -315,7 +331,8 @@ details[open] .chev { transform: rotate(90deg); }
     const dot = g.alive === false && ph !== "final" ? "bad" : ph === "live" ? (age > 45 ? "wait" : "on") : ph === "pre" ? "wait" : "";
     const sc = g.score && Object.keys(g.score).length && ph !== "pre"
       ? `${esc(g.away)} ${g.score[g.away] ?? 0} – ${esc(g.home)} ${g.score[g.home] ?? 0}` : `${esc(g.away)} @ ${esc(g.home)}`;
-    const when = ph === "pre" ? (g.kickoff ? `Kickoff ${esc(etTime(g.kickoff))} ET` : esc(g.detail || "")) : esc(g.detail || "");
+    const ko = kickoffOf(g);
+    const when = ph === "pre" ? (ko ? `Kickoff ${esc(etTime(ko))} ET` : esc(g.detail || "")) : esc(g.detail || "");
     const meta = `${mine.length} play${mine.length === 1 ? "" : "s"}${act ? ` · <b class="pos">${act} live</b>` : ""}${R.n ? ` · ${rec(R)} <span class="${cls(R.units)}">${units(R.units)}</span>` : ""}`;
     const line = ph === "live"
       ? `${g.next_decision ? esc(g.next_decision.replace(/^watching, no flags between decision points \((.*)\)$/, "next decision: $1")) + " · " : ""}flagged ${g.flags}/${S.rules.per_game}${g.calibrated ? "" : " · not calibrated"}${g.health && g.health.feed_delay_s != null ? " · ESPN " + Math.round(g.health.feed_delay_s) + "s behind" : ""}`
@@ -338,7 +355,7 @@ details[open] .chev { transform: rotate(90deg); }
     if (show("pre") && groups.pre.length) {
       html += `<div class="group"><h3 class="slot">Upcoming · ${groups.pre.length}</h3>`;
       const slots = {};
-      groups.pre.forEach((g) => { const k = g.kickoff ? new Date(g.kickoff).toLocaleString("en-US", { ...ET, weekday: "short", hour: "numeric", minute: "2-digit" }) + " ET" : "Kickoff time unknown"; (slots[k] = slots[k] || []).push(g); });
+      groups.pre.forEach((g) => { const ko = kickoffOf(g); const k = ko ? new Date(ko).toLocaleString("en-US", { ...ET, weekday: "short", hour: "numeric", minute: "2-digit" }) + " ET" : "Kickoff time unknown"; (slots[k] = slots[k] || []).push(g); });
       for (const [k, list] of Object.entries(slots))
         html += `<p class="kick"><b>${esc(k)}</b> · ${list.length} game${list.length > 1 ? "s" : ""}</p><div class="glist">${list.map(gameCard).join("")}</div>`;
       html += "</div>";
@@ -357,7 +374,12 @@ details[open] .chev { transform: rotate(90deg); }
     const { html, groups } = slate();
     const B = S.budget || {};
     document.getElementById("sub").textContent = `Live · ${S.mode === "demo" ? "demo replay" : "paper trading"} · prices: ${B.source || "PropLine"} (${B.used}/${B.budget} requests today)`;
+    const eng = S.engine || {};
+    const stale = S.mode !== "demo" && eng.version !== PAGE_VERSION;
     top.innerHTML = `
+      ${stale ? `<div class="empty" role="alert" style="border:1px solid var(--bad);border-style:solid;background:var(--bad-soft);color:var(--ink)">
+        <b>Restart the engine.</b> It is running older code (started ${esc(new Date(eng.started).toLocaleString("en-US", { ...ET, weekday: "short", hour: "numeric", minute: "2-digit" }))} ET), so kickoff times, per-game records or games may be missing.
+        In its PowerShell window press <b>Ctrl+C</b>, then run <code>.\\.venv\\Scripts\\python.exe -m live.engine --lan</code>. It is safe: flags and calibration carry over.</div>` : ""}
       <section aria-label="Today"><div class="tiles">
         <div class="tile"><div class="k">Today (paper)</div><div class="v">${rec(T)}</div><div class="note"><span class="${cls(T.units)}">${T.n ? units(T.units) : "nothing graded yet"}</span></div></div>
         <div class="tile"><div class="k">Live plays now</div><div class="v">${active.length}</div><div class="note">${timeline.length} flagged today</div></div>

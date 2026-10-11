@@ -66,6 +66,9 @@ class OddsSource:
 SRC = OddsSource("sgo")
 
 PORT = 8770  # the board's local preview uses 8765
+# Bump together with PAGE_VERSION in live/page.html. The engine serves page.html fresh from disk but
+# loads its own code once, so a mismatch means "the page was updated; restart the engine".
+ENGINE_VERSION = "2026-10-11.4"
 ESPN_POLL = 7
 ODDS_MIN_GAP = 20
 ODDS_HEARTBEAT = 120
@@ -161,7 +164,7 @@ class Engine:
                                                      "prop_per_game": decide.PROP_PER_GAME, "game_per_game": decide.GAME_PER_GAME,
                                                      "per_game": decide.MAX_PER_GAME, "ttl": decide.CARD_TTL_S},
                 "engine": {"started": self.started.isoformat(), "seq": seq, "last_error_at": self.last_error_at,
-                           "ready": self.ready},
+                           "ready": self.ready, "version": ENGINE_VERSION},
                 "events": events}
 
     def write_status(self) -> None:
@@ -811,7 +814,17 @@ def serve(engine: Engine, host: str, port: int = PORT) -> ThreadingHTTPServer:
                 return self._json(engine.pass_(body.get("id", "")))
             self.send_error(404)
 
-    srv = ThreadingHTTPServer((host, port), H)
+    class Server(ThreadingHTTPServer):
+        # Python's default (SO_REUSEADDR) lets a second engine bind the same port on Windows without an
+        # error; two engines would then both flag the same games into the ledger. Refuse instead.
+        allow_reuse_address = False
+        daemon_threads = True
+
+    try:
+        srv = Server((host, port), H)
+    except OSError:
+        raise SystemExit(f"Port {port} is already in use: another live engine is still running. Stop it first "
+                         f"(Ctrl+C in its window, or close that window), then start this one again.")
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     return srv
 
