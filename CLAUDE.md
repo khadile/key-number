@@ -321,6 +321,17 @@ the closing line, the board says so.
   the whole break. Live-path test: a scripted ESPN feed and PropLine quotes drive `GameRunner.step()`.
   Expect more PropLine calls a game than the lean estimate (each score now prices until the books
   post): measure and re-set `LEAN_CALLS_PER_GAME` before a full 13-game Sunday.
+- The scoring play's own wallclock starts the dead ball (engine .8): ESPN's score can lead its play
+  list (IND-PIT, 15 s), and the previous play's time let pre-score quotes count. Until the play
+  arrives, the time the score was seen is used (never too early).
+- Game markets judge the book's line on its merits (user, 2026-10-11, engine .9: "the goal is to find
+  a line and see if it's a good line"; Pinnacle hangs other numbers than DK/FD, e.g. 5.0 vs 4.5, 56.5
+  vs 55.5, so a same-number rule judged almost only moneylines). Pinnacle's reference at DK/FD's
+  number: its own price there (main line or one of its alternates, which PropLine carries), else its
+  nearest number within 2 points (spreads) or 3 (totals), moved by the model's chance of the result
+  landing between the two numbers (`_pin_fair`, `LINE_SLACK`). The gap check then compares the model
+  with Pinnacle at Pinnacle's number; EV stays the model's at the book's price. DK and FD are both
+  candidates, so the better line wins (line shopping).
 - Missed decisions can be replayed onto the record (`python -m live.replay_missed <game> --record`),
   marked "replayed", only with a commitment in ledger/live_replayed.jsonl pushed before the game ended
   that names the method; whatever it picks counts, win or lose. 2026-10-11: PHI-JAX (two-checks,

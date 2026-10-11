@@ -79,8 +79,11 @@ def parse_propline(o: dict, home: str, away: str, now: datetime, since: datetime
             fresh[book] = None
             continue                         # frozen pregame quote during the game
         for m in b.get("markets", []):
-            if m.get("line_type") != "main" or m.get("suspended_at"):
-                continue                     # alternates, milestones and suspended markets
+            # Pinnacle's other spread and total numbers: the reference at whatever number DK/FD hang (user, 2026-10-11)
+            alt = (book == "pinnacle" and m.get("line_type") == "alternate" and m.get("key") in ("spreads", "totals")
+                   and not m.get("team"))
+            if (m.get("line_type") != "main" and not alt) or m.get("suspended_at"):
+                continue                     # other alternates, milestones and suspended markets
             if m.get("period") not in (None, "", "full_game", "game"):
                 continue                     # quarter and half markets are out of scope
             upd = _parse_ts(m.get("last_update"))
@@ -90,6 +93,8 @@ def parse_propline(o: dict, home: str, away: str, now: datetime, since: datetime
             by_state = bool(o.get("live") and dead and upd
                             and upd >= since + timedelta(seconds=SINCE_MARGIN_S.get(book, SINCE_MARGIN_DEFAULT_S)))
             if o.get("live") and not by_state and (dead or age > MAX_AGE_S):
+                if alt:
+                    continue
                 if m["key"] in PROP_KEYS:
                     stale.update((x["player_id"], PROP_KEYS[m["key"]], book) for x in m.get("outcomes", []) if x.get("player_id"))
                 elif m["key"] in GAME_KEYS and not m.get("team"):
@@ -99,6 +104,20 @@ def parse_propline(o: dict, home: str, away: str, now: datetime, since: datetime
             outs = [x for x in m.get("outcomes", []) if not x.get("last_seen_at") or not m.get("last_update")
                     or x["last_seen_at"] >= m["last_update"]]
             key = m["key"]
+            if alt:
+                if key == "spreads":   # {home handicap: (home price, away price)}
+                    pr = {}
+                    for x in outs:
+                        side = "home" if nick[home] and x["name"].endswith(nick[home]) else ("away" if nick[away] and x["name"].endswith(nick[away]) else None)
+                        if side and x.get("point") is not None:
+                            pr[side] = (float(x["point"]), dec(x["price"]))
+                    if len(pr) == 2 and pr["home"][0] == -pr["away"][0]:
+                        game.setdefault(book, {}).setdefault("alt_spread", {})[pr["home"][0]] = (pr["home"][1], pr["away"][1])
+                else:                  # {total: (over price, under price)}
+                    pr = {x["name"]: (float(x["point"]), dec(x["price"])) for x in outs if x.get("point") is not None}
+                    if "Over" in pr and "Under" in pr and pr["Over"][0] == pr["Under"][0]:
+                        game.setdefault(book, {}).setdefault("alt_total", {})[pr["Over"][0]] = (pr["Over"][1], pr["Under"][1])
+                continue
             if key in PROP_KEYS:
                 by_player: dict = {}
                 for x in outs:

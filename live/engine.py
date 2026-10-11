@@ -68,7 +68,7 @@ SRC = OddsSource("propline")
 PORT = 8770  # the board's local preview uses 8765
 # Bump together with PAGE_VERSION in live/page.html. The engine serves page.html fresh from disk but
 # loads its own code once, so a mismatch means "the page was updated; restart the engine".
-ENGINE_VERSION = "2026-10-11.8"
+ENGINE_VERSION = "2026-10-11.9"
 ESPN_POLL = 7
 ODDS_MIN_GAP = 20
 ODDS_HEARTBEAT = 120
@@ -89,6 +89,10 @@ ROLLING_MAX_CHECKS = 20
 # ESPN posts a touchdown at +6 and folds the try into the same play about a minute later: an after-score window
 # waits for it (the score changing again, or the next play), at most this long, so the model prices the settled score.
 TRY_WAIT_S = 150
+# How far Pinnacle's nearest spread or total number may sit from the one DK/FD hang (user, 2026-10-11: judge the
+# book's line on its merits, don't require the same number). Pinnacle's price there is moved by the model's chance
+# of the result landing between the two numbers (_pin_fair).
+LINE_SLACK = {"spread": 2.0, "total": 3.0}
 FILL_AFTER = 25
 FILL_GIVEUP = 150       # no fresh quote for the market this long after a flag: its fill is "unknown"
 CLV_AFTER = 300
@@ -506,11 +510,13 @@ class GameRunner(threading.Thread):
         lead = int(st["score"].get(self.home, 0) - st["score"].get(self.away, 0))
         cands = decide.prop_candidates(self.gid, proj, od["props"], self.info)
         pin = od["game"].get("pinnacle", {})
-        for c in decide.game_candidates(self.gid, proj["game"], od["game"], self.home, self.away):
-            f = _pin_fair(pin, c)     # game markets are judged against Pinnacle's live no-vig number, same line
-            if f is None:
+        g = proj["game"]
+        margin = g["margin"] if g["teams"][0] == self.home else -g["margin"]
+        for c in decide.game_candidates(self.gid, g, od["game"], self.home, self.away):
+            r = _pin_fair(pin, c, margin, g["total"])   # judged against Pinnacle's live no-vig number at the book's line
+            if r is None:
                 continue
-            c.fair = f
+            c.fair, c.ref = r
             cands.append(c)
 
         def quote(c):
@@ -693,7 +699,8 @@ class GameRunner(threading.Thread):
             return f"waiting for Pinnacle to post after {after}"
         if not ours:
             return f"waiting for DK/FD to post after {after}"
-        return "DK/FD and Pinnacle have no line in common"
+        return (f"no Pinnacle number near DK/FD's (within {LINE_SLACK['spread']:g} on spreads, "
+                f"{LINE_SLACK['total']:g} on totals) and no moneyline")
 
     def _close_window(self) -> None:
         if self.window and self.window["rolling"]:
@@ -819,8 +826,8 @@ class GameRunner(threading.Thread):
                    "team_lead": st["score"].get(c.team, 0) - st["score"].get(other, 0)}
             return decide.reason(c, ctx)
         lead = int(st["score"].get(self.home, 0) - st["score"].get(self.away, 0))
-        return (f"model {c.p:.0%} vs Pinnacle {c.fair:.0%}; {self.home} {lead:+d} with "
-                f"{decide._mins(st['seconds_left'])} left, rest played from team strength")
+        return (f"model {c.p:.0%} vs Pinnacle {c.fair:.0%}" + (f" ({c.ref})" if c.ref else "")
+                + f"; {self.home} {lead:+d} with {decide._mins(st['seconds_left'])} left, rest played from team strength")
 
     def flag(self, c, st: dict, quote_age: float | None = None, window: str | None = None) -> None:
         t = _now()
@@ -950,17 +957,47 @@ def closing_from_archive(gid: str) -> tuple[dict, str]:
     return out, note
 
 
-def _pin_fair(pin: dict, c) -> float | None:
-    if c.market == "ml" and "ml_home" in pin:
+def _pin_fair(pin: dict, c, margin=None, total=None) -> tuple[float, str] | None:
+    """Pinnacle's no-vig chance for this side at the book's line, and a note when it was moved there.
+    Pinnacle's own price at the same number (its main or an alternate line) when it has one. Otherwise its
+    nearest number within LINE_SLACK, moved to the book's number by the model's chance of the result landing
+    between the two (user, 2026-10-11: books rarely hang Pinnacle's number, and a same-number rule meant spreads
+    and totals were almost never judged). margin: model samples of home minus away; total: of the total."""
+    if c.market == "ml":
+        if "ml_home" not in pin:
+            return None
         f = decide.no_vig(pin["ml_home"], pin["ml_away"])
-        return f if c.side == "home" else 1 - f
-    if c.market == "spread" and "spread" in pin and ((c.side == "home" and c.line == -pin["spread"]) or (c.side == "away" and c.line == pin["spread"])):
-        f = decide.no_vig(pin["spread_price_a"], pin["spread_price_b"])
-        return f if c.side == "home" else 1 - f
-    if c.market == "total" and "total" in pin and pin["total"] == c.line:
-        f = decide.no_vig(pin["total_price_a"], pin["total_price_b"])
-        return f if c.side == "over" else 1 - f
-    return None
+        return (f if c.side == "home" else 1 - f), ""
+    if c.market == "spread":   # in the home side's handicap h: home covers when margin + h > 0
+        lines = dict(pin.get("alt_spread", {}))
+        if "spread" in pin:
+            lines[-pin["spread"]] = (pin["spread_price_a"], pin["spread_price_b"])
+        x, s, first = (c.line if c.side == "home" else -c.line), margin, c.side == "home"
+        win = lambda h: float((s + h > 1e-9).mean())
+        lose = lambda h: float((s + h < -1e-9).mean())
+    else:
+        lines = dict(pin.get("alt_total", {}))
+        if "total" in pin:
+            lines[pin["total"]] = (pin["total_price_a"], pin["total_price_b"])
+        x, s, first = c.line, total, c.side == "over"
+        win = lambda t: float((s > t + 1e-9).mean())
+        lose = lambda t: float((s < t - 1e-9).mean())
+    if not lines:
+        return None
+    near = min(lines, key=lambda h: (abs(h - x), h))
+    if abs(near - x) > LINE_SLACK[c.market] + 1e-9:
+        return None
+    f = decide.no_vig(*lines[near])
+    f = f if first else 1 - f
+    if near == x:
+        return f, ""
+    if s is None:
+        return None
+    side = win if first else lose
+    push = 1 - win(near) - lose(near)
+    fair = min(max(f * (1 - push) + side(x) - side(near), 0.01), 0.99)
+    show = (lambda h: f"{(h if first else -h):+g}") if c.market == "spread" else (lambda h: f"{h:g}")
+    return fair, f"Pinnacle's {show(near)} moved to {show(x)} by the model"
 
 
 # ---------------------------------------------------------------- web page and API

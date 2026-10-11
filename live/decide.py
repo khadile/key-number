@@ -83,6 +83,7 @@ class Candidate:
     ev: float
     group: str          # correlation group
     reason: str = ""
+    ref: str = ""       # how the market reference was found, when not at the same number
 
     def label(self) -> str:
         if self.kind == "prop":
