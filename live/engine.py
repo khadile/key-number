@@ -68,7 +68,7 @@ SRC = OddsSource("propline")
 PORT = 8770  # the board's local preview uses 8765
 # Bump together with PAGE_VERSION in live/page.html. The engine serves page.html fresh from disk but
 # loads its own code once, so a mismatch means "the page was updated; restart the engine".
-ENGINE_VERSION = "2026-10-11.9"
+ENGINE_VERSION = "2026-10-11.10"
 ESPN_POLL = 7
 ODDS_MIN_GAP = 20
 ODDS_HEARTBEAT = 120
@@ -92,7 +92,7 @@ TRY_WAIT_S = 150
 # How far Pinnacle's nearest spread or total number may sit from the one DK/FD hang (user, 2026-10-11: judge the
 # book's line on its merits, don't require the same number). Pinnacle's price there is moved by the model's chance
 # of the result landing between the two numbers (_pin_fair).
-LINE_SLACK = {"spread": 2.0, "total": 3.0}
+LINE_SLACK = {"spread": 1.0, "total": 1.0}
 FILL_AFTER = 25
 FILL_GIVEUP = 150       # no fresh quote for the market this long after a flag: its fill is "unknown"
 CLV_AFTER = 300

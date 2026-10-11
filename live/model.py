@@ -161,7 +161,8 @@ class LiveModel:
         self.rng = np.random.default_rng(23)
         t = self.p.group_by("team").agg(pl.col("plays_hat", "db_hat", "dropbacks_hat", "team_targets_hat", "team_runs_hat",
                                                "team_att_hat", "spread", "total_line").first())
-        self.team = {r["team"]: r for r in t.iter_rows(named=True)}
+        # sorted: group_by's order varies run to run, and the teams take turns drawing from the same random stream
+        self.team = {r["team"]: r for r in sorted(t.iter_rows(named=True), key=lambda r: r["team"])}
         self.offset: dict[tuple[str, str], float] = {}   # (player, market) -> market minus model at kickoff
         self.rem0: dict[tuple[str, str], float] = {}     # expected production at kickoff
 

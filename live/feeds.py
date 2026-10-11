@@ -40,6 +40,11 @@ MAX_AGE_S = 90
 # at the 75th percentile). PropLine refreshes each book's live game lines only every 2-4 minutes.
 SINCE_MARGIN_S = {"pinnacle": 60}
 SINCE_MARGIN_DEFAULT_S = 20
+# During a game PropLine mixes Pinnacle's live markets with its frozen pregame ones, and both carry fresh timestamps.
+# The limits tell them apart (2026-10-11): live markets 1,000-5,000 (moneyline, spreads, totals, their alternates),
+# pregame 20,000-100,000 (DEN-LAC: 7-0 Broncos, Pinnacle still -3.5 / 41.5 at pregame limits while DK/FD were -7.5 /
+# 43.5). A Pinnacle market above this in a live game is its pregame one, and is skipped.
+PIN_LIVE_MAX_LIQ = 10_000
 
 
 def dec(american: float) -> float:
@@ -84,6 +89,9 @@ def parse_propline(o: dict, home: str, away: str, now: datetime, since: datetime
                    and not m.get("team"))
             if (m.get("line_type") != "main" and not alt) or m.get("suspended_at"):
                 continue                     # other alternates, milestones and suspended markets
+            if (book == "pinnacle" and o.get("live")
+                    and max((x.get("liquidity") or 0) for x in m.get("outcomes") or [{}]) > PIN_LIVE_MAX_LIQ):
+                continue                     # Pinnacle's frozen pregame market, not its live one
             if m.get("period") not in (None, "", "full_game", "game"):
                 continue                     # quarter and half markets are out of scope
             upd = _parse_ts(m.get("last_update"))

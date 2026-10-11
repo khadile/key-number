@@ -332,6 +332,18 @@ the closing line, the board says so.
   landing between the two numbers (`_pin_fair`, `LINE_SLACK`). The gap check then compares the model
   with Pinnacle at Pinnacle's number; EV stays the model's at the book's price. DK and FD are both
   candidates, so the better line wins (line shopping).
+- Slack set to 1 point (engine .10) from a paired replay (64 games, the model's draws held fixed;
+  reports/live_loose_*.json are earlier unpaired runs). Game markets after scores + halftime: same number only 68
+  plays +9.5u; 0.5 pt 95 plays +7.4u; 1 pt 100 plays +6.2u; 2-3 pts 104 plays +4.0u. The extra plays are
+  about break-even, worse as the slack grows (moved spreads lost, moved totals won; noise-level). The
+  archive has one line per book, so the replay always moved Pinnacle's number by the model; live, Pinnacle's
+  own alternates often give the exact number. `LiveModel` sorts its teams: group_by's order changed run to
+  run and the teams share one random stream, so replays moved +/-2u from noise alone.
+- PropLine serves Pinnacle's frozen pregame markets alongside its live ones during a game, both with
+  fresh timestamps (DEN-LAC 7-0: Pinnacle -3.5 / 41.5 / -182, the pregame numbers, while DK/FD were
+  -7.5 / 43.5 / -346). The limits tell them apart: live 1,000-5,000, pregame 20,000-100,000. In a live
+  game the parser skips any Pinnacle market above `PIN_LIVE_MAX_LIQ` (10,000). Many earlier "model more
+  than 10% from the market" fails were the model against pregame Pinnacle prices.
 - Missed decisions can be replayed onto the record (`python -m live.replay_missed <game> --record`),
   marked "replayed", only with a commitment in ledger/live_replayed.jsonl pushed before the game ended
   that names the method; whatever it picks counts, win or lose. 2026-10-11: PHI-JAX (two-checks,
