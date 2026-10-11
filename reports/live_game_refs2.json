@@ -1,0 +1,98 @@
+{
+ "strict": {
+  "plays": 59,
+  "w": 29,
+  "l": 30,
+  "units": 4.3,
+  "roi": 0.0729,
+  "by_event": {
+   "score": 51,
+   "half": 8
+  },
+  "by_market": {
+   "ml": 37,
+   "spread": 10,
+   "total": 12
+  }
+ },
+ "pin": {
+  "plays": 63,
+  "w": 29,
+  "l": 34,
+  "units": -1.9,
+  "roi": -0.0302,
+  "by_event": {
+   "score": 58,
+   "half": 5
+  },
+  "by_market": {
+   "ml": 29,
+   "spread": 15,
+   "total": 19
+  }
+ },
+ "both": {
+  "plays": 64,
+  "w": 31,
+  "l": 33,
+  "units": -0.35,
+  "roi": -0.0055,
+  "by_event": {
+   "score": 59,
+   "half": 5
+  },
+  "by_market": {
+   "ml": 29,
+   "spread": 15,
+   "total": 20
+  }
+ },
+ "strict_noml": {
+  "plays": 49,
+  "w": 29,
+  "l": 20,
+  "units": 5.88,
+  "roi": 0.1199,
+  "by_event": {
+   "score": 37,
+   "half": 12
+  },
+  "by_market": {
+   "ml": 0,
+   "spread": 20,
+   "total": 29
+  }
+ },
+ "pin_noml": {
+  "plays": 63,
+  "w": 37,
+  "l": 26,
+  "units": 6.41,
+  "roi": 0.1018,
+  "by_event": {
+   "score": 54,
+   "half": 9
+  },
+  "by_market": {
+   "ml": 0,
+   "spread": 26,
+   "total": 37
+  }
+ },
+ "both_noml": {
+  "plays": 64,
+  "w": 39,
+  "l": 25,
+  "units": 9.09,
+  "roi": 0.142,
+  "by_event": {
+   "score": 56,
+   "half": 8
+  },
+  "by_market": {
+   "ml": 0,
+   "spread": 26,
+   "total": 38
+  }
+ }
+}

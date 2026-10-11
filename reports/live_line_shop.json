@@ -1,0 +1,66 @@
+{
+ "model": {
+  "plays": 64,
+  "w": 39,
+  "l": 25,
+  "units": 9.09,
+  "roi": 0.142,
+  "by_event": {
+   "score": 56,
+   "half": 8
+  },
+  "by_market": {
+   "ml": 0,
+   "spread": 26,
+   "total": 38
+  }
+ },
+ "mkt3": {
+  "plays": 6,
+  "w": 4,
+  "l": 2,
+  "units": 3.32,
+  "roi": 0.5537,
+  "by_event": {
+   "score": 6,
+   "half": 0
+  },
+  "by_market": {
+   "ml": 0,
+   "spread": 3,
+   "total": 3
+  }
+ },
+ "mkt5": {
+  "plays": 3,
+  "w": 2,
+  "l": 1,
+  "units": 2.14,
+  "roi": 0.7133,
+  "by_event": {
+   "score": 3,
+   "half": 0
+  },
+  "by_market": {
+   "ml": 0,
+   "spread": 2,
+   "total": 1
+  }
+ },
+ "mkt3_dir": {
+  "plays": 3,
+  "w": 2,
+  "l": 1,
+  "units": 2.14,
+  "roi": 0.7133,
+  "by_event": {
+   "score": 3,
+   "half": 0
+  },
+  "by_market": {
+   "ml": 0,
+   "spread": 2,
+   "total": 1
+  }
+ }
+}

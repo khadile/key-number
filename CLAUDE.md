@@ -333,7 +333,7 @@ the closing line, the board says so.
   with Pinnacle at Pinnacle's number; EV stays the model's at the book's price. DK and FD are both
   candidates, so the better line wins (line shopping).
 - Slack set to 1 point (engine .10) from a paired replay (64 games, the model's draws held fixed;
-  reports/live_loose_*.json are earlier unpaired runs). Game markets after scores + halftime: same number only 68
+  earlier unpaired runs were noise-dominated). Game markets after scores + halftime: same number only 68
   plays +9.5u; 0.5 pt 95 plays +7.4u; 1 pt 100 plays +6.2u; 2-3 pts 104 plays +4.0u. The extra plays are
   about break-even, worse as the slack grows (moved spreads lost, moved totals won; noise-level). The
   archive has one line per book, so the replay always moved Pinnacle's number by the model; live, Pinnacle's
@@ -354,6 +354,9 @@ the closing line, the board says so.
 - Replay bug fixed (2026-10-11): `live/replay_windows.select` matched the two checks with a join on the
   line, and a moneyline's line is null, which never matches, so the after-score replay never took a
   moneyline; its "39 plays 22-17 +3.7u" was spreads and totals only. Now `nulls_equal=True`.
+- Pure line shopping against Pinnacle (flag DK/FD when its price beats Pinnacle's live no-vig at the
+  same number, two checks in a row, no model) rarely fires at decision points: 6 plays in 64 games at
+  3% (4-2), 3 at 5% (reports/live_line_shop.json). Not added; revisit if live logs show more.
 - Missed decisions can be replayed onto the record (`python -m live.replay_missed <game> --record`),
   marked "replayed", only with a commitment in ledger/live_replayed.jsonl pushed before the game ended
   that names the method; whatever it picks counts, win or lose. 2026-10-11: PHI-JAX (two-checks,

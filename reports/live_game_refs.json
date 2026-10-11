@@ -1,0 +1,50 @@
+{
+ "pin": {
+  "plays": 63,
+  "w": 29,
+  "l": 34,
+  "units": -1.9,
+  "roi": -0.0302,
+  "by_event": {
+   "score": 58,
+   "half": 5
+  },
+  "by_market": {
+   "ml": 29,
+   "spread": 15,
+   "total": 19
+  }
+ },
+ "us": {
+  "plays": 64,
+  "w": 30,
+  "l": 34,
+  "units": -2.06,
+  "roi": -0.0323,
+  "by_event": {
+   "score": 59,
+   "half": 5
+  },
+  "by_market": {
+   "ml": 29,
+   "spread": 14,
+   "total": 21
+  }
+ },
+ "both": {
+  "plays": 64,
+  "w": 31,
+  "l": 33,
+  "units": -0.35,
+  "roi": -0.0055,
+  "by_event": {
+   "score": 59,
+   "half": 5
+  },
+  "by_market": {
+   "ml": 29,
+   "spread": 15,
+   "total": 20
+  }
+ }
+}
