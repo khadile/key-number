@@ -323,6 +323,8 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
         # Parlays and Picks of the Week lock with the weekend slate (Saturday morning), from
         # locked picks whose games have not started.
         have = {r["type"] for r in existing if r.get("kind") == "parlay" and r["season"] == season and r["week"] == week}
+        if any(r.get("kind") == "potw" and r.get("season") == season and r.get("week") == week for r in existing):
+            have.add("potw")   # Picks of the Week records have no "type"; without this every build re-locked them
         weekend = [g for g in upcoming["game_id"].to_list() if kick[g].astimezone(ET).weekday() in (5, 6, 0)]  # Sat-Mon, Eastern
         if weekend and all(lock_time(kick[g]) <= now for g in weekend):
             pool = [r for r in existing + new_locks if r.get("kind") == "prop" and r["season"] == season
