@@ -935,8 +935,7 @@ def sync_ledger(message: str) -> tuple[bool, str]:
         try:
             if git("remote").stdout.strip() == "":
                 return False, "No GitHub remote: live results stay on this laptop"
-            git("add", "ledger/live_flags.jsonl", "ledger/live_events.jsonl", "ledger/live_accepts.jsonl",
-                "ledger/live_results.jsonl", "ledger/live_shadow.jsonl", "ledger/live_shadow_results.jsonl")
+            git("add", "--", "ledger/live_*.jsonl")   # a pattern: naming a file that does not exist yet fails the whole add
             c = git("commit", "-m", message, "--", "ledger/")
             if c.returncode != 0 and "nothing" not in (c.stdout + c.stderr):
                 return False, f"Could not commit the live ledger: {(c.stderr or c.stdout).strip()[:160]}"
