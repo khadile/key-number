@@ -270,7 +270,12 @@ the closing line, the board says so.
 
 ## 6c. Live engine (live/)
 
-- Runs locally: `python -m live.engine` (page http://localhost:8770, `--lan`
+- Page layout (2026-10-11, for a full slate): today's summary; live plays now (each tagged
+  with its game and clock); the slate, one card per game grouped live / upcoming by kickoff /
+  final, holding that game's plays and record; every play today as a timeline; the engine log,
+  filterable by game and by kind. Game state comes from ESPN (play-by-play, clock, possession,
+  box score, injury notes); SGO has none of the play-by-play, so it only supplies prices.
+- Runs locally: `python -m live.engine` (every game in the next 48 hours; page http://localhost:8770, `--lan`
   for the phone, `--demo <game_id>` replays a finished game with no PropLine
   calls). The published board cannot reach it; it shows the ledger after games.
 - Redesign (2026-10-09, user: fewer, more trustworthy plays): the engine
