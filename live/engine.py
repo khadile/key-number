@@ -1062,12 +1062,23 @@ def main() -> None:
             print("no games in the next 12 hours")
             return
         if SRC.kind == "propline":
-            room = max(0, propline.remaining_today()) // LEAN_CALLS_PER_GAME
-            if len(games) > room:
-                msg = f"PropLine budget covers {room} of {len(games)} games today; watching the first {room}"
+            # only games before PropLine's reset (midnight UTC, 8pm ET) spend today's budget; a game already
+            # past halftime needs about half a game's calls
+            now_ = _now()
+            reset = (now_ + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            today = [g for g in games if g["kickoff"] < reset]
+            cost = lambda g: LEAN_CALLS_PER_GAME * (0.5 if g["kickoff"] < now_ - timedelta(minutes=90) else 1)
+            left, keep = max(0, propline.remaining_today()), []
+            for g in today:
+                if cost(g) <= left:
+                    keep.append(g)
+                    left -= cost(g)
+            if len(keep) < len(today):
+                msg = (f"PropLine budget covers {len(keep)} of today's {len(today)} games; skipping "
+                       + ", ".join(f"{g['away']} at {g['home']}" for g in today if g not in keep))
                 print(msg)
                 engine.log("warn", msg)
-                games = games[:room]
+            games = keep + [g for g in games if g["kickoff"] >= reset]
         engine.log("info", f"Engine started in paper mode · prices from {SRC.name} · {SRC.used_today()}/{SRC.budget} requests used today")
         priors = priors_for(games)
         e2g = espn_to_gsis()
