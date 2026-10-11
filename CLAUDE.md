@@ -293,6 +293,16 @@ the closing line, the board says so.
   touches the ball again (live/rubric_checks.py; the engine reads yards per
   play from box-score changes between polls). Each game starts calibrated to
   its closing prop lines. Cards live 3 min (6 at halftime).
+- Halftime props roll (user, 2026-10-11 2:45pm ET): a check every 90 s through the whole break; the
+  first prop that holds on two checks in a row (same book, side and line, still passing) is flagged;
+  when nothing holds, what passes now is the new first check; play resuming with nothing held is a
+  pass (cap 20 checks). On the 64-game replay: rolling 61 plays 38-23 +12.4u vs one pair of checks
+  53 plays 32-21 +9.8u; the 9 plays only rolling finds went 6-3. One check only (no confirmation)
+  was worse: the plays the second check rejects went 10-10 (reports/live_rolling64.parquet).
+- Missed decisions can be replayed onto the record (`python -m live.replay_missed <game> --record`),
+  marked "replayed", only with a commitment in ledger/live_replayed.jsonl pushed before the game ended
+  that names the method; whatever it picks counts, win or lose. 2026-10-11: PHI-JAX (two-checks,
+  committed 11:48am) and seven 1pm games (rolling, committed 2:41pm) wait for nflverse's play-by-play.
 - Shadow picks (user, 2026-10-09): each game's second-best play of each kind
   that passed the whole rubric and lost only to the one-a-game cap is logged
   to ledger/live_shadow.jsonl and graded in live_shadow_results.jsonl, never
