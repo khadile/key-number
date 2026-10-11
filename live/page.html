@@ -179,7 +179,7 @@ details[open] .chev { transform: rotate(90deg); }
   const clockOf = (s) => { if (s == null) return ""; const q = Math.min(4, 4 - Math.floor((s - 1) / 900)), r = Math.max(0, s - (4 - q) * 900); return `Q${q} ${Math.floor(r / 60)}:${String(Math.round(r % 60)).padStart(2, "0")}`; };
   const store = { get(k, d) { try { const v = localStorage.getItem("kn-live-" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
                   set(k, v) { try { localStorage.setItem("kn-live-" + k, JSON.stringify(v)); } catch (e) { /* private window */ } } };
-  const PAGE_VERSION = "2026-10-11.4";   // must match ENGINE_VERSION in live/engine.py
+  const PAGE_VERSION = "2026-10-11.5";   // must match ENGINE_VERSION in live/engine.py
   let S = null, G = {}, editing = null, busy = false, lastSeq = 0, lastOk = null, failed = false, started = null;
   let open = new Set(store.get("open", [])), shut = new Set(), slateView = store.get("view", "all"), logKind = "all";
   const allEvents = [];           // every log line this page has seen, any game

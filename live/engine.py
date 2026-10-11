@@ -63,17 +63,25 @@ class OddsSource:
         return max(0, self.budget - self.used_today())
 
 
-SRC = OddsSource("sgo")
+SRC = OddsSource("propline")
 
 PORT = 8770  # the board's local preview uses 8765
 # Bump together with PAGE_VERSION in live/page.html. The engine serves page.html fresh from disk but
 # loads its own code once, so a mismatch means "the page was updated; restart the engine".
-ENGINE_VERSION = "2026-10-11.4"
+ENGINE_VERSION = "2026-10-11.5"
 ESPN_POLL = 7
 ODDS_MIN_GAP = 20
 ODDS_HEARTBEAT = 120
 ODDS_HALFTIME = 300
-CALLS_PER_GAME = 220
+CALLS_PER_GAME = 220    # PropLine, polling every play (the old schedule)
+# Lean schedule (PropLine, 2026-10-11): price checks only at decision points (halftime, after a score),
+# for live cards and their 30-second and 5-minute re-checks, plus a slow heartbeat for the log. About
+# 50 calls a game, so a 13-game Sunday fits PropLine's 950 a day.
+LEAN_CALLS_PER_GAME = 60
+LEAN_HEARTBEAT = 600    # seconds between log-only price checks outside decision points
+CARD_POLL = 30          # while a card is live or awaiting its re-check
+WINDOW_RETRY_S = 30     # a decision point whose prices were all too old tries again this soon...
+WINDOW_RETRIES = 8      # ...this many times, until play resumes
 FILL_AFTER = 25
 FILL_GIVEUP = 150       # no fresh quote for the market this long after a flag: its fill is "unknown"
 CLV_AFTER = 300
@@ -364,7 +372,22 @@ class GameRunner(threading.Thread):
         gap = ODDS_MIN_GAP * (2 if remaining < 0.2 * SRC.budget else 1)
         heartbeat = ODDS_HALFTIME if half else ODDS_HEARTBEAT
         check = self.window is not None and now >= self.window["next_check"]   # a decision point's price check
-        due = self.demo or check or (snap and now - self.last_odds >= gap) or now - self.last_odds >= heartbeat
+        if SRC.kind == "propline" and not self.demo:
+            # lean: decision points, live cards and their re-checks, and a slow heartbeat for the log
+            t_now = _now()
+            cards_due = False
+            for c in self.e.cards.values():
+                if c["game_id"] != self.gid or c.get("restored"):
+                    continue
+                age = (t_now - datetime.fromisoformat(c["at"])).total_seconds()
+                if (c["status"] == "active" or (c.get("fill") == "pending" and age >= FILL_AFTER)
+                        or (c.get("clv_units") is None and CLV_AFTER <= age < CLV_AFTER + 180)):
+                    cards_due = True
+                    break
+            lean_beat = LEAN_HEARTBEAT * (3 if remaining < 0.15 * SRC.budget else 1)
+            due = check or (cards_due and now - self.last_odds >= CARD_POLL) or now - self.last_odds >= lean_beat
+        else:
+            due = self.demo or check or (snap and now - self.last_odds >= gap) or now - self.last_odds >= heartbeat
         if due and not self.demo and remaining <= 0:
             if not self.budget_warned:
                 self.say("warn", f"{SRC.name}'s daily budget is used up; still following the game, no prices until midnight UTC")
@@ -501,6 +524,17 @@ class GameRunner(threading.Thread):
         mine = [c for c in passing if c.kind == W["kind"]]
         key = lambda c: (c.key, c.side, c.book, c.line)
         what = "props" if W["kind"] == "prop" else "game-market prices"
+        fk = fails[W["kind"]]
+        priced = sum(c.kind == W["kind"] for c in cands)
+        too_old = priced == 0 or (not mine and set(fk) <= {"quote too old"})
+        if too_old and W.get("retries", 0) < WINDOW_RETRIES:
+            # nothing fresh enough to judge is not the same as nothing worth betting: wait for fresh prices
+            W["retries"] = W.get("retries", 0) + 1
+            W["next_check"] = time.monotonic() + WINDOW_RETRY_S / (self.feed.speed if self.demo else 1.0)
+            self.say("price", f"{W['label']}: no {what} fresh enough to judge yet"
+                              + (f" ({priced} priced, all quotes too old)" if priced else "")
+                              + f"; trying again in {WINDOW_RETRY_S}s ({W['retries']}/{WINDOW_RETRIES})")
+            return
         if W["first"] is None:
             W["first"], W["next_check"] = {key(c) for c in mine}, time.monotonic() + W["persist"]
             top = max(mine, key=lambda c: c.ev) if mine else None
@@ -962,8 +996,9 @@ def main() -> None:
     ap.add_argument("--speed", type=float, default=20.0, help="demo speed: game seconds per real second")
     ap.add_argument("--lan", action="store_true", help="serve on your home network too (for your phone)")
     ap.add_argument("--port", type=int, default=PORT)
-    ap.add_argument("--odds", choices=("sgo", "propline"), default="sgo",
-                    help="live prices: SportsGameOdds (trial week, every game) or PropLine (free plan, ~4 games a day)")
+    ap.add_argument("--odds", choices=("sgo", "propline"), default="propline",
+                    help="live prices: PropLine (default; ~50 requests a game on the lean schedule) or SportsGameOdds "
+                         "(its in-game quotes were 5-7 minutes old on the trial plan, 2026-10-11: too stale to bet)")
     args = ap.parse_args()
     global SRC
     SRC = OddsSource(args.odds)
@@ -991,7 +1026,7 @@ def main() -> None:
             print("no games in the next 12 hours")
             return
         if SRC.kind == "propline":
-            room = max(0, propline.remaining_today()) // CALLS_PER_GAME
+            room = max(0, propline.remaining_today()) // LEAN_CALLS_PER_GAME
             if len(games) > room:
                 msg = f"PropLine budget covers {room} of {len(games)} games today; watching the first {room}"
                 print(msg)
