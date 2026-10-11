@@ -644,6 +644,11 @@ class GameRunner(threading.Thread):
         speed = self.feed.speed if self.demo else 1.0
         secs, pts = st["seconds_left"], sum(st["score"].values())
         snap = any(p.get("type") in SCRIM for p in new)
+        if (self.prev_secs is None and "half" in decide.PROP_WINDOWS and "half" not in self.windows_done
+                and secs is not None and secs < 1800 and "half" not in (st.get("detail") or "").lower()):
+            self.windows_done.add("half")   # joined in the second half: the halftime decision is behind us
+            self.say("info", "Joined after halftime: this game's prop decision has passed (props decide at halftime only); "
+                             "game markets still check after each score")
         W = self.window
         if W and snap and not self.demo and (W["kind"] == "prop" or now - W["opened"] > 20):
             self.say("info", f"{W['label']}: play resumed before the second price check; no flag")
