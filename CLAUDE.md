@@ -7,6 +7,30 @@ history), PropLine (live) and a one-time SportsGameOdds pull (2025 closing
 prop lines, 2026 opens and closes; 2e). The user bets at DraftKings and FanDuel only; Pinnacle is the
 sharp reference, never a bet.
 
+## 0. Where it runs (2026-10-11)
+
+- Public repo https://github.com/khadile/key-number, branch `main`. The board is
+  built by GitHub Actions (`.github/workflows/board.yml`) Tue/Thu/Sat from 10am ET
+  and published to https://khadile.github.io/key-number/ (`board/site.py` wraps
+  it in a page). The workflow fires every half hour 14:07-17:37 UTC because
+  GitHub drops scheduled firings; `board/slot.py` builds on the first one at or
+  after 10am ET (`board/last_build.json`). Run it by hand with
+  `gh workflow run board.yml -R khadile/key-number -f force=true`.
+  `publish.yml` republishes the committed board without rebuilding.
+- Needs the `ODDSPAPI_KEY` repo secret. Odds data never goes in the repo:
+  data/oddspapi (except the three catalog JSONs), data/propline, data/sgo,
+  data/live and price-level report parquets are gitignored; on Actions the
+  OddsPapi archive lives in the cache (the history endpoint re-serves the
+  current season for free if it is lost).
+- The local branch `archive-private` holds the full history with the odds
+  data. Never push it, and never check it out (switching back to `main` would
+  delete the ignored data from disk).
+- The Claude scheduled task `nfl-board-build` is paused; do not re-enable it
+  while the workflow runs (two builds would both lock picks).
+- The live engine still runs on the laptop. After each graded game it commits
+  ledger/live_*.jsonl and pushes (`live.engine.sync_ledger`); the public board
+  shows it at the next build.
+
 ## 1. No leakage, ever
 
 Every rating, feature and probability used for a game in week N is built only
@@ -64,6 +88,14 @@ for CLV. Never type a line in by hand.
   a game after kickoff, to start from that game's closing prop lines.
 
 ## 2d. PropLine budget (free plan: 1,000 requests a day, reset 00:00 UTC)
+
+- Trial week (2026-10-11 to ~10-16): the engine prices from SportsGameOdds instead
+  (`--odds sgo`, the default for now; `--odds propline` goes back). One shared
+  call every 12 s (`pipeline/sgo.live_event`) covers every watched game, so the
+  whole slate is watched; SGO quotes count as stale after 120 s (it refreshes
+  every 30-60 s in-game on this plan). Players are matched to gsis ids by name
+  within team, re-matched as books post props. Switch the default back to
+  propline when the trial ends.
 
 - Every call goes through `pipeline/propline.py` (certifi TLS; Python's own
   store rejects their chain). It logs to `data/propline/request_log.jsonl`,
