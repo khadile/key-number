@@ -32,7 +32,8 @@ def board_data(season: int) -> dict:
     rec = ledger.records()
     flags = [{k: f.get(k) for k in ("id", "game_id", "label", "market", "side", "line", "book", "american", "p", "fair",
                                      "ev", "reason", "at", "fill", "fill_dec", "fill_line", "clv_units", "result",
-                                     "actual", "units", "accepted", "expired", "passed", "score", "seconds_left")}
+                                     "actual", "units", "accepted", "expired", "passed", "score", "seconds_left", "window",
+                                     "replayed", "replay_note")}
              for f in rec["flags"][:150]]
     variants = []
     for tag, name in VARIANTS:

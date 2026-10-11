@@ -1663,7 +1663,7 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
     const FILL = { filled: "price still there 30 s later", missed: "price gone 30 s later", unknown: "no fresh quote to re-check the price", unchecked: "price not re-checked" };
     const flags = LV.flags.map((f) => `<article class="flagcard">
         <div class="fc-top"><span>${esc(new Date(f.at).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }))} · ${esc((f.game_id || "").split("_").slice(2).join(" at "))}${f.seconds_left != null ? " · " + clock(f.seconds_left) : ""}</span>
-          <span>${resChip(f.result) || '<span class="res P">PENDING</span>'} <b class="${cls(f.units)}">${f.units == null ? "" : units(f.units)}</b>${f.accepted ? ' <span class="tag promo">You took it</span>' : ""}</span></div>
+          <span>${resChip(f.result) || '<span class="res P">PENDING</span>'} <b class="${cls(f.units)}">${f.units == null ? "" : units(f.units)}</b>${f.accepted ? ' <span class="tag promo">You took it</span>' : ""}${f.replayed ? ` <span class="tag" title="${esc(f.replay_note || "")}">Replayed after the game</span>` : ""}</span></div>
         <div class="fc-play"><b>${label(f.label)}</b><span class="mono">${am(f.american)}</span><span class="note">${esc(BOOKN[f.book] || f.book)} · 1u</span></div>
         <div class="fc-nums"><span>Model <b>${pct(f.p)}</b> vs <b>${pct(f.fair)}</b> ${term("novig", "no-vig")}</span><span>${term("ev", "EV")} <b>${signed(100 * f.ev, 1)}%</b></span>
           <span>${term("clv", "Line value")} <b class="${cls(f.clv_units)}">${f.clv_units == null ? "–" : signed(f.clv_units, 1)}</b></span><span>${esc(FILL[f.fill] || "")}</span></div>
