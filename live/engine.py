@@ -2,7 +2,7 @@
 flag the best few, and keep score. Runs on your laptop; the published board only shows
 its record.
 
-    python -m live.engine                          # today's games, as many as the PropLine budget covers
+    python -m live.engine                          # every game in the next 48 hours (PropLine: as many as its budget covers)
     python -m live.engine --games 2026_05_TB_DAL   # specific games
     python -m live.engine --demo 2026_04_PIT_CLE   # replay a finished game: no PropLine requests
     python -m live.engine --lan                    # also serve the page to your phone on home Wi-Fi
@@ -836,8 +836,8 @@ def todays_games(only: list[str] | None) -> list[dict]:
     now = _now()
     if only:
         g = g.filter(pl.col("game_id").is_in(only))
-    else:   # games that kick off in the next 12 hours or are under way
-        g = g.filter(pl.col("result").is_null() & (pl.col("kickoff_utc") <= now + timedelta(hours=12))
+    else:   # every unplayed game kicking off in the next 48 hours (a Sunday-morning start covers Monday night) or under way
+        g = g.filter(pl.col("result").is_null() & (pl.col("kickoff_utc") <= now + timedelta(hours=48))
                      & (pl.col("kickoff_utc") >= now - timedelta(hours=4)))
     return [{"game_id": r["game_id"], "home": r["home_team"], "away": r["away_team"], "kickoff": r["kickoff_utc"],
              "espn": r["espn"], "season": r["season"], "week": r["week"]} for r in g.sort("kickoff_utc").iter_rows(named=True)]
@@ -944,7 +944,7 @@ def propline_event(game: dict) -> str | None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--games", nargs="*", help="nflverse game ids (default: today's)")
+    ap.add_argument("--games", nargs="*", help="nflverse game ids (default: every game in the next 48 hours)")
     ap.add_argument("--demo", help="replay this finished game instead of a live one")
     ap.add_argument("--speed", type=float, default=20.0, help="demo speed: game seconds per real second")
     ap.add_argument("--lan", action="store_true", help="serve on your home network too (for your phone)")

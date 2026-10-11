@@ -40,26 +40,36 @@ header b i { font-style: normal; color: var(--accent); }
 @keyframes ping { 0% { transform: scale(1); opacity: .6; } 80%, 100% { transform: scale(2.6); opacity: 0; } }
 @keyframes blink { 50% { opacity: 0; } }
 @keyframes fadein { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
-main { max-width: 900px; margin: 0 auto; padding: 14px 16px 60px; display: grid; gap: 22px; }
+main { max-width: 900px; margin: 0 auto; padding: 18px 16px 72px; display: grid; gap: 32px; }
+#top, #bottom { display: grid; gap: 32px; min-width: 0; }
 section { min-width: 0; }
-h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 8px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-h2 .sub { text-transform: none; letter-spacing: 0; font-weight: 400; }
-h3.slot { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 12px 0 6px; font-weight: 600; }
+/* every titled section: a hairline above, the title, its one-line explanation underneath */
+.sec { border-top: 1px solid var(--line-2); padding-top: 18px; }
+.sh { margin: 0 0 14px; }
+h2 { font-size: 14px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink); margin: 0; font-weight: 700; }
+.sh-sub { margin: 4px 0 0; font-size: 13px; color: var(--muted); line-height: 1.4; }
+/* slate groups: Live now / Upcoming / Final */
+.group + .group { margin-top: 26px; }
+h3.slot { display: flex; align-items: center; gap: 10px; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 10px; font-weight: 700; }
+h3.slot::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.kick { margin: 18px 0 8px; font-size: 13px; color: var(--ink-2); }
+h3.slot + .kick { margin-top: 0; }
+.glist { display: grid; gap: 10px; }
+.cards { display: grid; gap: 14px; }
 .note { font-size: 13px; color: var(--muted); margin: 0; }
 .empty { background: var(--surface); border: 1px dashed var(--line-2); border-radius: 10px; padding: 14px; color: var(--muted); }
 .pos { color: var(--good); } .neg { color: var(--bad); }
 /* summary tiles */
-.tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 @media (min-width: 640px) { .tiles { grid-template-columns: repeat(4, 1fr); } }
-.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; min-width: 0; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; min-width: 0; }
 .tile .k { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .tile .v { font-size: 24px; font-weight: 700; }
 /* the game tag: the same chip everywhere a play appears */
 .gtag { display: inline-flex; align-items: center; gap: 6px; font: 700 12px ui-monospace, Consolas, monospace; letter-spacing: .03em; padding: 2px 8px; border-radius: 5px; background: var(--ink); color: var(--surface); white-space: nowrap; }
 .gtag .clk { font-weight: 400; opacity: .8; }
 /* live play cards */
-.card { background: var(--surface); border: 1px solid var(--gold-line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; box-shadow: 0 1px 2px rgba(60,45,20,.08); }
-.card + .card { margin-top: 10px; }
+.card { background: var(--surface); border: 1px solid var(--gold-line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; box-shadow: 0 1px 2px rgba(60,45,20,.08); }
 .lbl { font-size: 21px; font-weight: 700; line-height: 1.15; }
 .row { display: flex; gap: 6px 14px; flex-wrap: wrap; align-items: center; font-size: 14px; color: var(--ink-2); }
 .why { font-size: 14px; background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
@@ -80,34 +90,33 @@ input.px { width: 84px; font: 15px ui-monospace, Consolas, monospace; padding: 9
 .seg button + button { border-left: 1px solid var(--line-2); }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
 select { font: 13px system-ui, sans-serif; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); max-width: 100%; }
-.bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+.bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
 /* the slate: one card per game */
 details.game { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
-details.game + details.game { margin-top: 8px; }
 details.game.live { border-color: var(--gold-line); }
-details.game > summary { list-style: none; cursor: pointer; padding: 10px 12px; display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: center; }
+details.game > summary { list-style: none; cursor: pointer; padding: 12px 14px; display: grid; grid-template-columns: auto 1fr auto; gap: 6px 12px; align-items: center; }
 details.game > summary::-webkit-details-marker { display: none; }
 details.game > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 10px; }
 .gs-score { font-weight: 700; font-variant-numeric: tabular-nums; }
 .gs-meta { font-size: 13px; color: var(--ink-2); text-align: right; white-space: nowrap; }
-.gs-line { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
+.gs-line { grid-column: 2 / -1; font-size: 13px; color: var(--muted); }
 .chev { transition: transform .15s; display: inline-block; color: var(--muted); }
 details[open] .chev { transform: rotate(90deg); }
-.gbody { border-top: 1px solid var(--line); padding: 10px 12px 12px; display: grid; gap: 8px; }
+.gbody { border-top: 1px solid var(--line); padding: 12px 14px 14px; display: grid; gap: 12px; }
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--off); }
 .dot.on { background: var(--on); } .dot.wait { background: var(--wait); } .dot.bad { background: var(--bad); }
 /* play rows (inside a game, and the timeline) */
-.plays { display: grid; gap: 6px; }
-.prow { display: grid; grid-template-columns: 62px auto 1fr auto auto; gap: 4px 10px; align-items: center; background: var(--surface-2); border-radius: 8px; padding: 7px 10px; font-size: 14px; }
+.plays { display: grid; gap: 8px; }
+.prow { display: grid; grid-template-columns: 70px auto 1fr auto auto; gap: 6px 12px; align-items: center; background: var(--surface-2); border-radius: 8px; padding: 9px 12px; font-size: 14px; line-height: 1.35; }
 .prow .t { color: var(--muted); font-size: 12px; }
 .prow .pl { font-weight: 600; min-width: 0; }
 .prow .u { font-weight: 700; text-align: right; min-width: 58px; }
-.prow.nogame { grid-template-columns: 62px 1fr auto auto; }
+.prow.nogame { grid-template-columns: 70px 1fr auto auto; }
 @media (max-width: 560px) {
   .prow, .prow.nogame { grid-template-columns: 1fr auto; }
   .prow .t { grid-column: 1 / -1; }
   details.game > summary { grid-template-columns: auto 1fr; }
-  .gs-meta { grid-column: 1 / -1; text-align: left; }
+  .gs-meta, .gs-line { grid-column: 2 / -1; text-align: left; }
 }
 /* the engine log */
 .termwrap { background: var(--term-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 6px 18px rgba(29,36,51,.18); }
@@ -136,7 +145,8 @@ details[open] .chev { transform: rotate(90deg); }
   <span class="status wait" id="status" role="status" aria-live="polite"><i class="light"></i><span id="status-text">Connecting to the engine…</span></span></header>
 <main>
   <div id="top"><p class="note">Connecting to the engine…</p></div>
-  <section aria-labelledby="logh"><h2 id="logh">Engine log <span class="sub" id="logsub"></span></h2>
+  <section class="sec" aria-labelledby="logh"><div class="sh"><h2 id="logh">Engine log</h2>
+    <p class="sh-sub">Every play it reads, every price check and why it did or did not flag. Newest at the bottom; pick a game to see only its lines.</p></div>
     <div class="bar">
       <label class="sub" for="logGame">Game</label> <select id="logGame"><option value="">All games</option></select>
       <span class="seg" role="group" aria-label="What to show">
@@ -145,8 +155,7 @@ details[open] .chev { transform: rotate(90deg); }
     </div>
     <div class="termwrap"><div class="termbar"><span class="tdots"><i></i><i></i><i></i></span><span class="tname">live.engine</span><span id="tcount"></span>
       <button id="follow" hidden>Jump to latest</button></div>
-      <div class="term" id="term" role="log" aria-label="What the engine is doing" tabindex="0"><span class="cursor" id="cursor"></span></div></div>
-    <p class="note" style="margin-top:6px">Every play it reads, every price check and why it did or did not flag. Newest at the bottom. Pick a game to see only its lines.</p></section>
+      <div class="term" id="term" role="log" aria-label="What the engine is doing" tabindex="0"><span class="cursor" id="cursor"></span></div></div></section>
   <div id="bottom"></div>
 </main>
 <script>
@@ -306,7 +315,7 @@ details[open] .chev { transform: rotate(90deg); }
     const dot = g.alive === false && ph !== "final" ? "bad" : ph === "live" ? (age > 45 ? "wait" : "on") : ph === "pre" ? "wait" : "";
     const sc = g.score && Object.keys(g.score).length && ph !== "pre"
       ? `${esc(g.away)} ${g.score[g.away] ?? 0} – ${esc(g.home)} ${g.score[g.home] ?? 0}` : `${esc(g.away)} @ ${esc(g.home)}`;
-    const when = ph === "pre" ? `Kickoff ${esc(etTime(g.kickoff))} ET` : esc(g.detail || "");
+    const when = ph === "pre" ? (g.kickoff ? `Kickoff ${esc(etTime(g.kickoff))} ET` : esc(g.detail || "")) : esc(g.detail || "");
     const meta = `${mine.length} play${mine.length === 1 ? "" : "s"}${act ? ` · <b class="pos">${act} live</b>` : ""}${R.n ? ` · ${rec(R)} <span class="${cls(R.units)}">${units(R.units)}</span>` : ""}`;
     const line = ph === "live"
       ? `${g.next_decision ? esc(g.next_decision.replace(/^watching, no flags between decision points \((.*)\)$/, "next decision: $1")) + " · " : ""}flagged ${g.flags}/${S.rules.per_game}${g.calibrated ? "" : " · not calibrated"}${g.health && g.health.feed_delay_s != null ? " · ESPN " + Math.round(g.health.feed_delay_s) + "s behind" : ""}`
@@ -324,14 +333,17 @@ details[open] .chev { transform: rotate(90deg); }
     const groups = { live: gs.filter((g) => phaseOf(g) === "live"), pre: gs.filter((g) => phaseOf(g) === "pre"), final: gs.filter((g) => phaseOf(g) === "final") };
     const show = (k) => slateView === "all" || slateView === k;
     let html = "";
-    if (show("live")) html += `<h3 class="slot">Live now (${groups.live.length})</h3>` + (groups.live.length ? groups.live.map(gameCard).join("") : '<p class="note">No game in progress.</p>');
+    if (show("live")) html += `<div class="group"><h3 class="slot">Live now · ${groups.live.length}</h3>` +
+      (groups.live.length ? `<div class="glist">${groups.live.map(gameCard).join("")}</div>` : '<p class="note">No game in progress.</p>') + "</div>";
     if (show("pre") && groups.pre.length) {
-      html += `<h3 class="slot">Upcoming (${groups.pre.length})</h3>`;
+      html += `<div class="group"><h3 class="slot">Upcoming · ${groups.pre.length}</h3>`;
       const slots = {};
-      groups.pre.forEach((g) => { const k = new Date(g.kickoff || 0).toLocaleString("en-US", { ...ET, weekday: "short", hour: "numeric", minute: "2-digit" }); (slots[k] = slots[k] || []).push(g); });
-      for (const [k, list] of Object.entries(slots)) html += `<p class="note" style="margin:8px 0 4px"><b>${esc(k)} ET</b> · ${list.length} game${list.length > 1 ? "s" : ""}</p>` + list.map(gameCard).join("");
+      groups.pre.forEach((g) => { const k = g.kickoff ? new Date(g.kickoff).toLocaleString("en-US", { ...ET, weekday: "short", hour: "numeric", minute: "2-digit" }) + " ET" : "Kickoff time unknown"; (slots[k] = slots[k] || []).push(g); });
+      for (const [k, list] of Object.entries(slots))
+        html += `<p class="kick"><b>${esc(k)}</b> · ${list.length} game${list.length > 1 ? "s" : ""}</p><div class="glist">${list.map(gameCard).join("")}</div>`;
+      html += "</div>";
     }
-    if (show("final") && groups.final.length) html += `<h3 class="slot">Final (${groups.final.length})</h3>` + groups.final.map(gameCard).join("");
+    if (show("final") && groups.final.length) html += `<div class="group"><h3 class="slot">Final · ${groups.final.length}</h3><div class="glist">${groups.final.map(gameCard).join("")}</div></div>`;
     return { html, groups };
   }
 
@@ -352,17 +364,17 @@ details[open] .chev { transform: rotate(90deg); }
         <div class="tile"><div class="k">Games</div><div class="v">${groups.live.length} <span class="sub">live</span></div><div class="note">${groups.pre.length} upcoming · ${groups.final.length} final</div></div>
         <div class="tile"><div class="k">Season (paper)</div><div class="v">${rec(R.paper)}</div><div class="note"><span class="${cls(R.paper.units)}">${R.paper.n ? units(R.paper.units) : "1u per play"}</span>${R.you && R.you.n ? ` · you ${rec(R.you)}` : ""}</div></div>
       </div></section>
-      <section aria-labelledby="nowh"><h2 id="nowh">Live plays now <span class="sub">act on these · soonest to close first</span></h2>
-        ${active.length ? active.map(liveCard).join("") : `<div class="empty">Nothing to bet right now. A play shows here for ${S.rules.ttl / 60} minutes (longer at halftime) or until the line moves.</div>`}</section>
-      <section aria-labelledby="slh"><h2 id="slh">The slate <span class="sub">every game, its plays and its record · tap a game to open it</span></h2>
+      <section class="sec" aria-labelledby="nowh"><div class="sh"><h2 id="nowh">Live plays now</h2><p class="sh-sub">The only plays to act on, soonest to close first. Each is tagged with its game and the clock.</p></div>
+        ${active.length ? `<div class="cards">${active.map(liveCard).join("")}</div>` : `<div class="empty">Nothing to bet right now. A play shows here for ${S.rules.ttl / 60} minutes (longer at halftime) or until the line moves.</div>`}</section>
+      <section class="sec" aria-labelledby="slh"><div class="sh"><h2 id="slh">The slate</h2><p class="sh-sub">Every game with its plays and its record. Tap a game to open it.</p></div>
         <div class="bar"><span class="seg" role="group" aria-label="Which games">
           ${[["all", "All"], ["live", "Live"], ["pre", "Upcoming"], ["final", "Final"]].map(([k, l]) => `<button data-view="${k}" aria-pressed="${slateView === k}">${l}</button>`).join("")}</span>
           <button class="small" data-openall="1">Open all</button><button class="small" data-closeall="1">Close all</button></div>
         ${html || '<div class="empty">No games being watched.</div>'}</section>`;
     bottom.innerHTML = `
-      <section aria-labelledby="tlh"><h2 id="tlh">Every play today <span class="sub">newest first, tagged with its game</span></h2>
+      <section class="sec" aria-labelledby="tlh"><div class="sh"><h2 id="tlh">Every play today</h2><p class="sh-sub">Newest first, each tagged with its game and the quarter it came in.</p></div>
         ${timeline.length ? `<div class="plays">${timeline.map((c) => playRow(c, true)).join("")}</div>` : '<div class="empty">No plays flagged yet today.</div>'}</section>
-      <p class="note">Rules: the engine watches every play but bets only at decision points: player props once, at ${esc((S.rules.windows || []).join(" and ").toLowerCase())} (the ${S.rules.prop_per_game === 1 ? "single strongest play" : S.rules.prop_per_game + " strongest plays"}), game markets after a score (${S.rules.game_per_game} a game). A play needs the model within ${Math.round(100 * S.rules.max_gap)} points of the market, ${Math.round(100 * S.rules.min_ev)}%+ expected value after the vig, the same price on two checks, no blowout, no long shot and a fresh quote. Every flag counts in the paper record at the price it was flagged; the engine also checks whether that price was still there 30 seconds later. Alerts: ${S.alerts ? "on (ntfy)" : "off (set NTFY_TOPIC in .env)"}. Model output, not betting advice.</p>`;
+      <p class="note sec">Rules: the engine watches every play but bets only at decision points: player props once, at ${esc((S.rules.windows || []).join(" and ").toLowerCase())} (the ${S.rules.prop_per_game === 1 ? "single strongest play" : S.rules.prop_per_game + " strongest plays"}), game markets after a score (${S.rules.game_per_game} a game). A play needs the model within ${Math.round(100 * S.rules.max_gap)} points of the market, ${Math.round(100 * S.rules.min_ev)}%+ expected value after the vig, the same price on two checks, no blowout, no long shot and a fresh quote. Every flag counts in the paper record at the price it was flagged; the engine also checks whether that price was still there 30 seconds later. Alerts: ${S.alerts ? "on (ntfy)" : "off (set NTFY_TOPIC in .env)"}. Model output, not betting advice.</p>`;
   }
 
   async function post(path, body) {
