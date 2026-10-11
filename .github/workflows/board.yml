@@ -1,0 +1,104 @@
+name: board
+
+# The Key Number board, rebuilt Tuesday, Thursday and Saturday from 10am ET and published to
+# GitHub Pages. Same build as the laptop's (python -m board.build): grades, locks picks that
+# are due, archives OddsPapi lines, writes board/nfl_board.html.
+#
+# Dropped firings: GitHub's scheduler is best-effort and sheds load at the top of the hour
+# (the market-brief repo got 1 of 35 firings on its first day). So this fires every half hour
+# at :07 and :37 from 14:07 to 17:37 UTC (10am EDT / 9am EST onward), and board/slot.py builds
+# on the first firing at or after 10am Eastern; the rest of the day's firings skip.
+#
+# Odds data stays out of the repo: data/oddspapi (current season only, re-served free by
+# OddsPapi's history endpoint) lives in the Actions cache, nflverse downloads too.
+
+on:
+  schedule:
+    - cron: "7,37 14-17 * * 2,4,6"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Build now even if today's build already ran"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: board
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Is a build due?
+        id: slot
+        run: python -m board.slot --check ${{ inputs.force && '--force' || '' }}
+
+      - name: Install
+        if: steps.slot.outputs.due == 'true'
+        run: pip install -r requirements.txt
+
+      - name: Restore nflverse downloads
+        if: steps.slot.outputs.due == 'true'
+        uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: nflverse-${{ github.run_id }}
+          restore-keys: nflverse-
+
+      - name: Restore the odds archive
+        if: steps.slot.outputs.due == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/oddspapi/history
+            data/oddspapi/props
+            data/oddspapi/request_log.jsonl
+            data/oddspapi/open_close.parquet
+          key: oddspapi-${{ github.run_id }}
+          restore-keys: oddspapi-
+
+      - name: Build
+        if: steps.slot.outputs.due == 'true'
+        env:
+          ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
+          PYTHONIOENCODING: utf-8
+        run: |
+          python -m board.build
+          python -m board.slot --mark
+          python -m board.site
+
+      - name: Save the ledger and the board
+        if: steps.slot.outputs.due == 'true'
+        run: |
+          git config user.name "key-number-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ledger board/nfl_board.html board/last_build.json data/lines reports/*.json reports/*.md
+          git commit -m "Board build $(TZ=America/New_York date +%Y-%m-%d)" || echo "nothing to commit"
+          git pull --rebase
+          git push
+
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.slot.outputs.due == 'true'
+        with:
+          path: site
+
+      - id: deploy
+        if: steps.slot.outputs.due == 'true'
+        uses: actions/deploy-pages@v4

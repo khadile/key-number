@@ -1,0 +1,37 @@
+.venv/
+__pycache__/
+.env
+data/raw/
+data/clean/
+data/snapshots/
+# data/lines/ is kept: it is our only record of line history
+board/preview.html
+# live engine demo replays are throwaway; real engine logs (data/live/<game>/) are kept
+# status.json is the engine's 20-second heartbeat, read by the board build
+data/live/status.json
+data/live/demo_ledger/
+data/live/*_demo/
+
+# SportsGameOdds raw events (large); tidy tables in data/sgo/*.parquet are kept
+data/sgo/raw/
+data/sgo/raw_alt/
+
+# GitHub Pages output (built by the workflow)
+site/
+
+# ---- kept off the public repo (third-party odds data; lives on the laptop and in the Actions cache)
+data/oddspapi/*
+!data/oddspapi/fixtures_t31.json
+!data/oddspapi/markets_s14.json
+!data/oddspapi/players_s14.json
+data/propline/
+data/sgo/
+data/live/
+reports/*.parquet
+!reports/projections.parquet
+!reports/parlay_rules.parquet
+!reports/bets.parquet
+!reports/live_replay_flags.parquet
+!reports/live_windows_flags.parquet
+reports/*.log
+.claude/

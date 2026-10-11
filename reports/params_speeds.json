@@ -1,0 +1,22 @@
+{
+  "ratings": {
+    "half_life": 16.0,
+    "gap": 8.0,
+    "alpha_play": 200.0,
+    "alpha_game": 16.0,
+    "qb_half_life": 250.0,
+    "qb_gap": 0.0,
+    "alpha_qb": 250.0,
+    "hl_pass_off": 16.0,
+    "hl_pass_def": 16.0,
+    "hl_rush_off": 16.0,
+    "hl_rush_def": 24.0,
+    "hl_tend": 16.0,
+    "hl_st": 16.0,
+    "gap_off": 12.0,
+    "gap_def": 4.0
+  },
+  "points_alpha": 500.0,
+  "tuned_on": "2018-2021",
+  "score": 21.24594050203558
+}

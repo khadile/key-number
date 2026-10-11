@@ -1,0 +1,201 @@
+{
+ "games": 64,
+ "lines": 19690,
+ "card": [
+  {
+   "book": "draftkings",
+   "market": "pass_yds",
+   "n": 125,
+   "said_over": 0.5000253743990913,
+   "over_hit": 0.528,
+   "roi_over": -0.0006240000000000113,
+   "roi_under": -0.10650400000000003
+  },
+  {
+   "book": "draftkings",
+   "market": "rec_yds",
+   "n": 493,
+   "said_over": 0.49978516199388173,
+   "over_hit": 0.4847870182555781,
+   "roi_over": -0.081868154158215,
+   "roi_under": -0.025062880324543627
+  },
+  {
+   "book": "draftkings",
+   "market": "receptions",
+   "n": 372,
+   "said_over": 0.4927783680714051,
+   "over_hit": 0.478494623655914,
+   "roi_over": -0.07676881720430108,
+   "roi_under": -0.02579301075268817
+  },
+  {
+   "book": "draftkings",
+   "market": "rush_yds",
+   "n": 233,
+   "said_over": 0.49957223473538726,
+   "over_hit": 0.463519313304721,
+   "roi_over": -0.12089270386266097,
+   "roi_under": 0.015527896995708168
+  },
+  {
+   "book": "fanduel",
+   "market": "pass_yds",
+   "n": 125,
+   "said_over": 0.5,
+   "over_hit": 0.536,
+   "roi_over": 0.007679999999999943,
+   "roi_under": -0.12768000000000007
+  },
+  {
+   "book": "fanduel",
+   "market": "rec_yds",
+   "n": 498,
+   "said_over": 0.4996697183012733,
+   "over_hit": 0.5120481927710844,
+   "roi_over": -0.036847389558232975,
+   "roi_under": -0.08337349397590367
+  },
+  {
+   "book": "fanduel",
+   "market": "receptions",
+   "n": 497,
+   "said_over": 0.49429037606308096,
+   "over_hit": 0.4869215291750503,
+   "roi_over": -0.06949698189134809,
+   "roi_under": -0.042696177062374246
+  },
+  {
+   "book": "fanduel",
+   "market": "rush_yds",
+   "n": 236,
+   "said_over": 0.5,
+   "over_hit": 0.4957627118644068,
+   "roi_over": -0.0679661016949153,
+   "roi_under": -0.05203389830508479
+  },
+  {
+   "book": "pinnacle",
+   "market": "pass_yds",
+   "n": 123,
+   "said_over": 0.49952061800290215,
+   "over_hit": 0.5447154471544715,
+   "roi_over": 0.040130081300813046,
+   "roi_under": -0.13206504065040645
+  },
+  {
+   "book": "pinnacle",
+   "market": "rec_yds",
+   "n": 485,
+   "said_over": 0.5022762097046265,
+   "over_hit": 0.488659793814433,
+   "roi_over": -0.06979793814432991,
+   "roi_under": -0.01787628865979382
+  },
+  {
+   "book": "pinnacle",
+   "market": "receptions",
+   "n": 483,
+   "said_over": 0.4942492010726885,
+   "over_hit": 0.484472049689441,
+   "roi_over": -0.051594202898550726,
+   "roi_under": -0.01639751552795032
+  },
+  {
+   "book": "pinnacle",
+   "market": "rush_yds",
+   "n": 227,
+   "said_over": 0.500275911210303,
+   "over_hit": 0.45374449339207046,
+   "roi_over": -0.13198678414096915,
+   "roi_under": 0.04554185022026432
+  }
+ ],
+ "brier": [
+  {
+   "market": "pass_yds",
+   "n": 373,
+   "books": 0.24981086805056962,
+   "model": 0.25094614209115285,
+   "blend": 0.24846032553535097
+  },
+  {
+   "market": "rec_yds",
+   "n": 1476,
+   "books": 0.25022887600034555,
+   "model": 0.26537457041836043,
+   "blend": 0.2550273466602275
+  },
+  {
+   "market": "receptions",
+   "n": 1352,
+   "books": 0.25048717923667785,
+   "model": 0.2661734417529586,
+   "blend": 0.2551912402314144
+  },
+  {
+   "market": "rush_yds",
+   "n": 696,
+   "books": 0.2504510454180482,
+   "model": 0.27288796749281613,
+   "blend": 0.2573157675671434
+  }
+ ],
+ "moves": [
+  {
+   "when": "open",
+   "n": 1368,
+   "moved": 1273,
+   "toward": 665,
+   "k": 0.036,
+   "clv_sd": 0.0062,
+   "big_gap_n": 457,
+   "big_gap_toward": 240,
+   "big_gap_moved": 434
+  },
+  {
+   "when": "tue",
+   "n": 485,
+   "moved": 466,
+   "toward": 230,
+   "k": 0.005,
+   "clv_sd": -0.0023,
+   "big_gap_n": 168,
+   "big_gap_toward": 84,
+   "big_gap_moved": 165
+  },
+  {
+   "when": "thu",
+   "n": 1173,
+   "moved": 1119,
+   "toward": 567,
+   "k": 0.017,
+   "clv_sd": 0.0045,
+   "big_gap_n": 388,
+   "big_gap_toward": 196,
+   "big_gap_moved": 378
+  },
+  {
+   "when": "sat",
+   "n": 1331,
+   "moved": 1214,
+   "toward": 627,
+   "k": 0.007,
+   "clv_sd": 0.0026,
+   "big_gap_n": 467,
+   "big_gap_toward": 224,
+   "big_gap_moved": 435
+  },
+  {
+   "when": "t3h",
+   "n": 1354,
+   "moved": 769,
+   "toward": 393,
+   "k": 0.007,
+   "clv_sd": 0.0025,
+   "big_gap_n": 492,
+   "big_gap_toward": 141,
+   "big_gap_moved": 284
+  }
+ ]
+}

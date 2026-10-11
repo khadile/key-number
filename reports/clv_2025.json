@@ -1,0 +1,9 @@
+{
+ "validation_2026": {
+  "games": 79,
+  "spread_match": 0.046153846153846156,
+  "spread_sign_flipped": true,
+  "total_match": 0.03076923076923077,
+  "spread_within_half": 0.13846153846153847
+ }
+}

@@ -1,0 +1,23 @@
+{
+ "games": 64,
+ "checkpoints": 797,
+ "summary": {
+  "flags": 88,
+  "filled": 44,
+  "w": 20,
+  "l": 24,
+  "p": 0,
+  "units": 22.57,
+  "roi": 0.513,
+  "clv_n": 41,
+  "clv_prob": 0.0024
+ },
+ "win_prob": {
+  "n": 797,
+  "market": 0.1977,
+  "model": 0.1945,
+  "k_game": 0.1698,
+  "moved": 531,
+  "toward": 275
+ }
+}
