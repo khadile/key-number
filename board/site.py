@@ -17,7 +17,8 @@ def main() -> None:
     SITE.mkdir(exist_ok=True)
     head = ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
-            '<style>body{margin:0}</style></head><body>')
+            '<style>body{margin:0}</style></head><body>'
+            '<script>window.KN_PUBLIC = true;</script>')   # hides My Picks (it needs claude.ai's storage)
     (SITE / "index.html").write_text(head + body + "</body></html>", encoding="utf-8")
     (SITE / ".nojekyll").write_text("")
     print(f"wrote {SITE / 'index.html'} ({len(body) // 1024} KB)")

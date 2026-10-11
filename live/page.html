@@ -5,23 +5,23 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Key Number Live</title>
 <style>
-/* Layout: sticky header with the engine's status light, then games, live plays, the engine log
-   (a small terminal that persists between refreshes), record and recent plays, one column.
+/* Layout, top to bottom: status header; today's summary; LIVE PLAYS NOW (the only thing to act on);
+   the slate, one card per game grouped Live / Upcoming by kickoff / Final, each holding that game's
+   plays and record; every play today as one timeline; the engine log, filterable by game; rules.
+   Every play carries its game's tag, so with a dozen games on nothing gets mixed up.
    Look: the board's cream ticket; the terminal is the one dark surface, like a scoreboard feed. */
 :root {
   color-scheme: light;
   --bg: #f4ecdc; --surface: #fffaf0; --surface-2: #f8f0df; --ink: #1d2433; --ink-2: #464c5b; --muted: #6e6858;
   --line: #e6dcc8; --line-2: #d6c9ae; --accent: #1f3a6b; --gold: #85590a; --gold-soft: #f6e6c2; --gold-line: #c99a3c;
   --good: #1f3a6b; --good-soft: #e3e7f1; --bad: #a83a2c; --bad-soft: #f5dfd8; --you: #7d2a4a; --you-soft: #f3e0e7;
-  /* status lights: semantic, separate from the palette */
   --on: #2f8a4e; --wait: #c27c0e; --off: #8d877a;
-  /* terminal */
   --term-bg: #1b2130; --term-ink: #ece4d2; --term-dim: #8e94a3; --t-play: #a9bde3; --t-odds: #8cc4ff; --t-price: #d9cfb8;
   --t-flag: #f2c14e; --t-card: #c9a7e8; --t-fill: #8fd3c7; --t-warn: #f0a35e; --t-error: #ff7b6b;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
-.mono { font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.mono, .num { font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
 header { position: sticky; top: env(safe-area-inset-top, 0px); background: var(--surface); border-bottom: 1px solid var(--line); padding: 10px 16px; z-index: 5; display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; }
 header b { font-size: 20px; letter-spacing: .06em; }
 header b i { font-style: normal; color: var(--accent); }
@@ -40,54 +40,95 @@ header b i { font-style: normal; color: var(--accent); }
 @keyframes ping { 0% { transform: scale(1); opacity: .6; } 80%, 100% { transform: scale(2.6); opacity: 0; } }
 @keyframes blink { 50% { opacity: 0; } }
 @keyframes fadein { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
-main { max-width: 760px; margin: 0 auto; padding: 14px 16px 60px; display: grid; gap: 18px; }
-h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 8px; }
-.games { display: grid; gap: 8px; }
-.g { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.g .sc { font-weight: 600; }
-.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--off); margin-right: 6px; }
-.dot.on { background: var(--on); } .dot.wait { background: var(--wait); } .dot.bad { background: var(--bad); }
+main { max-width: 900px; margin: 0 auto; padding: 14px 16px 60px; display: grid; gap: 22px; }
+section { min-width: 0; }
+h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 8px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+h2 .sub { text-transform: none; letter-spacing: 0; font-weight: 400; }
+h3.slot { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 12px 0 6px; font-weight: 600; }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+.empty { background: var(--surface); border: 1px dashed var(--line-2); border-radius: 10px; padding: 14px; color: var(--muted); }
+.pos { color: var(--good); } .neg { color: var(--bad); }
+/* summary tiles */
+.tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+@media (min-width: 640px) { .tiles { grid-template-columns: repeat(4, 1fr); } }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; min-width: 0; }
+.tile .k { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.tile .v { font-size: 24px; font-weight: 700; }
+/* the game tag: the same chip everywhere a play appears */
+.gtag { display: inline-flex; align-items: center; gap: 6px; font: 700 12px ui-monospace, Consolas, monospace; letter-spacing: .03em; padding: 2px 8px; border-radius: 5px; background: var(--ink); color: var(--surface); white-space: nowrap; }
+.gtag .clk { font-weight: 400; opacity: .8; }
+/* live play cards */
 .card { background: var(--surface); border: 1px solid var(--gold-line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; box-shadow: 0 1px 2px rgba(60,45,20,.08); }
-.card.done { border-color: var(--line); opacity: .92; }
+.card + .card { margin-top: 10px; }
 .lbl { font-size: 21px; font-weight: 700; line-height: 1.15; }
-.row { display: flex; gap: 6px 14px; flex-wrap: wrap; font-size: 14px; color: var(--ink-2); }
+.row { display: flex; gap: 6px 14px; flex-wrap: wrap; align-items: center; font-size: 14px; color: var(--ink-2); }
 .why { font-size: 14px; background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
 .btns { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 button { font: 600 15px system-ui, sans-serif; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--surface-2); color: var(--ink); cursor: pointer; }
 button.acc { background: var(--you); color: #fff; border-color: var(--you); }
+button.small { font-size: 13px; padding: 5px 10px; }
 button:disabled { opacity: .5; cursor: not-allowed; }
 input.px { width: 84px; font: 15px ui-monospace, Consolas, monospace; padding: 9px 8px; border-radius: 8px; border: 1px solid var(--line-2); background: #fff; color: var(--ink); }
-.chip { font-size: 12px; font-weight: 700; letter-spacing: .04em; padding: 2px 7px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); }
+.chip { font-size: 12px; font-weight: 700; letter-spacing: .04em; padding: 2px 7px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
 .chip.W, .chip.filled { background: var(--good-soft); color: var(--good); border-color: transparent; }
 .chip.L, .chip.missed { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
 .chip.you { background: var(--you-soft); color: var(--you); border-color: transparent; }
 .chip.live { background: var(--gold-soft); color: var(--gold); border-color: var(--gold-line); }
-.tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-@media (min-width: 620px) { .tiles { grid-template-columns: repeat(4, 1fr); } }
-.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; }
-.tile .k { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
-.tile .v { font-size: 24px; font-weight: 700; }
-.pos { color: var(--good); } .neg { color: var(--bad); }
-.note { font-size: 13px; color: var(--muted); margin: 0; }
-.empty { background: var(--surface); border: 1px dashed var(--line-2); border-radius: 10px; padding: 14px; color: var(--muted); }
+/* filters */
+.seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; border-radius: 0; padding: 6px 12px; font-size: 13px; background: transparent; }
+.seg button + button { border-left: 1px solid var(--line-2); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+select { font: 13px system-ui, sans-serif; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); max-width: 100%; }
+.bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+/* the slate: one card per game */
+details.game { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+details.game + details.game { margin-top: 8px; }
+details.game.live { border-color: var(--gold-line); }
+details.game > summary { list-style: none; cursor: pointer; padding: 10px 12px; display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: center; }
+details.game > summary::-webkit-details-marker { display: none; }
+details.game > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 10px; }
+.gs-score { font-weight: 700; font-variant-numeric: tabular-nums; }
+.gs-meta { font-size: 13px; color: var(--ink-2); text-align: right; white-space: nowrap; }
+.gs-line { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
+.chev { transition: transform .15s; display: inline-block; color: var(--muted); }
+details[open] .chev { transform: rotate(90deg); }
+.gbody { border-top: 1px solid var(--line); padding: 10px 12px 12px; display: grid; gap: 8px; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--off); }
+.dot.on { background: var(--on); } .dot.wait { background: var(--wait); } .dot.bad { background: var(--bad); }
+/* play rows (inside a game, and the timeline) */
+.plays { display: grid; gap: 6px; }
+.prow { display: grid; grid-template-columns: 62px auto 1fr auto auto; gap: 4px 10px; align-items: center; background: var(--surface-2); border-radius: 8px; padding: 7px 10px; font-size: 14px; }
+.prow .t { color: var(--muted); font-size: 12px; }
+.prow .pl { font-weight: 600; min-width: 0; }
+.prow .u { font-weight: 700; text-align: right; min-width: 58px; }
+.prow.nogame { grid-template-columns: 62px 1fr auto auto; }
+@media (max-width: 560px) {
+  .prow, .prow.nogame { grid-template-columns: 1fr auto; }
+  .prow .t { grid-column: 1 / -1; }
+  details.game > summary { grid-template-columns: auto 1fr; }
+  .gs-meta { grid-column: 1 / -1; text-align: left; }
+}
 /* the engine log */
 .termwrap { background: var(--term-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 6px 18px rgba(29,36,51,.18); }
-.termbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,.08); color: var(--term-dim); font: 12px ui-monospace, Consolas, monospace; }
+.termbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,.08); color: var(--term-dim); font: 12px ui-monospace, Consolas, monospace; flex-wrap: wrap; }
 .termbar .tdots { display: inline-flex; gap: 5px; }
 .termbar .tdots i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.16); }
 .termbar .tname { color: var(--term-ink); }
 .termbar button { margin-left: auto; font: 12px ui-monospace, Consolas, monospace; padding: 3px 9px; border-radius: 6px; background: rgba(255,255,255,.08); color: var(--term-ink); border: 1px solid rgba(255,255,255,.14); }
-.term { height: 260px; overflow-y: auto; padding: 10px 12px 12px; font: 12.5px/1.55 ui-monospace, Consolas, monospace; color: var(--term-ink); overscroll-behavior: contain; }
-.term .ln { display: grid; grid-template-columns: 68px 52px 1fr; gap: 0 8px; }
-.term .t { color: var(--term-dim); }
+.term { height: 300px; overflow-y: auto; padding: 10px 12px 12px; font: 12.5px/1.55 ui-monospace, Consolas, monospace; color: var(--term-ink); overscroll-behavior: contain; }
+.term .ln { display: grid; grid-template-columns: 68px 74px 52px 1fr; gap: 0 8px; }
+.term.one .ln { grid-template-columns: 68px 52px 1fr; }
+.term.one .g { display: none; }
+.term .t, .term .g { color: var(--term-dim); }
 .term .k { font-weight: 700; }
 .term .m { white-space: pre-wrap; word-break: break-word; min-width: 0; }
 .k.play { color: var(--t-play); } .k.odds { color: var(--t-odds); } .k.price { color: var(--t-price); } .k.info { color: var(--term-dim); }
 .k.flag, .k.grade { color: var(--t-flag); } .k.card, .k.shadow { color: var(--t-card); } .k.fill { color: var(--t-fill); }
 .k.warn { color: var(--t-warn); } .k.error { color: var(--t-error); }
 .ln.flag .m { color: var(--t-flag); } .ln.error .m { color: var(--t-error); }
-.term .cursor { display: inline-block; width: 8px; height: 14px; background: var(--term-ink); vertical-align: -2px; margin-left: 76px; opacity: .7; }
-@media (max-width: 520px) { .term .ln { grid-template-columns: 58px 1fr; } .term .k { display: none; } .term .cursor { margin-left: 66px; } }
+.term .cursor { display: inline-block; width: 8px; height: 14px; background: var(--term-ink); vertical-align: -2px; opacity: .7; }
+@media (max-width: 560px) { .term .ln, .term.one .ln { grid-template-columns: 58px 1fr; } .term .k, .term .g { display: none; } }
 </style>
 </head>
 <body>
@@ -95,11 +136,17 @@ input.px { width: 84px; font: 15px ui-monospace, Consolas, monospace; padding: 9
   <span class="status wait" id="status" role="status" aria-live="polite"><i class="light"></i><span id="status-text">Connecting to the engine…</span></span></header>
 <main>
   <div id="top"><p class="note">Connecting to the engine…</p></div>
-  <section aria-labelledby="logh"><h2 id="logh">Engine log</h2>
+  <section aria-labelledby="logh"><h2 id="logh">Engine log <span class="sub" id="logsub"></span></h2>
+    <div class="bar">
+      <label class="sub" for="logGame">Game</label> <select id="logGame"><option value="">All games</option></select>
+      <span class="seg" role="group" aria-label="What to show">
+        <button data-lk="all" aria-pressed="true">Everything</button><button data-lk="plays">Flags &amp; grades</button><button data-lk="warn">Warnings</button>
+      </span>
+    </div>
     <div class="termwrap"><div class="termbar"><span class="tdots"><i></i><i></i><i></i></span><span class="tname">live.engine</span><span id="tcount"></span>
       <button id="follow" hidden>Jump to latest</button></div>
       <div class="term" id="term" role="log" aria-label="What the engine is doing" tabindex="0"><span class="cursor" id="cursor"></span></div></div>
-    <p class="note" style="margin-top:6px">Every play it reads, every price check and why it did or did not flag. Newest at the bottom.</p></section>
+    <p class="note" style="margin-top:6px">Every play it reads, every price check and why it did or did not flag. Newest at the bottom. Pick a game to see only its lines.</p></section>
   <div id="bottom"></div>
 </main>
 <script>
@@ -107,22 +154,39 @@ input.px { width: 84px; font: 15px ui-monospace, Consolas, monospace; padding: 9
   "use strict";
   const top = document.getElementById("top"), bottom = document.getElementById("bottom");
   const term = document.getElementById("term"), cursor = document.getElementById("cursor"), follow = document.getElementById("follow");
+  const logGame = document.getElementById("logGame");
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const am = (n) => (n == null ? "–" : (n > 0 ? "+" : "") + n);
   const pct = (x) => (x == null ? "–" : Math.round(100 * x) + "%");
-  const units = (u) => (u == null ? "–" : (u > 0 ? "+" : "") + u.toFixed(2) + "u");
-  const BOOK = { draftkings: "DraftKings", fanduel: "FanDuel", pinnacle: "Pinnacle" };
+  const units = (u) => (u == null ? "–" : (u > 0 ? "+" : u < 0 ? "−" : "") + Math.abs(u).toFixed(2) + "u");
+  const cls = (x) => (x > 0 ? "pos" : x < 0 ? "neg" : "");
+  const rec = (r) => (!r || !r.n ? "0-0" : `${r.w}-${r.l}${r.p ? "-" + r.p : ""}`);
+  const BOOK = { draftkings: "DK", fanduel: "FD", pinnacle: "Pinnacle" };
+  const BOOKL = { draftkings: "DraftKings", fanduel: "FanDuel", pinnacle: "Pinnacle" };
   const TAG = { play: "PLAY", odds: "ODDS", price: "PRICE", flag: "FLAG", shadow: "SHADOW", card: "CARD", fill: "FILL", grade: "GRADE", info: "INFO", warn: "WARN", error: "ERROR" };
-  let S = null, editing = null, busy = false, lastSeq = 0, lastOk = null, failed = false, lines = 0, started = null;
-  function left(card) {
-    const s = Math.max(0, Math.round((Date.parse(card.expires_at) - Date.now()) / 1000));
-    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-  }
+  const RES = { W: "WIN", L: "LOSS", P: "PUSH", V: "VOID" };
+  const ET = { timeZone: "America/New_York" };
+  const etTime = (t) => new Date(t).toLocaleTimeString("en-US", { ...ET, hour: "numeric", minute: "2-digit" });
+  const clockOf = (s) => { if (s == null) return ""; const q = Math.min(4, 4 - Math.floor((s - 1) / 900)), r = Math.max(0, s - (4 - q) * 900); return `Q${q} ${Math.floor(r / 60)}:${String(Math.round(r % 60)).padStart(2, "0")}`; };
+  const store = { get(k, d) { try { const v = localStorage.getItem("kn-live-" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+                  set(k, v) { try { localStorage.setItem("kn-live-" + k, JSON.stringify(v)); } catch (e) { /* private window */ } } };
+  let S = null, G = {}, editing = null, busy = false, lastSeq = 0, lastOk = null, failed = false, started = null;
+  let open = new Set(store.get("open", [])), shut = new Set(), slateView = store.get("view", "all"), logKind = "all";
+  const allEvents = [];           // every log line this page has seen, any game
+  let shown = 0;
+
+  // ---------- helpers that keep every play tied to its game
+  function matchup(gid) { const g = G[gid]; return g ? `${g.away} @ ${g.home}` : String(gid || "").split("_").slice(2).join(" @ "); }
+  function gtag(gid, extra) { return `<span class="gtag">${esc(matchup(gid))}${extra ? ` <span class="clk">${esc(extra)}</span>` : ""}</span>`; }
+  function playUnits(c) { if (!c.result) return null; if (c.result === "W") return (c.dec - 1) * (c.stake || 1); if (c.result === "L") return -(c.stake || 1); return 0; }
+  function left(card) { const s = Math.max(0, Math.round((Date.parse(card.expires_at) - Date.now()) / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
   function ago(t) {
     if (!t) return "–";
     const s = Math.max(0, Math.round((Date.now() - (typeof t === "number" ? t : Date.parse(t))) / 1000));
     return s < 60 ? s + "s ago" : s < 3600 ? Math.round(s / 60) + "m ago" : Math.round(s / 3600) + "h ago";
   }
+  function phaseOf(g) { return g.phase === "live" ? "live" : g.phase === "final" ? "final" : "pre"; }
+
   // ---------- the status light
   function status() {
     if (failed) return ["down", `Engine not responding${lastOk ? ", last heard " + ago(lastOk) : ""}. Start it with: python -m live.engine`];
@@ -145,81 +209,162 @@ input.px { width: 84px; font: 15px ui-monospace, Consolas, monospace; padding: 9
     return ["wait", "Running · waiting for kickoff"];
   }
   function paintStatus() {
-    const [cls, text] = status();
-    const el = document.getElementById("status");
-    el.className = "status " + cls;
+    const [c, text] = status();
+    document.getElementById("status").className = "status " + c;
     document.getElementById("status-text").textContent = text;
   }
-  // ---------- the engine log
+
+  // ---------- the engine log, filterable by game and by kind
   const atBottom = () => term.scrollTop + term.clientHeight >= term.scrollHeight - 24;
+  const KINDS = { all: null, plays: new Set(["flag", "card", "fill", "grade", "shadow"]), warn: new Set(["warn", "error"]) };
+  const passes = (e) => (!logGame.value || e.game === logGame.value) && (!KINDS[logKind] || KINDS[logKind].has(e.kind));
+  function lineEl(e) {
+    const d = document.createElement("div");
+    d.className = "ln " + e.kind;
+    const t = new Date(e.at).toLocaleTimeString("en-US", { ...ET, hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" });
+    d.innerHTML = `<span class="t">${esc(t)}</span><span class="g">${esc(e.game ? matchup(e.game) : "engine")}</span><span class="k ${esc(e.kind)}">${esc(TAG[e.kind] || e.kind)}</span><span class="m">${esc(e.msg)}</span>`;
+    return d;
+  }
+  function redrawLog() {
+    while (term.firstChild !== cursor) term.removeChild(term.firstChild);
+    const keep = allEvents.filter(passes).slice(-500);
+    const frag = document.createDocumentFragment();
+    keep.forEach((e) => frag.appendChild(lineEl(e)));
+    term.insertBefore(frag, cursor);
+    shown = keep.length;
+    term.classList.toggle("one", !!logGame.value);
+    document.getElementById("tcount").textContent = `· ${shown} lines${logGame.value ? " · " + matchup(logGame.value) : ""}`;
+    term.scrollTop = term.scrollHeight; follow.hidden = true;
+  }
   function addLines(events) {
     if (!events || !events.length) return;
     const stick = atBottom();
     const frag = document.createDocumentFragment();
     for (const e of events) {
-      const d = document.createElement("div");
-      d.className = "ln new " + e.kind;
-      const t = new Date(e.at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" });
-      d.innerHTML = `<span class="t">${esc(t)}</span><span class="k ${esc(e.kind)}">${esc(TAG[e.kind] || e.kind)}</span><span class="m">${esc(e.msg)}</span>`;
-      frag.appendChild(d);
-      lines++;
+      allEvents.push(e);
+      if (passes(e)) { const d = lineEl(e); d.classList.add("new"); frag.appendChild(d); shown++; }
     }
+    while (allEvents.length > 6000) allEvents.shift();
     term.insertBefore(frag, cursor);
-    while (lines > 400) { term.removeChild(term.firstChild); lines--; }
-    document.getElementById("tcount").textContent = `· ${lines} lines`;
+    while (shown > 500) { term.removeChild(term.firstChild); shown--; }
+    document.getElementById("tcount").textContent = `· ${shown} lines${logGame.value ? " · " + matchup(logGame.value) : ""}`;
     if (stick) term.scrollTop = term.scrollHeight; else follow.hidden = false;
   }
   term.addEventListener("scroll", () => { if (atBottom()) follow.hidden = true; });
   follow.addEventListener("click", () => { term.scrollTop = term.scrollHeight; follow.hidden = true; });
-  // ---------- plays and record
-  function tile(k, r, extra) {
-    const v = !r || !r.n ? "–" : `${r.w}-${r.l}${r.p ? "-" + r.p : ""}`;
-    return `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="note"><span class="${r && r.units > 0 ? "pos" : r && r.units < 0 ? "neg" : ""}">${r && r.n ? units(r.units) : "1u per play"}</span>${extra || ""}</div></div>`;
+  logGame.addEventListener("change", redrawLog);
+  document.querySelectorAll("[data-lk]").forEach((b) => b.addEventListener("click", () => {
+    logKind = b.dataset.lk;
+    document.querySelectorAll("[data-lk]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    redrawLog();
+  }));
+  function syncLogOptions() {
+    const want = sortedGames().map((g) => g.game_id);
+    const have = [...logGame.options].slice(1).map((o) => o.value);
+    if (want.join() === have.join()) return;
+    const cur = logGame.value;
+    logGame.innerHTML = '<option value="">All games</option>' + want.map((id) => `<option value="${esc(id)}">${esc(matchup(id))} · ${esc(etTime(G[id].kickoff || Date.now()))}</option>`).join("");
+    logGame.value = want.includes(cur) ? cur : "";
   }
-  function cardHtml(c) {
-    const active = c.status === "active";
-    const chips = [];
-    if (active) chips.push(`<span class="chip live">LIVE · ${left(c)}</span>`);
-    else chips.push(`<span class="chip">${c.expired_why ? "closed: " + esc(c.expired_why) : "closed"}</span>`);
-    if (c.fill === "unknown") chips.push('<span class="chip">price not re-checked: no fresh quote</span>');
-    else if (c.fill === "filled") chips.push(`<span class="chip filled">price still there 30 s later${c.fill_american ? " " + am(c.fill_american) : ""}</span>`);
+
+  // ---------- plays
+  function liveCard(c) {
+    const chips = [`<span class="chip live">LIVE · ${left(c)}</span>`];
+    if (c.fill === "filled") chips.push(`<span class="chip filled">price still there 30 s later</span>`);
     else if (c.fill === "missed") chips.push('<span class="chip missed">price gone 30 s later</span>');
     if (c.accepted) chips.push(`<span class="chip you">you took ${am(c.accepted.american)}</span>`);
-    if (c.result) chips.push(`<span class="chip ${c.result}">${{ W: "WIN", L: "LOSS", P: "PUSH", V: "VOID" }[c.result]}</span>`);
-    const canAccept = !c.accepted && (active || (Date.now() - Date.parse(c.expired_at || c.at)) / 1000 < 600) && !c.result;
     const acc = editing === c.id
       ? `<input class="px" id="px" inputmode="numeric" value="${c.american}" aria-label="Price you got"> <button class="acc" data-ok="${esc(c.id)}">Save bet</button> <button data-cancel="1">Cancel</button>`
-      : `<button class="acc" data-acc="${esc(c.id)}" ${canAccept ? "" : "disabled"}>${c.accepted ? "Accepted" : "Accept"}</button>${active && !c.passed ? ` <button data-pass="${esc(c.id)}">Pass</button>` : ""}`;
-    return `<article class="card${active ? "" : " done"}">
-      <div class="row">${chips.join(" ")}<span>${esc(c.game_id.split("_").slice(2).join(" at "))}</span></div>
+      : `<button class="acc" data-acc="${esc(c.id)}" ${c.accepted ? "disabled" : ""}>${c.accepted ? "Accepted" : "Accept"}</button>${!c.passed ? ` <button data-pass="${esc(c.id)}">Pass</button>` : ""}`;
+    return `<article class="card">
+      <div class="row">${gtag(c.game_id, clockOf(c.seconds_left))}${chips.join(" ")}</div>
       <div class="lbl">${esc(c.label)} <span class="mono">${am(c.american)}</span></div>
-      <div class="row"><span>${BOOK[c.book] || esc(c.book)}</span><span>model ${pct(c.p)} vs ${pct(c.fair)} no-vig</span><span>EV ${(100 * c.ev).toFixed(1)}%</span><span>stake ${c.stake}u</span><span>flagged ${ago(c.at)}</span>${c.quote_age_s != null ? `<span>quote ${c.quote_age_s}s old when flagged</span>` : ""}</div>
+      <div class="row"><span>${BOOKL[c.book] || esc(c.book)}</span><span>model ${pct(c.p)} vs ${pct(c.fair)} no-vig</span><span>EV ${(100 * c.ev).toFixed(1)}%</span><span>${c.stake}u</span><span>flagged ${ago(c.at)}</span>${c.quote_age_s != null ? `<span>quote ${c.quote_age_s}s old</span>` : ""}</div>
       <div class="why">Why: ${esc(c.reason)}</div>
-      ${c.result ? "" : `<div class="btns">${acc}</div>`}
-      ${active ? '<p class="note">Confirm the line and price in your app before betting. Accept means you placed it.</p>' : ""}
+      <div class="btns">${acc}</div>
+      <p class="note">Confirm the line and price in your app before betting. Accept means you placed it.</p>
     </article>`;
   }
+  function playRow(c, withGame) {
+    const u = playUnits(c);
+    const st = c.status === "active" ? `<span class="chip live">LIVE ${left(c)}</span>`
+      : c.result ? `<span class="chip ${c.result}">${RES[c.result]}</span>` : '<span class="chip">pending</span>';
+    const you = c.accepted ? ' <span class="chip you">you</span>' : "";
+    return `<div class="prow${withGame ? "" : " nogame"}"><span class="t">${esc(etTime(c.at))}<br>${esc(clockOf(c.seconds_left))}</span>
+      ${withGame ? gtag(c.game_id) : ""}<span class="pl">${esc(c.label)} <span class="mono">${am(c.american)}</span> <span class="sub">${BOOK[c.book] || esc(c.book)}</span>${you}</span>
+      ${st}<span class="u num ${cls(u)}">${u == null ? "" : units(u)}</span></div>`;
+  }
+
+  // ---------- the slate
+  function sortedGames() {
+    return [...(S.games || [])].sort((a, b) => (Date.parse(a.kickoff || 0) - Date.parse(b.kickoff || 0)) || a.game_id.localeCompare(b.game_id));
+  }
+  function gameCard(g) {
+    const ph = phaseOf(g), mine = S.cards.filter((c) => c.game_id === g.game_id).sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+    const R = (S.by_game || {})[g.game_id] || {}, act = mine.filter((c) => c.status === "active").length;
+    const age = g.health && g.health.espn_at ? (Date.now() - Date.parse(g.health.espn_at)) / 1000 : 999;
+    const dot = g.alive === false && ph !== "final" ? "bad" : ph === "live" ? (age > 45 ? "wait" : "on") : ph === "pre" ? "wait" : "";
+    const sc = g.score && Object.keys(g.score).length && ph !== "pre"
+      ? `${esc(g.away)} ${g.score[g.away] ?? 0} – ${esc(g.home)} ${g.score[g.home] ?? 0}` : `${esc(g.away)} @ ${esc(g.home)}`;
+    const when = ph === "pre" ? `Kickoff ${esc(etTime(g.kickoff))} ET` : esc(g.detail || "");
+    const meta = `${mine.length} play${mine.length === 1 ? "" : "s"}${act ? ` · <b class="pos">${act} live</b>` : ""}${R.n ? ` · ${rec(R)} <span class="${cls(R.units)}">${units(R.units)}</span>` : ""}`;
+    const line = ph === "live"
+      ? `${g.next_decision ? esc(g.next_decision.replace(/^watching, no flags between decision points \((.*)\)$/, "next decision: $1")) + " · " : ""}flagged ${g.flags}/${S.rules.per_game}${g.calibrated ? "" : " · not calibrated"}${g.health && g.health.feed_delay_s != null ? " · ESPN " + Math.round(g.health.feed_delay_s) + "s behind" : ""}`
+      : ph === "pre" ? `${g.calibrated ? "Calibrated to closing lines" : "Calibrates 10 minutes before kickoff"}` : "Final · graded";
+    const isOpen = open.has(g.game_id) || (ph === "live" && act > 0 && !shut.has(g.game_id));
+    return `<details class="game ${ph}" data-gid="${esc(g.game_id)}"${isOpen ? " open" : ""}>
+      <summary><span><span class="chev">›</span> <span class="dot ${dot}"></span></span><span><span class="gs-score">${sc}</span> <span class="sub">${when}</span></span><span class="gs-meta">${meta}</span>
+        <span class="gs-line">${line}</span></summary>
+      <div class="gbody">${mine.length ? `<div class="plays">${mine.map((c) => playRow(c, false)).join("")}</div>` : `<p class="note">${ph === "pre" ? "Not started." : "No plays flagged in this game yet."}</p>`}
+        <div><button class="small" data-log="${esc(g.game_id)}">Show this game's log</button></div></div>
+    </details>`;
+  }
+  function slate() {
+    const gs = sortedGames();
+    const groups = { live: gs.filter((g) => phaseOf(g) === "live"), pre: gs.filter((g) => phaseOf(g) === "pre"), final: gs.filter((g) => phaseOf(g) === "final") };
+    const show = (k) => slateView === "all" || slateView === k;
+    let html = "";
+    if (show("live")) html += `<h3 class="slot">Live now (${groups.live.length})</h3>` + (groups.live.length ? groups.live.map(gameCard).join("") : '<p class="note">No game in progress.</p>');
+    if (show("pre") && groups.pre.length) {
+      html += `<h3 class="slot">Upcoming (${groups.pre.length})</h3>`;
+      const slots = {};
+      groups.pre.forEach((g) => { const k = new Date(g.kickoff || 0).toLocaleString("en-US", { ...ET, weekday: "short", hour: "numeric", minute: "2-digit" }); (slots[k] = slots[k] || []).push(g); });
+      for (const [k, list] of Object.entries(slots)) html += `<p class="note" style="margin:8px 0 4px"><b>${esc(k)} ET</b> · ${list.length} game${list.length > 1 ? "s" : ""}</p>` + list.map(gameCard).join("");
+    }
+    if (show("final") && groups.final.length) html += `<h3 class="slot">Final (${groups.final.length})</h3>` + groups.final.map(gameCard).join("");
+    return { html, groups };
+  }
+
   function render() {
     if (!S) return;
-    const active = S.cards.filter((c) => c.status === "active");
-    const recent = S.cards.filter((c) => c.status !== "active");
-    const R = S.record;
-    document.getElementById("sub").textContent = `Live · ${S.mode === "demo" ? "demo replay" : "paper trading"} · PropLine ${S.budget.used}/${S.budget.budget} today`;
+    G = Object.fromEntries((S.games || []).map((g) => [g.game_id, g]));
+    syncLogOptions();
+    const active = S.cards.filter((c) => c.status === "active").sort((a, b) => Date.parse(a.expires_at) - Date.parse(b.expires_at));
+    const timeline = S.cards.filter((c) => G[c.game_id]).sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+    const T = S.today || {}, R = S.record;
+    const { html, groups } = slate();
+    const B = S.budget || {};
+    document.getElementById("sub").textContent = `Live · ${S.mode === "demo" ? "demo replay" : "paper trading"} · prices: ${B.source || "PropLine"} (${B.used}/${B.budget} requests today)`;
     top.innerHTML = `
-      <section><h2>Games</h2><div class="games">${S.games.length ? S.games.map((g) => {
-        const age = g.health && g.health.espn_at ? (Date.now() - Date.parse(g.health.espn_at)) / 1000 : 999;
-        const dot = g.alive === false && g.phase !== "final" ? "bad" : g.phase === "live" ? (age > 45 ? "wait" : "on") : g.phase === "pre" ? "wait" : "";
-        const sc = g.score && Object.keys(g.score).length ? `${esc(g.away)} ${g.score[g.away] ?? 0} · ${esc(g.home)} ${g.score[g.home] ?? 0}` : `${esc(g.away)} at ${esc(g.home)}`;
-        return `<div class="g"><span><span class="dot ${dot}"></span><span class="sc">${sc}</span> <span class="sub">${esc(g.detail || "")}</span></span>
-          <span class="sub">${g.next_decision && g.phase === "live" ? esc(g.next_decision.replace(/^watching, no flags between decision points \((.*)\)$/, "next: $1")) + " · " : ""}flagged ${g.flags}/${S.rules.per_game}${g.calibrated ? "" : " · not calibrated"}${g.health && g.health.feed_delay_s != null ? " · feed " + Math.round(g.health.feed_delay_s) + "s behind" : ""}</span></div>`; }).join("") : '<div class="empty">No games being watched.</div>'}</div></section>
-      <section style="margin-top:18px"><h2>Live plays</h2>${active.length ? active.map(cardHtml).join("") : `<div class="empty">Nothing worth betting right now. Plays show up here for ${S.rules.ttl / 60} minutes or until the line moves; the engine log below shows what it is weighing.</div>`}</section>`;
+      <section aria-label="Today"><div class="tiles">
+        <div class="tile"><div class="k">Today (paper)</div><div class="v">${rec(T)}</div><div class="note"><span class="${cls(T.units)}">${T.n ? units(T.units) : "nothing graded yet"}</span></div></div>
+        <div class="tile"><div class="k">Live plays now</div><div class="v">${active.length}</div><div class="note">${timeline.length} flagged today</div></div>
+        <div class="tile"><div class="k">Games</div><div class="v">${groups.live.length} <span class="sub">live</span></div><div class="note">${groups.pre.length} upcoming · ${groups.final.length} final</div></div>
+        <div class="tile"><div class="k">Season (paper)</div><div class="v">${rec(R.paper)}</div><div class="note"><span class="${cls(R.paper.units)}">${R.paper.n ? units(R.paper.units) : "1u per play"}</span>${R.you && R.you.n ? ` · you ${rec(R.you)}` : ""}</div></div>
+      </div></section>
+      <section aria-labelledby="nowh"><h2 id="nowh">Live plays now <span class="sub">act on these · soonest to close first</span></h2>
+        ${active.length ? active.map(liveCard).join("") : `<div class="empty">Nothing to bet right now. A play shows here for ${S.rules.ttl / 60} minutes (longer at halftime) or until the line moves.</div>`}</section>
+      <section aria-labelledby="slh"><h2 id="slh">The slate <span class="sub">every game, its plays and its record · tap a game to open it</span></h2>
+        <div class="bar"><span class="seg" role="group" aria-label="Which games">
+          ${[["all", "All"], ["live", "Live"], ["pre", "Upcoming"], ["final", "Final"]].map(([k, l]) => `<button data-view="${k}" aria-pressed="${slateView === k}">${l}</button>`).join("")}</span>
+          <button class="small" data-openall="1">Open all</button><button class="small" data-closeall="1">Close all</button></div>
+        ${html || '<div class="empty">No games being watched.</div>'}</section>`;
     bottom.innerHTML = `
-      <section><h2>Record</h2><div class="tiles">${tile("Model (paper)", R.paper, R.fill_checked ? ` · price still there 30 s later on ${R.fill_checked - R.missed} of ${R.fill_checked}` : "")}${tile("You", R.you)}
-        <div class="tile"><div class="k">Line value</div><div class="v">${R.paper.clv == null ? "–" : (R.paper.clv > 0 ? "+" : "") + R.paper.clv}</div><div class="note">yards (or points) the line moved our way in 5 min</div></div>
-        <div class="tile"><div class="k">Alerts</div><div class="v">${S.alerts ? "On" : "Off"}</div><div class="note">${S.alerts ? "ntfy" : "set NTFY_TOPIC in .env"}</div></div></div></section>
-      <section style="margin-top:18px"><h2>Recent plays</h2>${recent.length ? recent.map(cardHtml).join("") : '<div class="empty">None yet.</div>'}</section>
-      <p class="note" style="margin-top:18px">Rules: the engine watches every play but bets only at decision points: player props once, at ${esc((S.rules.windows || []).join(" and ").toLowerCase())} (the ${S.rules.prop_per_game === 1 ? "single strongest play" : S.rules.prop_per_game + " strongest plays"}), game markets after a score (${S.rules.game_per_game} a game). A play needs the model within ${Math.round(100 * S.rules.max_gap)} points of the market, ${Math.round(100 * S.rules.min_ev)}%+ expected value after the vig, the same price on two checks, no blowout, no long shot and a fresh quote. Every flag counts in the paper record at the price it was flagged; the engine also checks whether that price was still there 30 seconds later. Model output, not betting advice.</p>`;
+      <section aria-labelledby="tlh"><h2 id="tlh">Every play today <span class="sub">newest first, tagged with its game</span></h2>
+        ${timeline.length ? `<div class="plays">${timeline.map((c) => playRow(c, true)).join("")}</div>` : '<div class="empty">No plays flagged yet today.</div>'}</section>
+      <p class="note">Rules: the engine watches every play but bets only at decision points: player props once, at ${esc((S.rules.windows || []).join(" and ").toLowerCase())} (the ${S.rules.prop_per_game === 1 ? "single strongest play" : S.rules.prop_per_game + " strongest plays"}), game markets after a score (${S.rules.game_per_game} a game). A play needs the model within ${Math.round(100 * S.rules.max_gap)} points of the market, ${Math.round(100 * S.rules.min_ev)}%+ expected value after the vig, the same price on two checks, no blowout, no long shot and a fresh quote. Every flag counts in the paper record at the price it was flagged; the engine also checks whether that price was still there 30 seconds later. Alerts: ${S.alerts ? "on (ntfy)" : "off (set NTFY_TOPIC in .env)"}. Model output, not betting advice.</p>`;
   }
+
   async function post(path, body) {
     busy = true;
     try { const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const j = await r.json(); if (!j.ok && j.error) showError(j.error); }
@@ -232,12 +377,24 @@ input.px { width: 84px; font: 15px ui-monospace, Consolas, monospace; padding: 9
     top.prepend(p);
     setTimeout(() => p.remove(), 6000);
   }
+  // remember which games are open (a re-render every 2 s must not snap them shut)
+  document.querySelector("main").addEventListener("toggle", (ev) => {
+    const d = ev.target;
+    if (!(d instanceof HTMLDetailsElement) || !d.dataset.gid) return;
+    if (d.open) { open.add(d.dataset.gid); shut.delete(d.dataset.gid); } else { open.delete(d.dataset.gid); shut.add(d.dataset.gid); }
+    store.set("open", [...open]);
+  }, true);
   document.querySelector("main").addEventListener("click", (ev) => {
-    const t = ev.target;
+    const t = ev.target.closest("button");
+    if (!t) return;
     if (t.dataset.acc) { editing = t.dataset.acc; render(); const i = document.getElementById("px"); if (i) i.focus(); }
     else if (t.dataset.ok) { const v = document.getElementById("px").value.trim(); post("/api/accept", { id: t.dataset.ok, american: v === "" ? null : Number(v) }); }
     else if (t.dataset.cancel) { editing = null; render(); }
     else if (t.dataset.pass) post("/api/pass", { id: t.dataset.pass });
+    else if (t.dataset.view) { slateView = t.dataset.view; store.set("view", slateView); render(); }
+    else if (t.dataset.openall) { (S.games || []).forEach((g) => open.add(g.game_id)); store.set("open", [...open]); render(); }
+    else if (t.dataset.closeall) { (S.games || []).forEach((g) => shut.add(g.game_id)); open.clear(); store.set("open", []); render(); }
+    else if (t.dataset.log) { logGame.value = t.dataset.log; redrawLog(); document.getElementById("logh").scrollIntoView({ behavior: "smooth", block: "start" }); }
   });
   async function load() {
     try {
@@ -246,12 +403,13 @@ input.px { width: 84px; font: 15px ui-monospace, Consolas, monospace; padding: 9
       failed = false; lastOk = Date.now();
       const eng = S.engine || {};
       if (started && eng.started !== started) {   // the engine restarted: its log starts over
-        addLines([{ at: new Date().toISOString(), kind: "info", msg: "--- engine restarted ---" }]);
-        lastSeq = 0; started = eng.started;
+        allEvents.length = 0; lastSeq = 0; started = eng.started;
         return load();
       }
+      const first = !started;
       started = eng.started;
-      addLines(S.events);
+      G = Object.fromEntries((S.games || []).map((g) => [g.game_id, g]));
+      if (first) { allEvents.push(...(S.events || [])); syncLogOptions(); redrawLog(); } else addLines(S.events);
       if (eng.seq) lastSeq = eng.seq;
       if (!editing) render();
     } catch (e) {
@@ -261,7 +419,7 @@ input.px { width: 84px; font: 15px ui-monospace, Consolas, monospace; padding: 9
   }
   load();
   setInterval(() => { if (!busy) load(); }, 2000);
-  setInterval(paintStatus, 1000);   // keeps "seconds ago" honest between refreshes
+  setInterval(paintStatus, 1000);
 })();
 </script>
 </body>

@@ -599,6 +599,9 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
     props: [["props", "This week"], ["props-players", "Players"], ["props-mine", "My picks"], ["props-defense", "Defenses"], ["props-record", "Record"], ["props-model", "How it works"]],
     live: [["live", "Live"], ["live-model", "How it works"]],
   };
+  // The public website (board/site.py sets KN_PUBLIC) has no My Picks: it needs claude.ai's storage.
+  const PUBLIC = !!window.KN_PUBLIC;
+  if (PUBLIC) for (const k of Object.keys(SECTIONS)) SECTIONS[k] = SECTIONS[k].filter(([v]) => v !== "mine" && v !== "props-mine");
   const sectionOf = (h) => (h.startsWith("props") || h.startsWith("pg-") || h.startsWith("p-") ? "props" : h.startsWith("live") ? "live" : "lines");
   function setTab(name) {
     const sec = sectionOf(name);
@@ -609,6 +612,7 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
   function route(e) {
     const resized = e === "resize";
     const h = (location.hash || "#week").slice(1);
+    if (PUBLIC && (h === "mine" || h === "props-mine")) { location.replace(h === "mine" ? "#week" : "#props"); return; }
     if (h.startsWith("g-") && GAMES[h.slice(2)]) { current = "game"; setTab("week"); renderGame(GAMES[h.slice(2)]); }
     else if (h.startsWith("pg-")) { current = "pgame"; setTab("props"); renderPropsGame(h.slice(3)); }
     else if (h.startsWith("p-")) { current = "player"; setTab("props-players"); renderPlayer(h.slice(2)); }

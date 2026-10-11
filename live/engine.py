@@ -76,7 +76,7 @@ FILL_GIVEUP = 150       # no fresh quote for the market this long after a flag: 
 CLV_AFTER = 300
 ACCEPT_GRACE = 600      # an Accept still counts this long after a card expires
 QUIET_LOG_S = 60        # log an "all quiet" line when nothing else was logged for this long
-EVENT_KEEP = 400        # lines of engine log kept for the live page
+EVENT_KEEP = 6000       # lines of engine log kept for the live page (a full slate, every game)
 LOG_DIR = DATA / "live"
 STATUS = LOG_DIR / "status.json"
 PAGE = Path(__file__).with_name("page.html")
@@ -143,14 +143,17 @@ class Engine:
 
     def snapshot(self, since: int = 0) -> dict:
         with self.lock:
-            cards = sorted(self.cards.values(), key=lambda c: (c["status"] != "active", c["at"]), reverse=False)
-            cards = [c for c in cards if c["status"] == "active"] + sorted(
-                [c for c in cards if c["status"] != "active"], key=lambda c: c["at"], reverse=True)[:40]
+            watched = set(self.games)
+            cards = sorted([c for c in self.cards.values() if c["game_id"] in watched or c["status"] == "active"],
+                           key=lambda c: c["at"], reverse=True)[:600]
             games = [{**g, "alive": any(r.gid == g["game_id"] and r.is_alive() for r in self.runners)} for g in self.games.values()]
-            events = [e for e in self.events if e["seq"] > since][-200:]
+            events = [e for e in self.events if e["seq"] > since][-(2500 if since == 0 else 600):]
             seq = self.seq
         rec = ledger.records()
+        mine = [r for r in rec["flags"] if r["game_id"] in watched and r.get("units") is not None]
+        by_game = {g: ledger._tally([r for r in mine if r["game_id"] == g]) for g in watched}
         return {"mode": self.mode, "now": _now().isoformat(), "url": self.url, "games": games, "cards": cards,
+                "today": ledger._tally(mine), "by_game": by_game,
                 "record": {"paper": rec["paper"], "you": rec["you"], "missed": rec["missed"], "fill_checked": rec["fill_checked"]},
                 "budget": {"used": SRC.used_today(), "budget": SRC.budget, "source": SRC.name},
                 "alerts": notify.enabled(), "rules": {"min_ev": decide.MIN_EV, "max_gap": decide.MAX_GAP,
@@ -212,7 +215,9 @@ class GameRunner(threading.Thread):
         self.log = LOG_DIR / f"{self.gid}{'_demo' if demo else ''}"
         self.log.mkdir(parents=True, exist_ok=True)
         self.cal_path = self.log / "calibration.json"
+        kick = game.get("kickoff")
         self.e.games[self.gid] = {"game_id": self.gid, "home": self.home, "away": self.away, "detail": "Waiting",
+                                  "kickoff": kick.isoformat() if hasattr(kick, "isoformat") else kick,
                                   "score": {}, "flags": 0, "calibrated": False, "phase": "pre", "health": {}}
         if not demo:
             self._restore()
@@ -462,7 +467,7 @@ class GameRunner(threading.Thread):
         state = {"seconds_left": st["seconds_left"], "score": st["score"], "possession": st["possession"],
                  "yards_to_endzone": st["yards_to_endzone"]}
         proj = self.model.project(state, st["banked"], st["team_so_far"])
-        lead = st["score"].get(self.home, 0) - st["score"].get(self.away, 0)
+        lead = int(st["score"].get(self.home, 0) - st["score"].get(self.away, 0))
         cands = decide.prop_candidates(self.gid, proj, od["props"], self.info)
         pin = od["game"].get("pinnacle", {})
         for c in decide.game_candidates(self.gid, proj["game"], od["game"], self.home, self.away):
@@ -635,7 +640,7 @@ class GameRunner(threading.Thread):
                               "pass_yds": b.get("pass_yds", 0)},
                    "team_lead": st["score"].get(c.team, 0) - st["score"].get(other, 0)}
             return decide.reason(c, ctx)
-        lead = st["score"].get(self.home, 0) - st["score"].get(self.away, 0)
+        lead = int(st["score"].get(self.home, 0) - st["score"].get(self.away, 0))
         return (f"model {c.p:.0%} vs Pinnacle {c.fair:.0%}; {self.home} {lead:+d} with "
                 f"{decide._mins(st['seconds_left'])} left, rest played from team strength")
 
