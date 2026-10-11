@@ -297,7 +297,10 @@ details[open] .chev { transform: rotate(90deg); }
     if (c.fill === "filled") chips.push(`<span class="chip filled">price still there 30 s later</span>`);
     else if (c.fill === "missed") chips.push('<span class="chip missed">price gone 30 s later</span>');
     if (c.accepted) chips.push(`<span class="chip you">you took ${am(c.accepted.american)}</span>`);
-    const acc = editing === c.id
+    // Paper trading: every flag is bet automatically on the paper record, so there is nothing to click.
+    const paper = S.mode !== "live";
+    const acc = paper ? `<span class="chip filled">Paper bet placed automatically · ${am(c.american)} ${esc(BOOKL[c.book] || c.book)} · ${c.stake}u</span>`
+      : editing === c.id
       ? `<input class="px" id="px" inputmode="numeric" value="${c.american}" aria-label="Price you got"> <button class="acc" data-ok="${esc(c.id)}">Save bet</button> <button data-cancel="1">Cancel</button>`
       : `<button class="acc" data-acc="${esc(c.id)}" ${c.accepted ? "disabled" : ""}>${c.accepted ? "Accepted" : "Accept"}</button>${!c.passed ? ` <button data-pass="${esc(c.id)}">Pass</button>` : ""}`;
     return `<article class="card">
@@ -306,14 +309,14 @@ details[open] .chev { transform: rotate(90deg); }
       <div class="row"><span>${BOOKL[c.book] || esc(c.book)}</span><span>model ${pct(c.p)} vs ${pct(c.fair)} no-vig</span><span>EV ${(100 * c.ev).toFixed(1)}%</span><span>${c.stake}u</span><span>flagged ${ago(c.at)}</span>${c.quote_age_s != null ? `<span>quote ${c.quote_age_s}s old</span>` : ""}</div>
       <div class="why">Why: ${esc(c.reason)}</div>
       <div class="btns">${acc}</div>
-      <p class="note">Confirm the line and price in your app before betting. Accept means you placed it.</p>
+      <p class="note">${paper ? "Paper trading: it counts on the paper record at this price, win or lose." : "Confirm the line and price in your app before betting. Accept means you placed it."}</p>
     </article>`;
   }
   function playRow(c, withGame) {
     const u = playUnits(c);
     const st = c.status === "active" ? `<span class="chip live">LIVE ${left(c)}</span>`
       : c.result ? `<span class="chip ${c.result}">${RES[c.result]}</span>` : '<span class="chip">pending</span>';
-    const you = c.accepted ? ' <span class="chip you">you</span>' : "";
+    const you = c.accepted && S.mode === "live" ? ' <span class="chip you">you</span>' : "";   // paper mode auto-accepts every flag
     return `<div class="prow${withGame ? "" : " nogame"}"><span class="t">${esc(etTime(c.at))}<br>${esc(clockOf(c.seconds_left))}</span>
       ${withGame ? gtag(c.game_id) : ""}<span class="pl">${esc(c.label)} <span class="mono">${am(c.american)}</span> <span class="sub">${BOOK[c.book] || esc(c.book)}</span>${you}</span>
       ${st}<span class="u num ${cls(u)}">${u == null ? "" : units(u)}</span></div>`;
