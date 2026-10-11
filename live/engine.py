@@ -68,7 +68,7 @@ SRC = OddsSource("propline")
 PORT = 8770  # the board's local preview uses 8765
 # Bump together with PAGE_VERSION in live/page.html. The engine serves page.html fresh from disk but
 # loads its own code once, so a mismatch means "the page was updated; restart the engine".
-ENGINE_VERSION = "2026-10-11.6"
+ENGINE_VERSION = "2026-10-11.7"
 ESPN_POLL = 7
 ODDS_MIN_GAP = 20
 ODDS_HEARTBEAT = 120
@@ -86,6 +86,9 @@ WINDOW_RETRIES = 8      # ...this many times, until play resumes
 # that holds on two checks in a row is flagged; when nothing holds, what passes now becomes the new first
 # check. Play resuming ends the window: no flag, a pass. Capped so one break cannot drain PropLine's budget.
 ROLLING_MAX_CHECKS = 20
+# ESPN posts a touchdown at +6 and folds the try into the same play about a minute later: an after-score window
+# waits for it (the score changing again, or the next play), at most this long, so the model prices the settled score.
+TRY_WAIT_S = 150
 FILL_AFTER = 25
 FILL_GIVEUP = 150       # no fresh quote for the market this long after a flag: its fill is "unknown"
 CLV_AFTER = 300
@@ -213,6 +216,8 @@ class GameRunner(threading.Thread):
         self.window: dict | None = None      # the open decision point (decide.py), if any
         self.shadowed: set[str] = {s["kind"] for s in ledger.read(ledger.SHADOW) if s["game_id"] == game["game_id"]}
         self.windows_done: set[str] = set()
+        self.last_wall: datetime | None = None   # wallclock of the newest play seen: when the game last changed
+        self.dead: dict | None = None   # a dead ball: {since: the play that froze the game, kinds: markets it applies to}
         self.prev_secs: float | None = None
         self.prev_points: float | None = None
         # what the rubric's play checks need (live/rubric_checks.py): yards per play from the box
@@ -397,7 +402,8 @@ class GameRunner(threading.Thread):
                 self.say("warn", f"{SRC.name}'s daily budget is used up; still following the game, no prices until midnight UTC")
                 self.budget_warned = True
         elif due:
-            od = self.feed.odds()
+            # in a dead ball, prices count by when they were posted (after the play that froze the game), not by age
+            od = self.feed.odds(since=self.dead["since"], kinds=self.dead["kinds"]) if self.dead else self.feed.odds()
             self.last_odds = now
             if od:
                 src = "archived prices" if self.demo else f"{SRC.name} {SRC.used_today()}/{SRC.budget} today"
@@ -508,10 +514,14 @@ class GameRunner(threading.Thread):
             cands.append(c)
 
         def quote(c):
-            return od["props"].get((c.player, c.market), {}).get(c.book, {}) if c.kind == "prop" else od["game"].get(c.book, {})
+            if c.kind == "prop":
+                return od["props"].get((c.player, c.market), {}).get(c.book, {})
+            g = od["game"].get(c.book, {})
+            return {"age": g.get(f"age_{c.market}", g.get("age")), "by_state": g.get(f"by_state_{c.market}", False)}
         passing, fails = [], {"prop": {}, "game": {}}
         for c in cands:
-            why = decide.gate(c, lead, quote(c).get("age"))
+            q_ = quote(c)
+            why = decide.gate(c, lead, None if q_.get("by_state") else q_.get("age"))
             if why is None and c.kind == "prop":
                 why = self._play_checks(c, st)
             if why is None:
@@ -525,73 +535,95 @@ class GameRunner(threading.Thread):
         if W is None:   # between decision points: price everything for the log, flag nothing
             self.say("price", f"{seen} · {self._watching()}")
             return
-        mine = [c for c in passing if c.kind == W["kind"]]
+        if W.get("await_try"):
+            self.say("price", f"{seen} · {W['label']}: waiting for the try before deciding")
+            return
+        # A window decides one kind or both (halftime: the prop and the game market; after a score: the game market),
+        # each on its own clock. A play is flagged when it holds (same book, side and line, still passing) on two
+        # checks W["persist"] apart. A rolling window (halftime) starts over with whatever passes now when nothing
+        # holds; an after-score window ends after its pair. Play resuming ends any window (_watch_breaks).
         key = lambda c: (c.key, c.side, c.book, c.line)
-        what = "props" if W["kind"] == "prop" else "game-market prices"
-        fk = fails[W["kind"]]
-        priced = sum(c.kind == W["kind"] for c in cands)
-        too_old = priced == 0 or (not mine and set(fk) <= {"quote too old"})
-        rolling = W["kind"] == "prop"   # props roll through the break; game markets get one pair after a score
         speed = self.feed.speed if self.demo else 1.0
-        W["checks"] = W.get("checks", 0) + 1
-        if rolling and W["checks"] > ROLLING_MAX_CHECKS:
-            self.say("price", f"{W['label']}: {ROLLING_MAX_CHECKS} checks and no play held up on two in a row; pass")
+        now_m = time.monotonic()
+        if W["checks"] >= ROLLING_MAX_CHECKS:
+            self.say("price", f"{W['label']}: {ROLLING_MAX_CHECKS} checks and nothing held up on two in a row; pass")
             self._close_window()
             return
-        if too_old and (rolling or W.get("retries", 0) < WINDOW_RETRIES):
-            # nothing fresh enough to judge is not the same as nothing worth betting: wait for fresh prices
-            W["retries"] = W.get("retries", 0) + 1
-            W["next_check"] = time.monotonic() + WINDOW_RETRY_S / speed
-            self.say("price", f"{W['label']}: no {what} fresh enough to judge yet"
-                              + (f" ({priced} priced, all quotes too old)" if priced else "")
-                              + f"; trying again in {WINDOW_RETRY_S}s" + ("" if rolling else f" ({W['retries']}/{WINDOW_RETRIES})"))
-            return
-        top = max(mine, key=lambda c: c.ev) if mine else None
-        best = (f" (best {top.label()} {decide.american(top.dec):+d} {BOOK_SHORT.get(top.book, top.book)}, EV {top.ev:+.1%})"
-                if top else "")
-        why_not = (f" ({', '.join(f'{n} {w}' for w, n in sorted(fk.items(), key=lambda x: -x[1])[:3])})" if fk else "")
-        tag = f"check {W['checks']}" if rolling else ("first check" if W["first"] is None else "second check")
-        if W["first"] is None:
-            if not mine:
-                if rolling:
-                    W["next_check"] = time.monotonic() + W["persist"]
-                    self.say("price", f"{W['label']}, {tag}: no {what} pass the rubric{why_not}; checking again in {W['persist']:.0f}s")
-                    return
-                self.say("price", f"{W['label']}, {tag}: no {what} pass the rubric{why_not}; no flag")
-                self._close_window()
-                return
-            W["first"], W["next_check"] = {key(c) for c in mine}, time.monotonic() + W["persist"]
-            self.say("price", f"{W['label']}, {tag}: {len(mine)} {what} pass the rubric{best}; "
-                              f"{'confirming' if rolling else 'second check'} in {W['persist']:.0f}s")
-            return
-        held = [c for c in mine if key(c) in W["first"]]
-        new = decide.select(held, self.flags)
-        self._shadow(held, new, W, st)
-        if new:
-            for c in new:
-                c.reason = self.reason(c, proj, st) + f"; held on two price checks {W['persist']:.0f}s apart"
-                self.flag(c, st, quote(c).get("age"), W["label"])
+        after = "the end of the half" if W["rolling"] else "the score"
+        notes = []
+        for kind in list(W["kinds"]):
+            if now_m < W["due"][kind]:
+                continue
+            what = "props" if kind == "prop" else "game markets"
+            mine = [c for c in passing if c.kind == kind]
+            fk = fails[kind]
+            priced = sum(c.kind == kind for c in cands)
+            if priced == 0 or (not mine and set(fk) <= {"quote too old"}):
+                # nothing current enough to judge is not the same as nothing worth betting: wait for the books
+                W["retries"][kind] = W["retries"].get(kind, 0) + 1
+                if not W["rolling"] and W["retries"][kind] > WINDOW_RETRIES:
+                    W["kinds"].remove(kind)
+                    notes.append(f"{what}: no prices posted after {after} in {WINDOW_RETRIES} tries; no flag")
+                    continue
+                # a rolling window retries quickly three times, then at its own pace, so one kind that never gets
+                # a price cannot spend the break's ROLLING_MAX_CHECKS before play resumes
+                wait = WINDOW_RETRY_S / speed if not W["rolling"] or W["retries"][kind] <= 3 else W["persist"]
+                W["due"][kind] = now_m + wait
+                notes.append(f"{what}: no prices posted after {after} yet, again in {wait * speed:.0f}s"
+                             + ("" if W["rolling"] else f" ({W['retries'][kind]}/{WINDOW_RETRIES})"))
+                continue
+            W["priced"] = True
+            top = max(mine, key=lambda c: c.ev) if mine else None
+            best = (f" (best {top.label()} {decide.american(top.dec):+d} {BOOK_SHORT.get(top.book, top.book)}, EV {top.ev:+.1%})"
+                    if top else "")
+            why_not = (f" ({', '.join(f'{n} {w}' for w, n in sorted(fk.items(), key=lambda x: -x[1])[:3])})" if fk else "")
+            first = W["first"][kind]
+            if first is None:
+                if not mine and not W["rolling"]:
+                    W["kinds"].remove(kind)
+                    notes.append(f"{what}: none pass the rubric{why_not}; no flag")
+                    continue
+                W["first"][kind] = {key(c) for c in mine} or None
+                W["due"][kind] = now_m + W["persist"]
+                notes.append(f"{what}: {len(mine)} pass{best}, confirming in {W['persist']:.0f}s" if mine
+                             else f"{what}: none pass the rubric{why_not}, again in {W['persist']:.0f}s")
+                continue
+            held = [c for c in mine if key(c) in first]
+            new = decide.select(held, self.flags)
+            self._shadow(held, new, W, st, kind)
+            if new:
+                for c in new:
+                    q_ = quote(c)
+                    c.reason = (self.reason(c, proj, st) + f"; held on two price checks {W['persist']:.0f}s apart"
+                                + (f"; its price was posted after {after}" if q_.get("by_state") else ""))
+                    self.flag(c, st, q_.get("age"), W["label"])
+                W["kinds"].remove(kind)
+                notes.append(f"{what}: flagged {', '.join(c.label() for c in new)}")
+                continue
+            n_prop, n_game = self._counts()
+            capped = (n_prop >= decide.PROP_PER_GAME) if kind == "prop" else (n_game >= decide.GAME_PER_GAME)
+            if held and capped:
+                W["kinds"].remove(kind)
+                notes.append(f"{what}: {len(held)} held up, but this game's play is already used")
+                continue
+            if not W["rolling"]:
+                W["kinds"].remove(kind)
+                notes.append(f"{what}: nothing held up ({len(held)} of {len(first)} still pass"
+                             + (", but they repeat an exposure already taken" if held else "") + "); no flag")
+                continue
+            W["first"][kind] = {key(c) for c in mine} or None
+            W["due"][kind] = now_m + W["persist"]
+            notes.append(f"{what}: nothing held from the last check ({len(held)} of {len(first)} still pass"
+                         + (", but they repeat an exposure already taken" if held else "") + ")"
+                         + (f"; {len(mine)} pass now{best}, confirming in {W['persist']:.0f}s" if mine
+                            else f"; none pass now, again in {W['persist']:.0f}s"))
+        if notes:
+            W["checks"] += 1
+            self.say("price", f"{W['label']}, check {W['checks']}: " + " · ".join(notes))
+        if not W["kinds"]:
             self._close_window()
             return
-        n_prop, n_game = self._counts()
-        capped = (n_prop >= decide.PROP_PER_GAME) if W["kind"] == "prop" else (n_game >= decide.GAME_PER_GAME)
-        if held and capped:
-            self.say("price", f"{W['label']}, {tag}: {len(held)} held up, but this game's "
-                              f"{'prop' if W['kind'] == 'prop' else 'game-market'} play is already used; no flag")
-            self._close_window()
-            return
-        n_prev = len(W["first"])
-        if rolling:   # nothing held: what passes now is the new first check
-            W["first"] = {key(c) for c in mine} if mine else None
-            W["next_check"] = time.monotonic() + W["persist"]
-            self.say("price", f"{W['label']}, {tag}: nothing held up from the last check ({len(held)} of {n_prev} still pass"
-                              + (", but they repeat an exposure already taken" if held else "") + "); "
-                              + (f"{len(mine)} pass now{best}, confirming in {W['persist']:.0f}s" if mine
-                                 else f"none pass now, checking again in {W['persist']:.0f}s"))
-            return
-        self.say("price", f"{W['label']}, {tag}: nothing held up ({len(held)} of {n_prev} still pass"
-                          + (", but they repeat an exposure already taken" if held else "") + "); no flag")
-        self._close_window()
+        W["next_check"] = min(W["due"][k] for k in W["kinds"])
 
     def _track(self, st: dict, new: list) -> None:
         """Per-play pieces for the rubric's last two checks. Yards gained on each play come from the box
@@ -625,11 +657,10 @@ class GameRunner(threading.Thread):
                 return "numbers lean on one big play"
         return None
 
-    def _shadow(self, held: list, new: list, W: dict, st: dict) -> None:
+    def _shadow(self, held: list, new: list, W: dict, st: dict, kind: str) -> None:
         """Each game's second-best play of each kind: it passed the whole rubric, both checks and the
         exposure rules, and only the one-a-game cap kept it off. Logged and graded off the record
         (ledger/live_shadow.jsonl), to learn whether a second slot would earn its keep."""
-        kind = W["kind"]
         if kind in self.shadowed:
             return
         taken = self.flags + [{"key": c.key, "player": c.player, "group": c.group, "kind": c.kind} for c in new]
@@ -650,7 +681,7 @@ class GameRunner(threading.Thread):
                            f"{'prop' if kind == 'prop' else 'game-market'} play, kept off by the one-a-game cap")
 
     def _close_window(self) -> None:
-        if self.window and self.window["kind"] == "prop":
+        if self.window and self.window["rolling"]:
             self.windows_done.add(self.window["name"])
         self.window = None
 
@@ -662,43 +693,82 @@ class GameRunner(threading.Thread):
         todo = [decide.WINDOW_LABEL[w].lower() for w in decide.PROP_WINDOWS if w not in self.windows_done]
         props = (f"props decide at {' and '.join(todo)}" if todo and n_prop < decide.PROP_PER_GAME
                  else "props: done for this game")
-        games = "game markets after the next score" if n_game < decide.GAME_PER_GAME else "game markets: done for this game"
+        games = ("game markets after the next score" + (" and at halftime" if "half" not in self.windows_done else "")
+                 if n_game < decide.GAME_PER_GAME else "game markets: done for this game")
         return f"watching, no flags between decision points ({props}; {games})"
 
     def _watch_breaks(self, st: dict, new: list) -> None:
-        """Open a decision point: the break for props (decide.PROP_WINDOWS), a score for game markets."""
+        """Open a decision point: halftime, for the prop and the game market (each rolls through the break); a score,
+        for the game market (one pair of checks). A score or the end of the half also starts a dead ball (self.dead),
+        which lasts until the next snap: quotes posted after the play that froze the game count as current, whatever
+        their age, and quotes from before it do not (live/feeds.parse_propline)."""
         now = time.monotonic()
         speed = self.feed.speed if self.demo else 1.0
         secs, pts = st["seconds_left"], sum(st["score"].values())
         snap = any(p.get("type") in SCRIM for p in new)
+        for p in new:
+            w = _wall(p)
+            if w and (self.last_wall is None or w > self.last_wall):
+                self.last_wall = w
+        if snap:
+            self.dead = None
         if (self.prev_secs is None and "half" in decide.PROP_WINDOWS and "half" not in self.windows_done
                 and secs is not None and secs < 1800 and "half" not in (st.get("detail") or "").lower()):
             self.windows_done.add("half")   # joined in the second half: the halftime decision is behind us
-            self.say("info", "Joined after halftime: this game's prop decision has passed (props decide at halftime only); "
-                             "game markets still check after each score")
+            self.say("info", "Joined after halftime: this game's halftime decision (the prop and the game market) has "
+                             "passed; game markets still check after each score")
         W = self.window
-        if W and snap and not self.demo and (W["kind"] == "prop" or now - W["opened"] > 20):
-            if W["kind"] == "prop":
-                self.say("info", f"{W['label']}: play resumed after {W.get('checks', 0)} checks; no play held up on "
-                                 f"two checks in a row; pass")
+        if W and snap and not self.demo and (W["rolling"] or now - W["opened"] > 20):
+            left = " or ".join("the prop" if k == "prop" else "the game market" for k in W["kinds"])
+            if W["rolling"] or W.get("priced"):
+                self.say("info", f"{W['label']}: play resumed after {W['checks']} checks; nothing held up on two checks "
+                                 f"in a row for {left}; " + ("pass" if W["rolling"] else "no flag"))
             else:
-                self.say("info", f"{W['label']}: play resumed before the second price check; no flag")
+                self.say("info", f"{W['label']}: play resumed before the books posted prices after the score; no flag")
             self._close_window()
+        jump = pts - self.prev_points if self.prev_points is not None else 0
+        W = self.window
+        if W and W.get("await_try") and (pts != W["pts"] or new or now - W["opened"] >= TRY_WAIT_S / speed):
+            # the try is in (ESPN folds it into the touchdown play) or play moved on: decide on the settled score
+            if pts - W["pts"] != 1 and self.dead and self.last_wall and self.last_wall > self.dead["since"]:
+                self.dead["since"] = self.last_wall   # a missed kick or a two-point try: earlier prices priced another score
+            W["await_try"] = False
+            W["label"] = f"After the score ({self.score_line(st)})"
+            W["next_check"] = W["due"]["game"] = now
+            jump = 0   # the try belongs to the touchdown's dead ball
+        elif jump > 0:
+            scored = [w for w in (_wall(p) for p in new if p.get("scoring")) if w]
+            since = scored[-1] if scored else self.last_wall
+            # a catch-up batch can hold the score and the next drive's first snap: then play has already resumed
+            resumed = since and any(p.get("type") in SCRIM and not p.get("scoring") and (_wall(p) or since) > since for p in new)
+            self.dead = {"since": since, "kinds": ("game",)} if since and not resumed else None
         brk = _break_name(st.get("detail"), secs, self.prev_secs)
+        if brk == "half" and not snap and self.last_wall and not (self.dead and "prop" in self.dead["kinds"]):
+            self.dead = {"since": self.last_wall, "kinds": ("prop", "game")}
         n_prop, n_game = self._counts()
-        if (brk in decide.PROP_WINDOWS and brk not in self.windows_done and n_prop < decide.PROP_PER_GAME
-                and (self.window is None or self.window["kind"] == "game")):
+        kinds = [k for k, n, cap in (("prop", n_prop, decide.PROP_PER_GAME), ("game", n_game, decide.GAME_PER_GAME)) if n < cap]
+        if (brk in decide.PROP_WINDOWS and brk not in self.windows_done and kinds
+                and (self.window is None or not self.window["rolling"])):
+            if self.window is not None:
+                self.say("info", f"{self.window['label']}: the break began; halftime decides from here")
             persist = decide.PERSIST_S * (2 if brk == "half" else 1) / speed
-            self.window = {"kind": "prop", "name": brk, "label": decide.WINDOW_LABEL[brk], "opened": now, "first": None,
+            self.window = {"kinds": kinds, "rolling": True, "name": brk, "label": decide.WINDOW_LABEL[brk], "opened": now,
+                           "checks": 0, "first": {k: None for k in kinds}, "due": {k: now for k in kinds}, "retries": {},
                            "next_check": now, "persist": persist}
-            self.say("info", f"{decide.WINDOW_LABEL[brk]}: decision point for player props · a check every "
-                             f"{persist:.0f}s through the break; a play must hold on two in a row; at most "
-                             f"{decide.PROP_PER_GAME - n_prop} play")
-        elif (self.prev_points is not None and pts > self.prev_points and self.window is None
+            what = " and ".join("player props" if k == "prop" else "game markets" for k in kinds)
+            self.say("info", f"{decide.WINDOW_LABEL[brk]}: decision point for {what} · a check every {persist:.0f}s "
+                             f"through the break with prices posted after the half ended; a play must hold on two "
+                             f"checks in a row; at most one of each")
+        elif (jump > 0 and self.window is None
               and (n_game < decide.GAME_PER_GAME or "game" not in self.shadowed) and secs > 60):
-            self.window = {"kind": "game", "name": f"score {pts}", "label": f"After the score ({self.score_line(st)})",
-                           "opened": now, "first": None, "next_check": now + 30 / speed, "persist": decide.PERSIST_S / speed}
-            self.say("info", f"{self.window['label']}: checking the moneyline, spread and total once the books reopen")
+            touchdown = jump == 6
+            wait = TRY_WAIT_S / speed if touchdown else 0.0
+            self.window = {"kinds": ["game"], "rolling": False, "name": f"score {pts}",
+                           "label": f"After the score ({self.score_line(st)})", "opened": now, "checks": 0,
+                           "first": {"game": None}, "due": {"game": now + wait}, "retries": {}, "next_check": now + wait,
+                           "persist": decide.PERSIST_S / speed, "await_try": touchdown, "pts": pts}
+            self.say("info", f"{self.window['label']}: checking the moneyline, spread and total with prices posted "
+                             f"after the score" + (", once the try is in" if touchdown else ""))
         self.prev_secs, self.prev_points = secs, pts
         self._status(next_decision=self._watching() if self.window is None else self.window["label"])
 
@@ -776,17 +846,35 @@ class GameRunner(threading.Thread):
 def _odds_line(od: dict, src: str) -> str:
     """The engine log's line for one odds update: what came back and how fresh each book's quotes were."""
     fresh = od.get("books") or {}
+    ok = od.get("ok_books")
+    since = od.get("since")
 
     def ages(mark_old: bool) -> str:
         return ", ".join(f"{BOOK_SHORT.get(b, b)} frozen" if a is None else
-                         f"{BOOK_SHORT.get(b, b)} {a:.0f}s" + (" (too old, skipped)" if mark_old and a > MAX_AGE_S else "")
+                         f"{BOOK_SHORT.get(b, b)} {a:.0f}s"
+                         + ((" (posted before the play stopped, skipped)" if since else " (too old, skipped)")
+                            if mark_old and (b not in ok if ok is not None else a > MAX_AGE_S) else "")
                          for b, a in sorted(fresh.items()))
     if not od["props"] and not od["game"]:
-        return ("Prices: nothing fresh enough to price"
-                + (f" (quotes {ages(False)} old; the limit is {MAX_AGE_S}s)" if fresh else "") + f" · {src}")
+        return ("Prices: nothing current enough to price"
+                + ((f" (quotes {ages(False)} old, all posted before the play stopped at "
+                    f"{datetime.fromisoformat(since).strftime('%H:%M:%S')} UTC)" if since else
+                    f" (quotes {ages(False)} old; the limit is {MAX_AGE_S}s)") if fresh else "") + f" · {src}")
     books = ", ".join(BOOK_SHORT.get(b, b) for b in sorted(od["game"])) or "no book"
     return (f"Prices: {len(od['props'])} player lines, game lines at {books}"
             + (f" · newest quote {ages(True)}" if fresh else "") + f" · {src}")
+
+
+def _wall(play: dict) -> datetime | None:
+    """A play's wallclock (ESPN; a demo's archived timestamp) as a UTC datetime."""
+    w = play.get("wallclock")
+    if not w:
+        return None
+    try:
+        t = datetime.fromisoformat(str(w).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=timezone.utc)
 
 
 def _break_name(detail: str | None, secs: float, prev: float | None) -> str | None:

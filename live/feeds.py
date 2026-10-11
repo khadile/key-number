@@ -34,6 +34,12 @@ PROP_KEYS = {"player_pass_yds": "pass_yds", "player_rush_yds": "rush_yds", "play
 MARKETS = ",".join(list(PROP_KEYS) + ["h2h", "spreads", "totals"])
 GAME_KEYS = {"h2h": "ml", "spreads": "spread", "totals": "total"}
 MAX_AGE_S = 90
+# During a dead ball (a score until the next snap; halftime) the game cannot change, so what makes a quote current is
+# that the book posted it after the play that froze the game, not its age. The margin covers the books' repricing
+# (weeks 1-4, first new game-line price after a score: DraftKings 7 s, FanDuel 9 s, Pinnacle 29 s median and 62 s
+# at the 75th percentile). PropLine refreshes each book's live game lines only every 2-4 minutes.
+SINCE_MARGIN_S = {"pinnacle": 60}
+SINCE_MARGIN_DEFAULT_S = 20
 
 
 def dec(american: float) -> float:
@@ -51,12 +57,18 @@ def _parse_ts(s: str | None) -> datetime | None:
     return datetime.fromisoformat(s.replace("Z", "+00:00"))
 
 
-def parse_propline(o: dict, home: str, away: str, now: datetime) -> dict:
-    """PropLine per-event odds -> main lines the engine can price, stale and pulled prices dropped."""
+def parse_propline(o: dict, home: str, away: str, now: datetime, since: datetime | None = None,
+                   kinds: tuple = ("prop", "game")) -> dict:
+    """PropLine per-event odds -> main lines the engine can price, stale and pulled prices dropped.
+    In play a quote counts when it is at most MAX_AGE_S old. During a dead ball (`since`: the wallclock of the play
+    that froze the game; `kinds`: the markets the open decision point decides) a quote for those markets counts
+    when the book posted it at least SINCE_MARGIN_S after that play, whatever its age (marked by_state), and one
+    posted before does not, however young: it priced a different game."""
     props: dict = {}
     game: dict = {}
     fresh: dict = {}   # book -> age of its freshest main market: PropLine refreshes each book on its own cycle
     stale: set = set()  # (player id or "game", market, book) dropped only for age
+    ok_books: set = set()  # books with at least one quote that counts
     nick = {home: None, away: None}
     for full, abbr in TEAMS.items():
         if abbr in nick:
@@ -74,12 +86,16 @@ def parse_propline(o: dict, home: str, away: str, now: datetime) -> dict:
             upd = _parse_ts(m.get("last_update"))
             age = (now - upd).total_seconds() if upd else 9e9
             fresh[book] = min(fresh.get(book, 9e9), age)
-            if age > MAX_AGE_S and o.get("live"):
+            dead = since is not None and ("prop" if m.get("key") in PROP_KEYS else "game") in kinds
+            by_state = bool(o.get("live") and dead and upd
+                            and upd >= since + timedelta(seconds=SINCE_MARGIN_S.get(book, SINCE_MARGIN_DEFAULT_S)))
+            if o.get("live") and not by_state and (dead or age > MAX_AGE_S):
                 if m["key"] in PROP_KEYS:
                     stale.update((x["player_id"], PROP_KEYS[m["key"]], book) for x in m.get("outcomes", []) if x.get("player_id"))
                 elif m["key"] in GAME_KEYS and not m.get("team"):
                     stale.add(("game", GAME_KEYS[m["key"]], book))
                 continue
+            ok_books.add(book)
             outs = [x for x in m.get("outcomes", []) if not x.get("last_seen_at") or not m.get("last_update")
                     or x["last_seen_at"] >= m["last_update"]]
             key = m["key"]
@@ -92,7 +108,8 @@ def parse_propline(o: dict, home: str, away: str, now: datetime) -> dict:
                 for (pid, point), sides in by_player.items():
                     if "Over" in sides and "Under" in sides:
                         props.setdefault((pid, PROP_KEYS[key]), {})[book] = {
-                            "line": float(point), "over": dec(sides["Over"]), "under": dec(sides["Under"]), "age": age}
+                            "line": float(point), "over": dec(sides["Over"]), "under": dec(sides["Under"]), "age": age,
+                            "by_state": by_state}
             elif key == "h2h":
                 pr = {}
                 for x in outs:
@@ -100,7 +117,8 @@ def parse_propline(o: dict, home: str, away: str, now: datetime) -> dict:
                     if side:
                         pr[side] = dec(x["price"])
                 if len(pr) == 2:
-                    game.setdefault(book, {}).update(ml_home=pr["home"], ml_away=pr["away"], age=age)
+                    game.setdefault(book, {}).update(ml_home=pr["home"], ml_away=pr["away"], age=age, age_ml=age,
+                                                     by_state_ml=by_state)
             elif key == "spreads":
                 pr = {}
                 for x in outs:
@@ -109,13 +127,16 @@ def parse_propline(o: dict, home: str, away: str, now: datetime) -> dict:
                         pr[side] = (float(x["point"]), dec(x["price"]))
                 if len(pr) == 2:
                     game.setdefault(book, {}).update(spread=-pr["home"][0], spread_price_a=pr["home"][1],
-                                                     spread_price_b=pr["away"][1], age=age)
+                                                     spread_price_b=pr["away"][1], age=age, age_spread=age,
+                                                     by_state_spread=by_state)
             elif key == "totals" and not m.get("team"):
                 pr = {x["name"]: (float(x["point"]), dec(x["price"])) for x in outs if x.get("point") is not None}
                 if "Over" in pr and "Under" in pr:
                     game.setdefault(book, {}).update(total=pr["Over"][0], total_price_a=pr["Over"][1],
-                                                     total_price_b=pr["Under"][1], age=age)
-    return {"props": props, "game": game, "at": now.isoformat(), "books": fresh, "stale": stale}
+                                                     total_price_b=pr["Under"][1], age=age, age_total=age,
+                                                     by_state_total=by_state)
+    return {"props": props, "game": game, "at": now.isoformat(), "books": fresh, "stale": stale, "ok_books": ok_books,
+            "since": since.isoformat() if since else None}
 
 
 class LiveFeed:
@@ -149,12 +170,12 @@ class LiveFeed:
                 "final": g["final"], "live": g["state"] == "in", "detail": g["detail"], "new_plays": new,
                 "banked": banked, "team_so_far": team_so, "box_names": {self.e2g.get(a): b.get("name") for a, b in g["box"].items()}}
 
-    def odds(self) -> dict | None:
+    def odds(self, since: datetime | None = None, kinds: tuple = ("prop", "game")) -> dict | None:
         o = propline.get(f"sports/{propline.SPORT}/events/{self.pid}/odds",
                          {"markets": MARKETS, "bookmakers": propline.BOOKS})
         if not isinstance(o, dict) or "error" in o:
             return None
-        out = parse_propline(o, self.home, self.away, datetime.now(timezone.utc))
+        out = parse_propline(o, self.home, self.away, datetime.now(timezone.utc), since, kinds)
         out["props"] = {(self._gsis(pid), m): v for (pid, m), v in out["props"].items() if self._gsis(pid)}
         out["stale"] = {(k if k == "game" else self._gsis(k), m, b) for k, m, b in out["stale"]}
         return out
@@ -243,7 +264,7 @@ class SGOFeed(LiveFeed):
         self.pmap, self.players, self.n_listed = pmap, players, -1
         sgo.watch(sgo_event)
 
-    def odds(self) -> dict | None:
+    def odds(self, since: datetime | None = None, kinds: tuple = ("prop", "game")) -> dict | None:
         e = sgo.live_event(self.pid)
         if e is None:
             return None
@@ -327,7 +348,7 @@ class DemoFeed:
                 "final": self.final, "live": not self.final, "detail": "Final" if self.final else f"{int(secs // 60)} min left",
                 "new_plays": new, "banked": b, "team_so_far": self.team_so[k] if self.team_so else {}}
 
-    def odds(self) -> dict:
+    def odds(self, since: datetime | None = None, kinds: tuple = ("prop", "game")) -> dict:
         t = self.now_game()
         g = self._pg(self.prop_rows, [t]).get(0, {})
         gg = self._gg(self.game_rows, [t]).get(0, {}) if self.game_rows.height else {}

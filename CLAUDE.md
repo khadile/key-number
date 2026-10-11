@@ -110,8 +110,17 @@ for CLV. Never type a line in by hand.
 - PropLine's CLV grader uses the pregame close, so it cannot grade in-game
   bets; live line value is measured from our own polls.
 - PropLine refreshes each book on its own cycle. On 2026-10-08 in-game quotes
-  were 25-160 s old when they arrived (Pinnacle often the oldest). The parser
-  skips anything older than 90 s (`MAX_AGE_S`), so some polls price nothing.
+  were 25-160 s old when they arrived (Pinnacle often the oldest); on 2026-10-11 live game lines
+  refreshed only every 2-4 minutes per book (DK 155-264 s old, FD ~2 min, Pinnacle 141-205 s). In
+  play the parser skips anything older than 90 s (`MAX_AGE_S`).
+- Dead balls (engine 2026-10-11.7): after a score until the next snap, and at halftime, the game
+  cannot change, so a quote counts when the book posted it after the play that froze the game
+  (ESPN's wallclock) plus a repricing margin (DK/FD 20 s, Pinnacle 60 s; `SINCE_MARGIN_S`), whatever
+  its age, and a quote posted before that play does not count however young (it priced another
+  game). Under the 90 s rule after-score windows almost never priced ("no game-market prices fresh
+  enough", over and over), and when they did, pre-score quotes caused the "model more than 10% from
+  the market" fails. After a score the rule covers game markets; at halftime props and game markets.
+  It holds until the next snap, so the 30 s fill re-check uses it too.
 
 ## 2e. SportsGameOdds archive (Pro trial, pulled 2026-10-09)
 
@@ -283,10 +292,11 @@ the closing line, the board says so.
 - Redesign (2026-10-09, user: fewer, more trustworthy plays): the engine
   watches and prices every play for the log but flags only at decision
   points. Props: once, at halftime (`PROP_WINDOWS`), the single strongest
-  play. Game markets: after each score, vs Pinnacle's live no-vig number, one
+  play. Game markets: after each score and at halftime, vs Pinnacle's live no-vig number, one
   a game. Rubric (`decide.gate` + two checks): model within 10 pts of no-vig
   (`MAX_GAP`), EV >= 5%, same price on two checks 45 s apart (90 at half),
-  quote <= 60 s old, no props in a 17+ point game, no game prices beyond
+  quote <= 60 s old (in a dead ball: posted after the play that froze the game, any age),
+  no props in a 17+ point game, no game prices beyond
   +/-300, one per player, correlated plays once; props also skip a player
   whose numbers lean on one 20+ yard play (half his yards in that stat, or
   one in the last 2 min) and one the play-by-play says was hurt until he
@@ -299,6 +309,18 @@ the closing line, the board says so.
   pass (cap 20 checks). On the 64-game replay: rolling 61 plays 38-23 +12.4u vs one pair of checks
   53 plays 32-21 +9.8u; the 9 plays only rolling finds went 6-3. One check only (no confirmation)
   was worse: the plays the second check rejects went 10-10 (reports/live_rolling64.parquet).
+- Game markets decide after each score AND at halftime (engine 2026-10-11.7; user: "our model checks
+  after each score", so the after-score checks stay). Halftime's window decides both kinds, each
+  rolling on its own clock (64-game replay, game markets at halftime: 28 plays 16-12 +4.8u; after
+  scores 39 plays 22-17 +3.7u; the Q1 and Q3 breaks lost and are not used). One game-market play a
+  game, whichever decision point finds it first. An after-score window that is open when the half
+  ends folds into halftime. ESPN posts a touchdown at +6 and folds the try into the same play about a
+  minute later, so a touchdown's window waits for the try (`TRY_WAIT_S`, at most 150 s) and prices
+  the settled score. Retries (no quote posted after the score yet) do not use up the pair of checks.
+  A rolling window retries three times at 30 s, then at its own 90 s pace, so the 20-check cap lasts
+  the whole break. Live-path test: a scripted ESPN feed and PropLine quotes drive `GameRunner.step()`.
+  Expect more PropLine calls a game than the lean estimate (each score now prices until the books
+  post): measure and re-set `LEAN_CALLS_PER_GAME` before a full 13-game Sunday.
 - Missed decisions can be replayed onto the record (`python -m live.replay_missed <game> --record`),
   marked "replayed", only with a commitment in ledger/live_replayed.jsonl pushed before the game ended
   that names the method; whatever it picks counts, win or lose. 2026-10-11: PHI-JAX (two-checks,
