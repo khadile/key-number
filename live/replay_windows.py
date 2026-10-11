@@ -276,7 +276,7 @@ def select(C: pl.DataFrame, s_by_week: dict, events: tuple | None, kind: str, ca
     C = C.filter(ok)
     pk = ["game_id", "event", "key", "side", "book", "line"]
     first = C.filter(pl.col("check") == "t1").select(pk).unique()
-    C2 = C.filter(pl.col("check") == "t2").join(first, on=pk, how="semi").sort("game_id", "at", pl.col("ev_adj"), descending=[False, False, True])
+    C2 = C.filter(pl.col("check") == "t2").join(first, on=pk, how="semi", nulls_equal=True).sort("game_id", "at", pl.col("ev_adj"), descending=[False, False, True])
     flags, used = [], cap_used if cap_used is not None else {}
     per_window, per_game = per_window or PER_WINDOW, per_game or EXPLORE_PER_GAME
     for (gid, ev), grp in C2.group_by(["game_id", "event"], maintain_order=True):

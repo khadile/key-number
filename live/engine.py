@@ -68,7 +68,7 @@ SRC = OddsSource("propline")
 PORT = 8770  # the board's local preview uses 8765
 # Bump together with PAGE_VERSION in live/page.html. The engine serves page.html fresh from disk but
 # loads its own code once, so a mismatch means "the page was updated; restart the engine".
-ENGINE_VERSION = "2026-10-11.10"
+ENGINE_VERSION = "2026-10-11.11"
 ESPN_POLL = 7
 ODDS_MIN_GAP = 20
 ODDS_HEARTBEAT = 120
@@ -513,9 +513,17 @@ class GameRunner(threading.Thread):
         g = proj["game"]
         margin = g["margin"] if g["teams"][0] == self.home else -g["margin"]
         for c in decide.game_candidates(self.gid, g, od["game"], self.home, self.away):
-            r = _pin_fair(pin, c, margin, g["total"])   # judged against Pinnacle's live no-vig number at the book's line
-            if r is None:
+            if c.market not in decide.GAME_MARKETS:
                 continue
+            # judged against Pinnacle's live no-vig number at the book's line; when Pinnacle has none near it (its live
+            # lines refresh slowest), against the other US book's: line shopping (user, 2026-10-11)
+            r = _pin_fair(pin, c, margin, g["total"])
+            if r is None:
+                other = "fanduel" if c.book == "draftkings" else "draftkings"
+                r = _pin_fair(od["game"].get(other, {}), c, margin, g["total"])
+                if r is None:
+                    continue
+                c.refbook = BOOK_SHORT[other]
             c.fair, c.ref = r
             cands.append(c)
 
@@ -693,14 +701,11 @@ class GameRunner(threading.Thread):
             return f"no prices posted after {after} yet"
         have = set(od["game"])
         ours = have & {"draftkings", "fanduel"}
-        if not ours and "pinnacle" not in have:
-            return f"no prices posted after {after} yet"
-        if "pinnacle" not in have:
-            return f"waiting for Pinnacle to post after {after}"
         if not ours:
-            return f"waiting for DK/FD to post after {after}"
-        return (f"no Pinnacle number near DK/FD's (within {LINE_SLACK['spread']:g} on spreads, "
-                f"{LINE_SLACK['total']:g} on totals) and no moneyline")
+            return f"no DK/FD prices posted after {after} yet"
+        if "pinnacle" not in have and len(ours) < 2:
+            return f"waiting for Pinnacle or the other US book to post after {after}"
+        return (f"no Pinnacle or other-book number within {LINE_SLACK['spread']:g} point of DK/FD's spread or total")
 
     def _close_window(self) -> None:
         if self.window and self.window["rolling"]:
@@ -826,7 +831,8 @@ class GameRunner(threading.Thread):
                    "team_lead": st["score"].get(c.team, 0) - st["score"].get(other, 0)}
             return decide.reason(c, ctx)
         lead = int(st["score"].get(self.home, 0) - st["score"].get(self.away, 0))
-        return (f"model {c.p:.0%} vs Pinnacle {c.fair:.0%}" + (f" ({c.ref})" if c.ref else "")
+        return (f"model {c.p:.0%} vs {c.refbook} {c.fair:.0%}" + (f" ({c.ref.replace('Pinnacle', c.refbook)})" if c.ref else "")
+                + ("" if c.refbook == "Pinnacle" else "; Pinnacle had no live number near it")
                 + f"; {self.home} {lead:+d} with {decide._mins(st['seconds_left'])} left, rest played from team strength")
 
     def flag(self, c, st: dict, quote_age: float | None = None, window: str | None = None) -> None:

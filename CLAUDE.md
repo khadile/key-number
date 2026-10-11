@@ -344,6 +344,16 @@ the closing line, the board says so.
   -7.5 / 43.5 / -346). The limits tell them apart: live 1,000-5,000, pregame 20,000-100,000. In a live
   game the parser skips any Pinnacle market above `PIN_LIVE_MAX_LIQ` (10,000). Many earlier "model more
   than 10% from the market" fails were the model against pregame Pinnacle prices.
+- Live game markets are spreads and totals only, and line-shop (engine .11, `decide.GAME_MARKETS`). The
+  reference is Pinnacle's live number within 1 point, else the other US book's (FD for a DK line, DK for
+  FD), moved the same way: Pinnacle's live lines refresh slowest. Paired replay (64 games, one game-market
+  play a game at the first decision point that finds one, after scores and halftime;
+  reports/live_game_refs2.json): with moneylines, Pinnacle same number 59 plays 29-30 +4.3u, Pinnacle 1 pt
+  63 plays -1.9u, Pinnacle-else-US 64 plays -0.4u; without moneylines 49 plays +5.9u, 63 plays +6.4u,
+  64 plays 39-25 +9.1u. Moneylines alone went 15-22, 11-18, 10-19 under the three references.
+- Replay bug fixed (2026-10-11): `live/replay_windows.select` matched the two checks with a join on the
+  line, and a moneyline's line is null, which never matches, so the after-score replay never took a
+  moneyline; its "39 plays 22-17 +3.7u" was spreads and totals only. Now `nulls_equal=True`.
 - Missed decisions can be replayed onto the record (`python -m live.replay_missed <game> --record`),
   marked "replayed", only with a commitment in ledger/live_replayed.jsonl pushed before the game ended
   that names the method; whatever it picks counts, win or lose. 2026-10-11: PHI-JAX (two-checks,

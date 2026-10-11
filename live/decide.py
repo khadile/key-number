@@ -40,6 +40,10 @@ WINDOW_AT = {"q1": 2700, "half": 1800, "q3": 900}    # game seconds left when ea
 WINDOW_LABEL = {"q1": "End of the first quarter", "half": "Halftime", "q3": "End of the third quarter"}
 PROP_PER_GAME = 1
 GAME_PER_GAME = 1
+# Live game markets: spreads and totals. Live moneylines lost in the paired replay under every market reference
+# (64 games, one game-market play a game: 15-22, 11-18, 10-19) while spreads and totals won (14-8, 18-16, 21-14);
+# the rule without moneylines went 39-25, +9.1u (2026-10-11, reports/live_game_refs2.json).
+GAME_MARKETS = ("spread", "total")
 MAX_PER_GAME = PROP_PER_GAME + GAME_PER_GAME
 PERSIST_S = 45                    # second price check this long after the first (twice that at halftime)
 FRESH_FLAG_S = 60
@@ -84,6 +88,7 @@ class Candidate:
     group: str          # correlation group
     reason: str = ""
     ref: str = ""       # how the market reference was found, when not at the same number
+    refbook: str = "Pinnacle"   # whose no-vig price the game-market reference is
 
     def label(self) -> str:
         if self.kind == "prop":
