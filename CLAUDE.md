@@ -89,13 +89,15 @@ for CLV. Never type a line in by hand.
 
 ## 2d. PropLine budget (free plan: 1,000 requests a day, reset 00:00 UTC)
 
-- Trial week (2026-10-11 to ~10-16): the engine prices from SportsGameOdds instead
-  (`--odds sgo`, the default for now; `--odds propline` goes back). One shared
-  call every 12 s (`pipeline/sgo.live_event`) covers every watched game, so the
-  whole slate is watched; SGO quotes count as stale after 120 s (it refreshes
-  every 30-60 s in-game on this plan). Players are matched to gsis ids by name
-  within team, re-matched as books post props. Switch the default back to
-  propline when the trial ends.
+- SportsGameOdds was tried for live prices on 2026-10-11 and failed: its in-game quotes were
+  5-7 minutes old on the trial plan (DK freshest 295 s, FD 341 s, Pinnacle 395 s at halftime;
+  PropLine 81/56/586 s), so the engine priced nothing. PropLine is the default; `--odds sgo`
+  remains for testing only.
+- Lean PropLine schedule (same day): price checks only at decision points (halftime, after a
+  score), for live cards and their 30 s / 5 min re-checks, and a 10-minute heartbeat for the
+  log. About 50 calls a game, so a full Sunday fits the 950 a day (`LEAN_CALLS_PER_GAME`).
+- A decision point whose prices were all too old (nothing priced, or every candidate failed
+  only on quote age) retries every 30 s, up to 8 times, until play resumes; it used to close.
 
 - Every call goes through `pipeline/propline.py` (certifi TLS; Python's own
   store rejects their chain). It logs to `data/propline/request_log.jsonl`,
