@@ -25,3 +25,9 @@
 {"id": "2026_05_SF_SEA:00-0035719:rush_yds:1791756165", "clv_units": 0.0, "logged_at": "2026-10-11T22:08:04.708956+00:00"}
 {"id": "2026_05_DET_ARI:00-0039139:receptions:1791756130", "expired": "time", "logged_at": "2026-10-11T22:08:11.423072+00:00"}
 {"id": "2026_05_SF_SEA:00-0035719:rush_yds:1791756165", "expired": "time", "logged_at": "2026-10-11T22:09:18.228207+00:00"}
+{"id": "2026_05_BAL_ATL:game:total:1791768618", "fill": "filled", "fill_dec": 1.9090909090909092, "fill_line": 45.5, "logged_at": "2026-10-12T01:30:47.352771+00:00"}
+{"id": "2026_05_BAL_ATL:game:total:1791768618", "expired": "line moved to 44.5", "logged_at": "2026-10-12T01:33:48.511865+00:00"}
+{"id": "2026_05_BAL_ATL:game:total:1791768618", "clv_units": -1.0, "logged_at": "2026-10-12T01:35:22.311887+00:00"}
+{"id": "2026_05_BAL_ATL:00-0032764:receptions:1791769819", "fill": "filled", "fill_dec": 2.3, "fill_line": 0.5, "logged_at": "2026-10-12T01:50:57.652551+00:00"}
+{"id": "2026_05_BAL_ATL:00-0032764:receptions:1791769819", "clv_units": 0.0, "logged_at": "2026-10-12T01:55:41.818686+00:00"}
+{"id": "2026_05_BAL_ATL:00-0032764:receptions:1791769819", "expired": "time", "logged_at": "2026-10-12T01:56:20.162696+00:00"}
