@@ -11,3 +11,11 @@
 {"id": "2026_05_BAL_ATL:00-0032764:receptions:1791769819", "result": "L", "actual": 1.0, "logged_at": "2026-10-12T03:47:18.433034+00:00"}
 {"id": "2026_05_BUF_LA:game:total:1791853915", "result": "W", "actual": null, "logged_at": "2026-10-13T03:47:44.130680+00:00"}
 {"id": "2026_05_BUF_LA:00-0037840:rush_yds:1791855617", "result": "W", "actual": 49.0, "logged_at": "2026-10-13T03:47:44.130911+00:00"}
+{"id": "2026_05_PHI_JAX:00-0034960:rec_yds:replay-half", "result": "W", "actual": 37.0, "logged_at": "2026-10-13T21:25:33.343484+00:00"}
+{"id": "2026_05_CHI_GB:00-0040126:rec_yds:replay-half", "result": "W", "actual": 19.0, "logged_at": "2026-10-13T21:25:34.054826+00:00"}
+{"id": "2026_05_CIN_MIA:00-0038597:receptions:replay-half", "result": "L", "actual": 3, "logged_at": "2026-10-13T21:25:34.770225+00:00"}
+{"id": "2026_05_CLE_NYJ:00-0040784:rec_yds:replay-half", "result": "L", "actual": 6.0, "logged_at": "2026-10-13T21:25:35.470545+00:00"}
+{"id": "2026_05_HOU_TEN:00-0040584:rec_yds:replay-half", "result": "W", "actual": 0, "logged_at": "2026-10-13T21:25:36.213662+00:00"}
+{"id": "2026_05_IND_PIT:00-0036223:rush_yds:replay-half", "result": "W", "actual": 45.0, "logged_at": "2026-10-13T21:25:36.956195+00:00"}
+{"id": "2026_05_MIN_NO:00-0036040:receptions:replay-half", "result": "L", "actual": 4, "logged_at": "2026-10-13T21:25:37.648809+00:00"}
+{"id": "2026_05_NYG_WAS:00-0041042:rec_yds:replay-half", "result": "L", "actual": 20.0, "logged_at": "2026-10-13T21:25:38.345521+00:00"}
