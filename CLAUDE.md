@@ -388,6 +388,10 @@ the closing line, the board says so.
   old their quote was. `data/live/status.json` (20 s heartbeat, gitignored)
   gives the board's Live tab a "last heard from" line and the log's last
   lines; the published board cannot show the engine as it runs.
+- The board's Flagged plays (Live tab) sit under week headers with the week's record, one dropdown
+  per game (user, 2026-10-13: 40+ plays in one list is a scroll), newest first; the header shows plays,
+  W-L, units and pending. A game with an ungraded play opens by itself; the open state is kept per
+  device (localStorage kn-live-open).
 - Restarts are safe: each game keeps `data/live/<game_id>/` (calibration.json
   plus play and odds logs). A restart restores the game's flags from the
   ledger (cap and exposure rules still hold; their fills show "unchecked")

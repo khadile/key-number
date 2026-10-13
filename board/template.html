@@ -1661,13 +1661,38 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
     const gate = Math.min(1, P.n / 40);
     const clock = (s) => { if (s == null) return ""; const q = Math.min(4, 4 - Math.floor((s - 1) / 900)), r = Math.max(0, s - (4 - q) * 900); return `Q${q} ${Math.floor(r / 60)}:${String(Math.round(r % 60)).padStart(2, "0")}`; };
     const FILL = { filled: "price still there 30 s later", missed: "price gone 30 s later", unknown: "no fresh quote to re-check the price", unchecked: "price not re-checked" };
-    const flags = LV.flags.map((f) => `<article class="flagcard">
-        <div class="fc-top"><span>${esc(new Date(f.at).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }))} · ${esc((f.game_id || "").split("_").slice(2).join(" at "))}${f.seconds_left != null ? " · " + clock(f.seconds_left) : ""}</span>
+    // Flagged plays, one dropdown per game under week headers, newest first (user, 2026-10-13: one long list of
+    // 40+ plays is a scroll). A game with an ungraded play opens by itself; otherwise the reader's choice is kept.
+    const flagCard = (f) => `<article class="flagcard">
+        <div class="fc-top"><span>${esc(new Date(f.at).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }))}${f.seconds_left != null ? " · " + clock(f.seconds_left) : ""}${f.window ? " · " + esc(f.window) : ""}</span>
           <span>${resChip(f.result) || '<span class="res P">PENDING</span>'} <b class="${cls(f.units)}">${f.units == null ? "" : units(f.units)}</b>${f.accepted ? ' <span class="tag promo">You took it</span>' : ""}${f.replayed ? ` <span class="tag" title="${esc(f.replay_note || "")}">Replayed after the game</span>` : ""}</span></div>
         <div class="fc-play"><b>${label(f.label)}</b><span class="mono">${am(f.american)}</span><span class="note">${esc(BOOKN[f.book] || f.book)} · 1u</span></div>
         <div class="fc-nums"><span>Model <b>${pct(f.p)}</b> vs <b>${pct(f.fair)}</b> ${term("novig", "no-vig")}</span><span>${term("ev", "EV")} <b>${signed(100 * f.ev, 1)}%</b></span>
           <span>${term("clv", "Line value")} <b class="${cls(f.clv_units)}">${f.clv_units == null ? "–" : signed(f.clv_units, 1)}</b></span><span>${esc(FILL[f.fill] || "")}</span></div>
-        ${f.reason ? `<p class="fc-why">Why: ${esc(f.reason)}</p>` : ""}</article>`).join("");
+        ${f.reason ? `<p class="fc-why">Why: ${esc(f.reason)}</p>` : ""}</article>`;
+    const byGame = new Map();
+    for (const f of LV.flags) { const g = f.game_id || "?"; if (!byGame.has(g)) byGame.set(g, []); byGame.get(g).push(f); }
+    const fgames = [...byGame].map(([gid, fs]) => {
+      const [, wk, away, home] = gid.split("_");
+      fs = [...fs].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+      return { gid, week: +wk, away, home, fs, last: Math.max(...fs.map((f) => Date.parse(f.at))) };
+    }).sort((a, b) => b.last - a.last);
+    const fweeks = [];
+    for (const g of fgames) { if (!fweeks.length || fweeks[fweeks.length - 1].week !== g.week) fweeks.push({ week: g.week, games: [] }); fweeks[fweeks.length - 1].games.push(g); }
+    const tallyF = (fs) => { const d = fs.filter((f) => f.result); return { n: d.length, w: d.filter((f) => f.result === "W").length, l: d.filter((f) => f.result === "L").length, p: d.filter((f) => f.result === "P").length, units: d.reduce((s, f) => s + (f.units || 0), 0), pending: fs.length - d.length }; };
+    const recLine = (t) => (t.n ? `${t.w}-${t.l}${t.p ? "-" + t.p : ""} · <b class="${cls(t.units)}">${units(t.units)}</b>` : "");
+    const fgame = (g) => {
+      const t = tallyF(g.fs), day = new Date(g.fs[0].at).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+      const open = lOpen.has(g.gid) || t.pending > 0;
+      return `<details class="acc gacc lgacc" data-lg="${esc(g.gid)}"${open ? " open" : ""}>
+        <summary><span class="mu">${badge(g.away)}<span class="at">at</span>${badge(g.home)}</span>
+          <span class="gm"><b>${nick(g.away)} at ${nick(g.home)}</b><span class="note">${esc(day)}</span></span>
+          <span class="gs"><span class="cnt">${g.fs.length} play${g.fs.length > 1 ? "s" : ""}</span>${t.n ? `<span class="bestc">${recLine(t)}</span>` : ""}${t.pending ? `<span class="res P">${t.pending} PENDING</span>` : ""}</span>
+          ${chev}</summary>
+        <div class="acc-body"><div class="flagcards">${g.fs.map(flagCard).join("")}</div></div></details>`;
+    };
+    const flags = fweeks.map((w) => { const t = tallyF(w.games.flatMap((g) => g.fs));
+      return `<h3 class="day">Week ${w.week} <span class="note">${w.games.length} game${w.games.length > 1 ? "s" : ""}${t.n ? " · " + recLine(t) : ""}</span></h3><div class="gaccs">${w.games.map(fgame).join("")}</div>`; }).join("");
     const WN = LV.windows || {}, EN = WN.engine || {}, EP = EN.props || {}, EG = EN.game || {};
     const PV = WN.props || {}, GV = WN.game || {}, RF = WN.reference || {}, GB = WN.gap_bands || {};
     const vrow = (name, v, hl) => (v && v.flags ? `<tr class="${hl ? "hl" : ""}"><td>${name}</td><td class="num">${v.flags}</td><td class="num">${v.w}-${v.l}${v.p ? "-" + v.p : ""}</td><td class="num ${cls(v.units)}">${units(v.units)}</td><td class="num ${cls(v.roi)}">${pct(v.roi, 1)}</td><td class="num">${pct(v.said)} → ${pct(v.won)}</td></tr>` : "");
@@ -1712,7 +1737,9 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
         <div class="tile"><span class="k">${term("clv", "Line value")}</span><span class="v ${cls(P.clv)}">${P.clv == null ? "–" : signed(P.clv, 2)}</span><span class="s">units the line moved our way in 5 min</span></div>
         <div class="tile"><span class="k">Go-live gate</span><span class="v">${P.n}/40</span><span class="s">graded paper plays; also needs 4 weekends and positive line value</span><span class="gate"><span class="gx" style="width:${(100 * gate).toFixed(0)}%"></span></span></div></div>
         ${(() => { const SH = (LV.shadow || {}).record || {}; return `<p class="note" style="margin-top:8px"><b>${term("shadow", "Shadow picks")}</b> (each game's second-best play, off the record): ${SH.n ? `${SH.w}-${SH.l}${SH.p ? "-" + SH.p : ""}, <span class="${cls(SH.units)}">${units(SH.units)}</span>, ROI ${pct(SH.roi, 1)}` : "none graded yet"}. If they hold up over a few weekends, a second play a game earns a slot.</p>`; })()}</section>
-      <section class="sec"><header><h2>Flagged plays</h2><span class="note">every flag counts, at the price it was flagged</span></header>${flags ? `<div class="flagcards">${flags}</div>` : '<p class="note">No live plays yet. They show up here after the engine watches a game.</p>'}</section>
+      <section class="sec"><header><h2>Flagged plays</h2>${flags ? '<div class="ctl"><button class="btn" id="lexp">Expand all</button></div>' : ""}</header>
+        <p class="note">Every flag counts, at the price it was flagged. Tap a game to see its plays.</p>
+        ${flags || '<p class="note">No live plays yet. They show up here after the engine watches a game.</p>'}</section>
       <details class="acc"><summary><h3>Run it on game day</h3><span class="note">start the engine, phone, alerts, demo</span>${chev}</summary>
         <div class="acc-body"><ul class="steps"><li><code>python -m live.engine</code> in the nfl_model folder, then open <b>http://localhost:8770</b>. It watches today's games, as many as the free PropLine plan covers (about ${Math.floor(LV.budget.budget / LV.budget.calls_per_game)} a day).</li>
           <li>On your phone: start it with <code>--lan</code> and open the address it prints while on home Wi-Fi. Phone alerts: add <code>NTFY_TOPIC=…</code> to .env and subscribe in the free ntfy app.</li>
@@ -1728,7 +1755,15 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
       ${sample ? `<details class="acc"><summary><h3>What the engine's flags looked like</h3><span class="note">a sample from the replay of its rule, with reasons</span>${chev}</summary>
         <div class="acc-body"><div class="flagcards">${sample}</div></div></details>` : ""}
       <p class="fine">Live odds: PropLine. Game feed: ESPN (unofficial). In-game history: OddsPapi. Model output, not betting advice; the engine never places a bet.</p>`;
+    const lgs = [...app.querySelectorAll("details.lgacc")];
+    const lexp = document.getElementById("lexp");
+    const syncLexp = () => { if (lexp) lexp.textContent = lgs.every((d) => d.open) ? "Collapse all" : "Expand all"; };
+    lgs.forEach((d) => d.addEventListener("toggle", () => { if (d.open) lOpen.add(d.dataset.lg); else lOpen.delete(d.dataset.lg); saveLOpen(); syncLexp(); }));
+    if (lexp) lexp.addEventListener("click", () => { const open = !lgs.every((d) => d.open); lgs.forEach((d) => { d.open = open; }); });
+    syncLexp();
   }
+  const lOpen = new Set((() => { try { return JSON.parse(localStorage.getItem("kn-live-open") || "[]"); } catch (e) { return []; } })());
+  function saveLOpen() { try { localStorage.setItem("kn-live-open", JSON.stringify([...lOpen])); } catch (e) { /* blocked storage: it still works for this visit */ } }
   function renderLiveModel() {
     if (!LV) return noLive();
     const r = LV.rules, pr = LV.params;
