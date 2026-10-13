@@ -1,0 +1,23 @@
+{
+ "rolling": {
+  "plays": 61,
+  "w": 38,
+  "l": 23,
+  "p": 0,
+  "units": 12.37,
+  "roi": 0.2027,
+  "said": 0.561,
+  "won": 0.623
+ },
+ "two-checks": {
+  "plays": 53,
+  "w": 32,
+  "l": 21,
+  "p": 0,
+  "units": 9.77,
+  "roi": 0.1844,
+  "said": 0.57,
+  "won": 0.604
+ },
+ "note": "Halftime props on the 64-game replay (weeks 1-4 of 2026), one a game: the rolling rule the engine runs (a check every 90 s through the break, a play must hold on two in a row) and the older single pair of checks."
+}

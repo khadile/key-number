@@ -385,6 +385,16 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
 .find { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; align-content: start; box-shadow: var(--shadow); }
 .find .k { font: 700 11px var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .find .big { font-family: var(--f-display); font-size: 36px; font-weight: 700; line-height: 1; }
+.kinds { display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (min-width: 760px) { .kinds { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kind { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 12px; align-content: start; box-shadow: var(--shadow); min-width: 0; }
+.kind .k { font: 700 12px var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+.kind .kr { display: grid; gap: 3px; min-width: 0; }
+.kind .kr + .kr { border-top: 1px solid var(--line); padding-top: 10px; }
+.kind .kl { font: 600 11px var(--f-body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.kind .big { font-family: var(--f-display); font-size: 36px; font-weight: 700; line-height: 1; }
+.kind .mid { font-family: var(--f-display); font-size: 24px; font-weight: 600; line-height: 1.1; }
+.kind .ks { font-size: 13px; color: var(--ink-2); }
 .flagcards { display: grid; gap: 10px; }
 .flagcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; box-shadow: var(--shadow); min-width: 0; }
 .flagcard .fc-top { display: flex; justify-content: space-between; align-items: center; gap: 6px 12px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
@@ -1707,11 +1717,16 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
       vrow(`All three breaks, within ${gapPts} points`, PV["q1+half+q3|raw|gap10"]),
       vrow("Before: any play after the first quarter (the old rule)", RF.props),
     ].join("");
+    // game markets: the paired replay of 2026-10-11 (one play a game, after each score and at halftime; the older
+    // after-score replay never took a moneyline, so its rows are left out)
+    const GRF = WN.game_refs || {};
+    const gv = (k) => GRF[k] && { flags: GRF[k].plays, w: GRF[k].w, l: GRF[k].l, p: GRF[k].p || 0, units: GRF[k].units, roi: GRF[k].roi };
     const grows = [
-      vrow(`<b>The engine's rule</b>: after a score, one a game, within ${gapPts} points`, EG, true),
-      vrow(`After a score, up to three a game`, GV["raw|gap10|cap300"]),
-      vrow("After a score, within 15 points", GV["raw|gap15|cap300"]),
-      vrow("Before: any play after the first quarter, long shots allowed", RF.game),
+      vrow(`<b>The engine's rule</b>: spreads and totals after each score and at halftime, one a game, Pinnacle within a point, else the other US book`, gv("both_noml"), true),
+      vrow("Spreads and totals, Pinnacle within a point only", gv("pin_noml")),
+      vrow("Spreads and totals, Pinnacle at the same number only", gv("strict_noml")),
+      vrow("With moneylines, Pinnacle within a point, else the other US book", gv("both")),
+      vrow("With moneylines, Pinnacle at the same number only (the rule until Oct 11)", gv("strict")),
     ].join("");
     const weeksUp = EN.props_by_week ? Object.values(EN.props_by_week).every((w) => (w.units || 0) > 0) : false;
     const TH = LV.replay.thesis || [];
@@ -1725,25 +1740,39 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
         ${f.reason ? `<p class="fc-why">Why: ${esc(f.reason)}</p>` : ""}</article>`).join("");
     const kl = LV.replay.k_live || {};
     app.innerHTML = `
-      <section class="hello"><h1>Live betting</h1><p class="lede">The live engine watches every play and keeps pricing every tracked prop and the game lines, but it bets only at decision points: player props once, at ${esc((LV.rules.windows || ["halftime"]).join(" and ").toLowerCase())}, and the moneyline, spread or total after a score. A play has to pass the rubric, and every flag counts at the price it was flagged. It runs on your laptop during games; this page keeps its record. ${term("paper", "Paper trading")} comes first: real money only after the go-live gate.</p></section>
+      <section class="hello"><h1>Live betting</h1><p class="lede">The live engine watches every play and keeps pricing every tracked prop and the game lines, but it bets only at decision points: player props once, at ${esc((LV.rules.windows || ["halftime"]).join(" and ").toLowerCase())}, and spreads and totals after each score and at halftime. A play has to pass the rubric, and every flag counts at the price it was flagged. It runs on your laptop during games; this page keeps its record. ${term("paper", "Paper trading")} comes first: real money only after the go-live gate.</p></section>
       <section class="sec">${engineStatus()}</section>
-      <section class="sec"><header><h2>What testing found</h2><span class="note">${WN.games || 0} games from weeks 1–4, replayed against real in-game prices; every flag counted</span></header>
-        <div class="finds">
-          <div class="find"><span class="k">Halftime props: the engine's rule</span><span class="big ${cls(EP.units)}">${EP.flags ? `${EP.w}-${EP.l}` : "–"}</span><p class="say">${EP.flags ? `${units(EP.units)} on ${EP.flags} plays, one a game at most. The model said ${pct(EP.said)} and won ${pct(EP.won)}${weeksUp ? "; every week came out ahead" : ""}. A reason to paper-trade it, not proof yet.` : "No replay yet."}</p></div>
-          <div class="find"><span class="k">Big disagreements lose</span><span class="big neg">${GB.big ? pct(GB.big.won) : "–"}</span><p class="say">${GB.big ? `won when the model, 10 to 15 points off the market, said ${pct(GB.big.said)} (${GB.big.flags} plays, ${units(GB.big.units)}): the market knew something the model did not. Within 10 points: ${GB.moderate.w}-${GB.moderate.l}, ${units(GB.moderate.units)}. The rubric skips the big ones.` : ""}</p></div>
-          <div class="find"><span class="k">Game markets after a score</span><span class="big ${cls(EG.units)}">${EG.flags ? `${EG.w}-${EG.l}` : "–"}</span><p class="say">${EG.flags ? `${units(EG.units)} on ${EG.flags} checks against Pinnacle's live number; said ${pct(EG.said)}, won ${pct(EG.won)}. Calibrated, a thin edge at best.` : ""}</p></div>
-        </div></section>
-      <section class="sec"><header><h2>Record</h2></header><div class="strip four">${liveTile("Model (paper)", P, R.fill_checked ? ` · price still there 30 s later on ${R.fill_checked - R.missed} of ${R.fill_checked}` : "")}${liveTile("You (accepted)", Y)}
+      <section class="sec"><header><h2>Record</h2><span class="note">props vs game markets: the live paper record, and the replay of each rule on ${WN.games || 64} games from weeks 1–4</span></header>
+        ${(() => {
+          const BK = R.by_kind || {}, RK = R.replay_by_kind || {};
+          const card = (name, L, X) => `<div class="kind"><span class="k">${name}</span>
+            <div class="kr"><span class="kl">Live (paper)</span><span class="big ${cls(L && L.units)}">${L && L.n ? `${L.w}-${L.l}${L.p ? "-" + L.p : ""}` : "–"}</span>
+              <span class="ks">${L && L.n ? `<b class="${cls(L.units)}">${units(L.units)}</b> · ROI ${pct(L.roi, 1)} · ${L.n} graded` : "nothing graded yet"}</span>
+              <span class="ks">${L && L.n ? `Edge at the flag ${signed(100 * L.avg_ev, 1)}% · ${term("clv", "line value")} ${L.clv == null ? "–" : signed(L.clv, 2)}` : ""}</span></div>
+            <div class="kr"><span class="kl">Replay of the rule</span><span class="mid ${cls(X && X.units)}">${X ? `${X.w}-${X.l}` : "–"}</span>
+              <span class="ks">${X ? `<b class="${cls(X.units)}">${units(X.units)}</b> · ROI ${pct(X.roi, 1)} · ${X.plays} plays` : "no replay yet"}</span>
+              <span class="ks note">${X ? esc(X.rule) : ""}</span></div></div>`;
+          const lead = (a, b, k) => (a && b && a[k] != null && b[k] != null ? (a[k] >= b[k] ? "props" : "game markets") : null);
+          const liveLead = (BK.prop || {}).n && (BK.game || {}).n ? lead(BK.prop, BK.game, "roi") : null;
+          const repLead = lead(RK.prop, RK.game, "roi");
+          const nLive = ((BK.prop || {}).n || 0) + ((BK.game || {}).n || 0);
+          return `<div class="kinds">${card("Player props", BK.prop, RK.prop)}${card("Game markets", BK.game, RK.game)}</div>
+            <p class="note" style="margin-top:8px">${repLead ? `In the replay, ${repLead} earned more per play (${pct(RK.prop.roi, 1)} props, ${pct(RK.game.roi, 1)} game markets).` : ""}
+              ${liveLead ? ` Live so far ${liveLead} lead, but ${nLive} graded plays is far too few to rank them: one or two results swing the order.` : ""}
+              Edge at the flag is what the model said the play was worth; ROI is what it returned.</p>`;
+        })()}
+        <div class="strip four" style="margin-top:12px">${liveTile("All plays (paper)", P, R.fill_checked ? ` · price still there 30 s later on ${R.fill_checked - R.missed} of ${R.fill_checked}` : "")}${liveTile("You (accepted)", Y)}
         <div class="tile"><span class="k">${term("clv", "Line value")}</span><span class="v ${cls(P.clv)}">${P.clv == null ? "–" : signed(P.clv, 2)}</span><span class="s">units the line moved our way in 5 min</span></div>
         <div class="tile"><span class="k">Go-live gate</span><span class="v">${P.n}/40</span><span class="s">graded paper plays; also needs 4 weekends and positive line value</span><span class="gate"><span class="gx" style="width:${(100 * gate).toFixed(0)}%"></span></span></div></div>
-        ${(() => { const SH = (LV.shadow || {}).record || {}; return `<p class="note" style="margin-top:8px"><b>${term("shadow", "Shadow picks")}</b> (each game's second-best play, off the record): ${SH.n ? `${SH.w}-${SH.l}${SH.p ? "-" + SH.p : ""}, <span class="${cls(SH.units)}">${units(SH.units)}</span>, ROI ${pct(SH.roi, 1)}` : "none graded yet"}. If they hold up over a few weekends, a second play a game earns a slot.</p>`; })()}</section>
+        ${(() => { const SH = (LV.shadow || {}).record || {}; return `<p class="note" style="margin-top:8px"><b>${term("shadow", "Shadow picks")}</b> (each game's second-best play, off the record): ${SH.n ? `${SH.w}-${SH.l}${SH.p ? "-" + SH.p : ""}, <span class="${cls(SH.units)}">${units(SH.units)}</span>, ROI ${pct(SH.roi, 1)}` : "none graded yet"}. If they hold up over a few weekends, a second play a game earns a slot.</p>`; })()}
+        ${GB.big ? `<p class="note"><b>Why the rubric skips big disagreements:</b> in the replay, when the model was 10 to 15 points off the market it said ${pct(GB.big.said)} and won ${pct(GB.big.won)} (${GB.big.flags} plays, ${units(GB.big.units)}); within 10 points ${GB.moderate.w}-${GB.moderate.l}, ${units(GB.moderate.units)}.</p>` : ""}</section>
       <section class="sec"><header><h2>Flagged plays</h2>${flags ? '<div class="ctl"><button class="btn" id="lexp">Expand all</button></div>' : ""}</header>
         <p class="note">Every flag counts, at the price it was flagged. Tap a game to see its plays.</p>
         ${flags || '<p class="note">No live plays yet. They show up here after the engine watches a game.</p>'}</section>
       <details class="acc"><summary><h3>Run it on game day</h3><span class="note">start the engine, phone, alerts, demo</span>${chev}</summary>
         <div class="acc-body"><ul class="steps"><li><code>python -m live.engine</code> in the nfl_model folder, then open <b>http://localhost:8770</b>. It watches today's games, as many as the free PropLine plan covers (about ${Math.floor(LV.budget.budget / LV.budget.calls_per_game)} a day).</li>
           <li>On your phone: start it with <code>--lan</code> and open the address it prints while on home Wi-Fi. Phone alerts: add <code>NTFY_TOPIC=…</code> to .env and subscribe in the free ntfy app.</li>
-          <li>Plays show up only at decision points: at ${esc((LV.rules.windows || ["halftime"]).join(" and ").toLowerCase())} for props, after a score for game markets. Each stays up ${LV.rules.ttl / 60} minutes (${2 * LV.rules.ttl / 60} at halftime) or until its line moves. <b>Accept</b> means you placed it; type the price you got. Every play is 1 unit.</li>
+          <li>Plays show up only at decision points: at ${esc((LV.rules.windows || ["halftime"]).join(" and ").toLowerCase())} for props, after each score and at halftime for game markets (spreads and totals). Each stays up ${LV.rules.ttl / 60} minutes (${2 * LV.rules.ttl / 60} at halftime) or until its line moves. <b>Accept</b> means you placed it; type the price you got. Every play is 1 unit.</li>
           <li>Try it with a finished game: <code>python -m live.engine --demo 2026_04_PIT_CLE</code> (no PropLine requests).</li></ul></div></details>
       ${vrows ? `<details class="acc" open><summary><h3>The rules we tested</h3><span class="note">when to decide, and how far from the market to trust the model</span>${chev}</summary>
         <div class="acc-body"><div class="scroll"><table class="t"><thead><tr><th>Player props</th><th class="num">Flags</th><th class="num">Record</th><th class="num">Units</th><th class="num">ROI</th><th class="num">Model said → won</th></tr></thead><tbody>${vrows}</tbody></table></div>

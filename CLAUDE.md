@@ -392,6 +392,10 @@ the closing line, the board says so.
   per game (user, 2026-10-13: 40+ plays in one list is a scroll), newest first; the header shows plays,
   W-L, units and pending. A game with an ungraded play opens by itself; the open state is kept per
   device (localStorage kn-live-open).
+- The Live tab's Record compares the kinds (user, 2026-10-13: do props or game markets have the higher
+  edge?): a card each with the live paper record, the edge stated at the flag, line value, and the replay
+  of its current rule (reports/live_props_rolling.json: rolling halftime props 61 plays 38-23 +12.4u;
+  reports/live_game_refs2.json both_noml: game markets 64 plays 39-25 +9.1u). Tallies only, no prices.
 - Restarts are safe: each game keeps `data/live/<game_id>/` (calibration.json
   plus play and odds logs). A restart restores the game's flags from the
   ledger (cap and exposure rules still hold; their fills show "unchecked")

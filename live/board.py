@@ -30,11 +30,27 @@ def _read(path):
 
 def board_data(season: int) -> dict:
     rec = ledger.records()
-    flags = [{k: f.get(k) for k in ("id", "game_id", "label", "market", "side", "line", "book", "american", "p", "fair",
-                                     "ev", "reason", "at", "fill", "fill_dec", "fill_line", "clv_units", "result",
-                                     "actual", "units", "accepted", "expired", "passed", "score", "seconds_left", "window",
-                                     "replayed", "replay_note")}
+    kind = lambda f: f.get("kind") or ("prop" if f.get("player") else "game")   # old rows carry no kind
+    flags = [{**{k: f.get(k) for k in ("id", "game_id", "label", "market", "side", "line", "book", "american", "p", "fair",
+                                        "ev", "reason", "at", "fill", "fill_dec", "fill_line", "clv_units", "result",
+                                        "actual", "units", "accepted", "expired", "passed", "score", "seconds_left", "window",
+                                        "replayed", "replay_note")}, "kind": kind(f)}
              for f in rec["flags"][:150]]
+    # props vs game markets (user, 2026-10-13: which has the higher edge?): the paper record by kind, with the
+    # stated edge at the flag, next to the replay of each kind's current rule on the 64 replay games
+    graded = [f for f in rec["flags"] if f.get("units") is not None]
+    by_kind = {}
+    for k in ("prop", "game"):
+        rows = [f for f in graded if kind(f) == k]
+        by_kind[k] = {**ledger._tally(rows), "avg_ev": round(sum(f["ev"] for f in rows) / len(rows), 4) if rows else None,
+                      "flags": sum(kind(f) == k for f in rec["flags"])}
+    PR = (_read(REPORTS / "live_props_rolling.json") or {}).get("rolling")
+    GR = (_read(REPORTS / "live_game_refs2.json") or {}).get("both_noml")
+    replay_by_kind = {
+        "prop": PR and {**PR, "rule": "Halftime, one prop a game, rolling checks through the break"},
+        "game": GR and {**GR, "rule": "Spreads and totals after each score and at halftime, one a game, "
+                                      "Pinnacle within a point, else the other US book"},
+    }
     variants = []
     for tag, name in VARIANTS:
         r = _read(REPORTS / (f"live_replay_{tag}.json" if tag else "live_replay.json"))
@@ -62,7 +78,8 @@ def board_data(season: int) -> dict:
         wsample = [{**{k: r.get(k) for k in ("game_id", "kind", "event", "label", "book", "p", "fair", "ev_adj", "reason", "result", "secs_left")},
                     "american": decide.american(r["dec"])} for r in F.iter_rows(named=True)]
     return {
-        "record": {"paper": rec["paper"], "you": rec["you"], "missed": rec["missed"], "fill_checked": rec["fill_checked"]},
+        "record": {"paper": rec["paper"], "you": rec["you"], "missed": rec["missed"], "fill_checked": rec["fill_checked"],
+                   "by_kind": by_kind, "replay_by_kind": replay_by_kind},
         "shadow": ledger.shadow_record(),
         "flags": flags,
         "replay": {"games": default.get("games"), "variants": variants, "thesis": default.get("thesis"),
@@ -73,7 +90,7 @@ def board_data(season: int) -> dict:
                   "game_per_game": decide.GAME_PER_GAME, "blowout": decide.BLOWOUT, "price_cap": decide.PRICE_CAP,
                   "persist_s": decide.PERSIST_S, "fresh_s": decide.FRESH_FLAG_S, "ttl": decide.CARD_TTL_S, "stake": decide.STAKE_U},
         "windows": {k: W.get(k) for k in ("games", "weeks", "engine", "props", "game", "reference", "gap_bands", "s_props")}
-                   | {"sample": wsample},
+                   | {"sample": wsample, "game_refs": _read(REPORTS / "live_game_refs2.json")},
         "params": {"n0_tgt": lp.n0_tgt, "k_game": round(lp.k_game, 3), "a_lead": round(lp.a_lead, 4),
                    "b_lead_late": round(lp.b_lead_late, 4)},
         "budget": {"used_today": propline.used_today(), "budget": propline.DAILY_BUDGET, "calls_per_game": 220},
