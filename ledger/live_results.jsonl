@@ -9,3 +9,5 @@
 {"id": "2026_05_SF_SEA:00-0035719:rush_yds:1791756165", "result": "W", "actual": 4.0, "logged_at": "2026-10-11T23:43:06.300293+00:00"}
 {"id": "2026_05_BAL_ATL:game:total:1791768618", "result": "W", "actual": null, "logged_at": "2026-10-12T03:47:18.432785+00:00"}
 {"id": "2026_05_BAL_ATL:00-0032764:receptions:1791769819", "result": "L", "actual": 1.0, "logged_at": "2026-10-12T03:47:18.433034+00:00"}
+{"id": "2026_05_BUF_LA:game:total:1791853915", "result": "W", "actual": null, "logged_at": "2026-10-13T03:47:44.130680+00:00"}
+{"id": "2026_05_BUF_LA:00-0037840:rush_yds:1791855617", "result": "W", "actual": 49.0, "logged_at": "2026-10-13T03:47:44.130911+00:00"}
