@@ -100,6 +100,8 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--offline", action="store_true", help="no downloads; rebuild from data on disk")
     ap.add_argument("--dry-run", action="store_true", help="compute picks and grades but write nothing to the ledger")
+    ap.add_argument("--lock-now", action="store_true",
+                    help="the day's update run early: lock now what its 10am build would lock (props due later today)")
     ap.add_argument("--sim-lock", choices=("tuesday", "last", "last-info"), default="tuesday",
                     help="replay of weeks 1-4: lock game lines at Tuesday's prices (default), at the last board "
                          "update before each game, or there with that later information")
@@ -413,7 +415,7 @@ def main() -> None:
     # --- player props: same lifecycle, its own ledger (props/section.py)
     from props.section import build_section
     market_lines = {c["id"]: {"spread": c["market"]["spread"], "total": c["market"]["total"]} for c in cards}
-    props_data_out = build_section(season, week, games, now, market_lines, args.dry_run)
+    props_data_out = build_section(season, week, games, now, market_lines, args.dry_run, args.lock_now)
 
     # --- live betting: the engine runs on the laptop; the board shows its record (live/board.py)
     from live.board import board_data as live_board

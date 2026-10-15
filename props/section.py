@@ -256,8 +256,17 @@ def _quant(s: np.ndarray) -> list[float]:
     return [round(float(v), 1) for v in np.quantile(s, [0.1, 0.25, 0.5, 0.75, 0.9])]
 
 
+def _lock_at(kickoff: datetime, now: datetime, lock_now: bool) -> datetime:
+    """A game's lock time; with lock_now (a build moved earlier than its 10am slot, user 2026-10-15), a lock
+    due later today is due now, so the day's update can run early without leaving that day's games unlocked."""
+    t = lock_time(kickoff)
+    if lock_now and t.astimezone(ET).date() == now.astimezone(ET).date():
+        return min(t, now)
+    return t
+
+
 def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, market_lines: dict,
-                  dry_run: bool) -> dict:
+                  dry_run: bool, lock_now: bool = False) -> dict:
     p, disp = load()
     sim = Simulator(disp, seed=17)
     hist = baselines(_frames_cached(p))
@@ -316,7 +325,7 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
     locked_games = {r["game_id"] for r in existing if r.get("kind") == "prop"}
     new_locks, new_parlays = [], []
     if week >= PROPS_LIVE_START and xw.height:
-        due = [g for g in upcoming["game_id"].to_list() if lock_time(kick[g]) <= now < kick[g] and g not in locked_games]
+        due = [g for g in upcoming["game_id"].to_list() if _lock_at(kick[g], now, lock_now) <= now < kick[g] and g not in locked_games]
         if due:
             xd = xw.filter(pl.col("game_id").is_in(due))
             new_locks = make_picks(xd, s_week, now_b, pricer, {g: now for g in due}, flag_potw=False)
@@ -326,7 +335,7 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
         if any(r.get("kind") == "potw" and r.get("season") == season and r.get("week") == week for r in existing):
             have.add("potw")   # Picks of the Week records have no "type"; without this every build re-locked them
         weekend = [g for g in upcoming["game_id"].to_list() if kick[g].astimezone(ET).weekday() in (5, 6, 0)]  # Sat-Mon, Eastern
-        if weekend and all(lock_time(kick[g]) <= now for g in weekend):
+        if weekend and all(_lock_at(kick[g], now, lock_now) <= now for g in weekend):
             pool = [r for r in existing + new_locks if r.get("kind") == "prop" and r["season"] == season
                     and r["week"] == week and kick[r["game_id"]] > now]
             if "potw" not in have and pool:

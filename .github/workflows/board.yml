@@ -21,6 +21,10 @@ on:
         description: "Build now even if today's build already ran"
         type: boolean
         default: false
+      lock_now:
+        description: "Today's update, run early: lock now what the 10am build would lock (the 10am firings then skip)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -80,7 +84,7 @@ jobs:
           ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
           PYTHONIOENCODING: utf-8
         run: |
-          python -m board.build
+          python -m board.build ${{ inputs.lock_now && '--lock-now' || '' }}
           python -m board.slot --mark
           python -m board.site
 
