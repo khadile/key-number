@@ -82,10 +82,13 @@ def project_week(p, season: int, week: int, upcoming: pl.DataFrame, market_lines
     return assign_roles(x).filter(pl.col("role").is_not_null())
 
 
-def promoted_flags(x: pl.DataFrame, tracked_hist: pl.DataFrame) -> pl.DataFrame:
+def promoted_flags(x: pl.DataFrame, tracked_hist: pl.DataFrame, available: pl.DataFrame | None = None) -> pl.DataFrame:
     """A player is promoted when he ranks higher at his position than in his team's
     previous game, because a teammate who ranked above him then is not playing now.
-    `tracked_hist`: earlier tracked rows (role set), with t and rank."""
+    `tracked_hist`: earlier tracked rows (role set), with t and rank. `available`: game_id, team, gsis_id of
+    everyone who can play (this week's candidates; a past game's players). Without it only role holders count
+    as playing, so a starter back from injury, or a teammate who simply lost his role, read as "promoted"
+    (2026-10-15: Lamar Jackson and Caleb Williams returning)."""
     by_game: dict[tuple[str, float], dict[str, tuple[str, int]]] = {}
     season_of: dict[tuple[str, float], int] = {}
     for r in tracked_hist.select("team", "t", "gsis_id", "position", "rank", "season").iter_rows():
@@ -95,7 +98,7 @@ def promoted_flags(x: pl.DataFrame, tracked_hist: pl.DataFrame) -> pl.DataFrame:
     for team, t in by_game:
         team_ts.setdefault(team, []).append(t)
     playing: dict[tuple[str, str], set] = {}
-    for g, team, pid in x.select("game_id", "team", "gsis_id").iter_rows():
+    for g, team, pid in (available if available is not None else x).select("game_id", "team", "gsis_id").iter_rows():
         playing.setdefault((g, team), set()).add(pid)
     out = []
     for r in x.select("game_id", "team", "t", "gsis_id", "position", "rank", "season").iter_rows(named=True):
@@ -301,7 +304,7 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
 
     # --- finished tracked rows this season: k, the simulation, grading
     done = hist.filter((pl.col("season") == season) & pl.col("game_id").is_in(list(graded_ids)) & pl.col("role").is_not_null())
-    done = promoted_flags(done, hist.filter(pl.col("role").is_not_null()))
+    done = promoted_flags(done, hist.filter(pl.col("role").is_not_null()), hist.select("game_id", "team", "gsis_id"))
     s_done = _samples(sim, done)
     kstudy = measure_k(s_done, lock_b, close_b)
     pricer = PropPricer(kstudy["k"])
@@ -322,7 +325,8 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
     upcoming = season_games.filter((pl.col("week") == week) & pl.col("result").is_null())
     xw = project_week(p, season, week, upcoming, market_lines)
     if xw.height:
-        xw = promoted_flags(xw, hist.filter(pl.col("role").is_not_null()))
+        xw = promoted_flags(xw, hist.filter(pl.col("role").is_not_null()),
+                            _candidates(season, week, upcoming).select("game_id", "team", "gsis_id"))
     s_week = _samples(sim, xw)
     existing = ledger.read(ledger.PICKS)
     locked_games = {r["game_id"] for r in existing if r.get("kind") == "prop"}
