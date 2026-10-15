@@ -145,6 +145,9 @@ def main() -> None:
     missing = set(plays["game_id"].unique()) - set(games["game_id"].unique())
     if missing:
         raise SystemExit(f"{len(missing)} pbp games missing from schedules, e.g. {sorted(missing)[:5]}")
+    # each game's QB from who actually played (or, upcoming, the depth chart), not the schedule's label
+    from pipeline.starters import fix_qbs
+    games = fix_qbs(games, plays)
 
     plays.write_parquet(CLEAN / "plays.parquet")
     team_games.write_parquet(CLEAN / "team_games.parquet")

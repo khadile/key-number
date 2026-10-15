@@ -30,15 +30,41 @@ HAT = {"pass_yds": "pass_yds_hat", "rush_yds": "rush_yds_hat", "rec_yds": "rec_y
 RB2_MIN_SHARE = 0.30  # an RB2 is tracked only in a real timeshare
 
 
+DEPTH_STARTERS = {"QB": 1, "RB": 3, "WR": 3, "TE": 2}   # how far down the depth chart a role can reach
+
+
 def assign_roles(x: pl.DataFrame) -> pl.DataFrame:
     """Rank each team's players in a game by projected usage: QB1, RB1-2, WR1-2, TE1.
     `x` holds only the players available for that game, so a teammate ruled out
-    simply moves everyone below him up a spot."""
+    simply moves everyone below him up a spot.
+
+    With a `dc_rank` column (the current depth chart, pipeline/starters.py), roles go to the depth chart's
+    starters first (QB: the top available one; RB and WR: the top three; TE: the top two), ordered among
+    themselves by projected usage, players with real usage ahead of those with none, who follow the depth
+    chart. Usage alone ranks a player with no usage at his position's prior share, a starter's: on 2026-10-15
+    it made Jalen Milroe (no snaps all season) QB1 over Sam Darnold, Irvin Charles (just off IR, not on the
+    depth chart) WR2 over Cooper Kupp, and Robert Henry Jr. (no carries) RB2 over George Holani."""
     usage = (pl.when(pl.col("position") == "QB").then(pl.col("att_hat"))
              .when(pl.col("position") == "RB").then(pl.col("car_hat") + pl.col("tgt_hat"))
              .otherwise(pl.col("tgt_hat")))
-    x = x.with_columns(usage=usage).with_columns(
-        rank=pl.col("usage").rank("ordinal", descending=True).over("game_id", "team", "position"))
+    x = x.with_columns(usage=usage)
+    if "dc_rank" in x.columns:
+        grp = ("game_id", "team", "position")
+        seen = sum(pl.col(c).fill_null(0.0) for c in ("team_targets_s", "team_runs_s", "team_att_s") if c in x.columns)
+        # the depth chart orders a position only where it has a word on it (past games carry the starting QB
+        # alone); elsewhere usage decides, as before
+        x = (x.with_columns(_has=pl.col("dc_rank").is_not_null().any().over(grp), _dc=pl.col("dc_rank").fill_null(99),
+                            _u=pl.col("usage").fill_null(0.0), _seen=(seen > 5.0) if isinstance(seen, pl.Expr) else pl.lit(True))
+             .with_columns(_new=pl.col("_has") & ~pl.col("_seen"), _dpos=pl.col("_dc").rank("ordinal").over(grp))
+             .with_columns(_tier=pl.when(~pl.col("_has") | (pl.col("_dpos") <= pl.col("position").replace_strict(
+                               DEPTH_STARTERS, default=3, return_dtype=pl.UInt32))).then(0).otherwise(1),
+                           _key=pl.when(pl.col("_has") & ((pl.col("position") == "QB") | pl.col("_new")))
+                           .then(pl.col("_dc").cast(pl.Float64)).otherwise(-pl.col("_u")))
+             .sort(*grp, "_tier", "_new", "_key", "_dc")
+             .with_columns(rank=pl.int_range(1, pl.len() + 1, dtype=pl.UInt32).over(grp))
+             .drop("_has", "_dc", "_u", "_seen", "_new", "_dpos", "_tier", "_key"))
+    else:
+        x = x.with_columns(rank=pl.col("usage").rank("ordinal", descending=True).over("game_id", "team", "position"))
     role = (pl.when((pl.col("position") == "QB") & (pl.col("rank") == 1)).then(pl.lit("QB1"))
             .when((pl.col("position") == "RB") & (pl.col("rank") == 1)).then(pl.lit("RB1"))
             .when((pl.col("position") == "RB") & (pl.col("rank") == 2) & (pl.col("rshare") >= RB2_MIN_SHARE)).then(pl.lit("RB2"))
@@ -76,6 +102,15 @@ def frames(p: Params) -> pl.DataFrame:
     tp = tm.predict(tf)
     pf = player_frame(None, p)
     x = project(pf.filter(pl.col("targets").is_not_null()), tp, defense_frame(pf, tf, p), p)
+    # QB1 in a past game is its starting quarterback (his first dropback; announced before kickoff), not the
+    # QB with the bigger projection: usage alone made the backup QB1 in 3.3% of past team-games (2018 BAL:
+    # Robert Griffin III over Lamar Jackson), because a QB with no history gets a starter's prior share
+    from config import CLEAN
+    from pipeline.starters import played_qbs
+    st = played_qbs(pl.read_parquet(CLEAN / "plays.parquet", columns=["game_id", "posteam", "play_id", "qb_id"]))
+    x = x.join(st.rename({"qb_id": "_starter"}), on=["game_id", "team"], how="left").with_columns(
+        dc_rank=pl.when((pl.col("position") == "QB") & pl.col("_starter").is_not_null())
+        .then(pl.when(pl.col("gsis_id") == pl.col("_starter")).then(1).otherwise(2)).otherwise(None).cast(pl.Int64)).drop("_starter")
     return assign_roles(x)
 
 

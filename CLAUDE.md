@@ -158,6 +158,30 @@ for CLV. Never type a line in by hand.
 - `expandResults` only adds derived totals (first downs, rates, sums) that
   nflverse already has. The rest of the API is metadata or AllStar-only streaming.
 
+## 2f. Who plays (pipeline/starters.py, 2026-10-15)
+
+- nflverse's schedule QB is a label, not the box score: 10 of 158 team-games in 2026 weeks 1-5 named
+  the wrong one (Seattle weeks 3-5: Drew Lock, while Sam Darnold took every snap), and it carries
+  labels into upcoming games (Seattle at Denver: Lock). `pipeline/clean.py` now sets each game's QB:
+  played games, the starter (the team's first dropback; known before kickoff, so no leak); upcoming
+  games, the depth chart's top quarterback who is on that week's active roster and not Out or
+  Doubtful (nflverse depth charts, refreshed daily). Game backtest: holdout margin MAE 9.862 -> 9.850,
+  total 10.382 -> 10.366; tuning years within noise. The weeks 1-4 game-line simulation on the board
+  went 81-74-3 +21.0u -> 78-76-3 +14.8u, all from the corrected QBs (it had run on the wrong ones).
+- Props roles (`assign_roles`): a player with no games gets his position's prior share, a starter's,
+  so usage alone put backups at QB1 for five teams on 2026-10-15 (BAL Fagnano, NE Morton, NYG Haener,
+  WAS Kaliakmanis, SEA Milroe) and practice-squad or just-off-IR receivers at WR2 (Irvin Charles over
+  Cooper Kupp). Now roles go to the current depth chart's starters (QB the top available one, RB and
+  WR the top three, TE the top two), ordered by projected usage, players with real usage first; a
+  fullback ranks behind every running back. Past games (the props backtest and the board's simulated
+  props) use each game's starting QB as QB1: backups had been QB1 in 3.3% of past team-games; holdout
+  passing-yards MAE 60.9 -> 59.1, other markets unchanged. Distributions recalibrated
+  (`python -m props.backtest --no-tune`): miscalibration pass yds 0.040 -> 0.036, rec yds 0.019 ->
+  0.016, receptions 0.028 -> 0.023, rush yds 0.020 -> 0.029.
+- Tested and not used: skipping games a player left early (under half his usual snaps) when computing
+  usage shares. Worse in every market on the holdout (pass yds MAE 60.9 -> 62.2, bias -0.2 -> +5.2):
+  a starter who leaves early is more often limited the next week, so the diluted share carries signal.
+
 ## 2c. Compare to Tuesday lines with Tuesday information
 
 When the model is compared to the line at publish time, build features with

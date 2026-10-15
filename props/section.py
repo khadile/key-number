@@ -76,6 +76,9 @@ def project_week(p, season: int, week: int, upcoming: pl.DataFrame, market_lines
     pf = player_frame(cand, p)
     x = project(pf.filter(pl.col("game_id").is_in(upcoming["game_id"].to_list()) & pl.col("targets").is_null()),
                 tp, defense_frame(pf, tf, p), p)
+    # roles from the current depth chart, ordered by projected usage (pipeline/starters.py, assign_roles)
+    from pipeline.starters import latest_depth
+    x = x.join(latest_depth(season), on=["gsis_id", "team", "position"], how="left")
     return assign_roles(x).filter(pl.col("role").is_not_null())
 
 
