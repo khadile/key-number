@@ -306,7 +306,7 @@ details[open] .chev { transform: rotate(90deg); }
     return `<article class="card">
       <div class="row">${gtag(c.game_id, clockOf(c.seconds_left))}${chips.join(" ")}</div>
       <div class="lbl">${esc(c.label)} <span class="mono">${am(c.american)}</span></div>
-      <div class="row"><span>${BOOKL[c.book] || esc(c.book)}</span><span>model ${pct(c.p)} vs ${pct(c.fair)} no-vig</span><span>EV ${(100 * c.ev).toFixed(1)}%</span><span>${c.stake}u</span><span>flagged ${ago(c.at)}</span>${c.quote_age_s != null ? `<span>quote ${c.quote_age_s}s old</span>` : ""}</div>
+      <div class="row"><span>${BOOKL[c.book] || esc(c.book)}</span><span>model ${pct(c.p)} vs ${pct(c.fair)} no-vig</span><span>EV ${(100 * c.ev).toFixed(1)}%</span><span>${c.stake}u${c.kelly_u != null ? ` · quarter Kelly ${c.kelly_u}u` : ""}</span><span>flagged ${ago(c.at)}</span>${c.quote_age_s != null ? `<span>quote ${c.quote_age_s}s old</span>` : ""}</div>
       <div class="why">Why: ${esc(c.reason)}</div>
       <div class="btns">${acc}</div>
       <p class="note">${paper ? "Paper trading: it counts on the paper record at this price, win or lose." : "Confirm the line and price in your app before betting. Accept means you placed it."}</p>

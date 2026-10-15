@@ -2,7 +2,8 @@
 
 ledger/picks.jsonl and ledger/results.jsonl are append-only. A pick is written
 once when its week is published and never edited; grading appends a result
-line; a change of category is an appended "parlay_type" line. The same grading
+line; a change of category is an appended "parlay_type" line, and a change of
+stake before kickoff an appended "stake" line. The same grading
 functions score the pre-launch simulation, so the two records are computed
 identically.
 """
@@ -12,6 +13,7 @@ from datetime import datetime, timezone
 import numpy as np
 
 from config import LEDGER, PARLAY_RISK, STRAIGHT_RISK
+from model.staking import kelly_of, kelly_tally, payout, tracked
 
 PICKS = LEDGER / "picks.jsonl"
 RESULTS = LEDGER / "results.jsonl"
@@ -40,12 +42,17 @@ def read_picks() -> list[dict]:
     """
     rows = read(PICKS)
     types = {r["id"]: r["type"] for r in rows if r.get("kind") == "parlay_type"}
+    # a stake set after locking, always before kickoff ({"kind": "stake", "id": ..., "risk": ...}): week 6's
+    # negative-EV picks, locked at 1u on 2026-10-13, became leans when the lean rule came in on 2026-10-15
+    stakes = {r["id"]: r["risk"] for r in rows if r.get("kind") == "stake"}
     out = []
     for r in rows:
-        if r.get("kind") == "parlay_type":
+        if r.get("kind") in ("parlay_type", "stake"):
             continue
         if r.get("kind") == "parlay":
             r = {**r, "type": types.get(r["id"], r.get("type", "golden"))}
+        if r["id"] in stakes:
+            r = {**r, "risk": stakes[r["id"]]}
         out.append(r)
     return out
 
@@ -90,7 +97,9 @@ def grade_all(picks: list[dict], finals: dict[str, tuple[int, int]], closes: dic
             continue
         h, a = finals[p["game_id"]]
         res = grade_straight(p, h, a)
-        out.append({"id": p["id"], "result": res, "units": units_for(res, p["dec"], STRAIGHT_RISK),
+        # a pick's stake as locked, or as reset by a stake line before kickoff (a lean: 0); picks locked before
+        # 2026-10-15 carry none: 1u
+        out.append({"id": p["id"], "result": res, "units": units_for(res, p["dec"], p.get("risk", STRAIGHT_RISK)),
                     "clv": clv_points(p, closes.get(p["game_id"]))})
     graded = {r["id"]: r for r in out}
     for p in picks:
@@ -128,7 +137,7 @@ def _tally(rows: list[dict]) -> dict:
     l = sum(r["result"] == "L" for r in rows)
     p = sum(r["result"] == "P" for r in rows)
     units = sum(r["units"] for r in rows)
-    risked = sum(r.get("risk", PARLAY_RISK) if r.get("kind") == "parlay" else STRAIGHT_RISK for r in rows)
+    risked = sum(r.get("risk", PARLAY_RISK) if r.get("kind") == "parlay" else r.get("risk", STRAIGHT_RISK) for r in rows)
     clvs = [r["clv"] for r in rows if r.get("clv") is not None]
     return {"w": w, "l": l, "p": p, "n": len(rows), "units": round(units, 2),
             "roi": round(units / risked, 4) if risked else None,
@@ -138,8 +147,14 @@ def _tally(rows: list[dict]) -> dict:
 def record(picks: list[dict], results: list[dict]) -> dict:
     """The record strip: ATS, O/U, ML, Picks of the Week, Golden Parlay, units, CLV, and by week."""
     res = {r["id"]: r for r in results}
-    rows = [dict(p, **res[p["id"]]) for p in picks if p["id"] in res]
+    graded = [dict(p, **res[p["id"]]) for p in picks if p["id"] in res]
+    # leans (negative-EV sides, from 2026-10-15) risk nothing and stay out of the record; they get their own line
+    lean = lambda r: r.get("kind") != "parlay" and r.get("risk", STRAIGHT_RISK) == 0
+    rows = [r for r in graded if not lean(r)]
+    leans = [r for r in graded if lean(r)]
     straight = [r for r in rows if r.get("kind") != "parlay"]
+    pos = [r for r in straight if kelly_of(r) > 0]   # the picks quarter Kelly stakes: positive EV
+    kt = lambda v: {**kelly_tally(v), "flat": _tally(v)}
     lottery = [r for r in rows if r.get("kind") == "parlay" and r.get("type") == "lottery"]
     out = {
         "ats": _tally([r for r in straight if r["market"] == "spread"]),
@@ -149,6 +164,15 @@ def record(picks: list[dict], results: list[dict]) -> dict:
         "parlay": _tally([r for r in rows if r.get("kind") == "parlay" and r.get("type", "golden") == "golden"]),
         "lottery": _tally(lottery),
         "all": _tally(rows),
+        # leans risk nothing; units_1u is what they would have made at 1u, the check on the lean rule itself
+        "leans": {**_tally(leans), "units_1u": round(sum(payout(r["result"], r["dec"]) for r in leans), 2)},
+        # quarter-Kelly sizing, its own record from week 1, apart from the flat one (model/staking.py). Each tally
+        # carries the same picks' flat record ("flat"), so the two compare like for like; "since" is week 6 on.
+        "kelly": {**{k: kt(v) for k, v in (("all", pos), ("ats", [r for r in pos if r["market"] == "spread"]),
+                                           ("ou", [r for r in pos if r["market"] == "total"]),
+                                           ("ml", [r for r in pos if r["market"] == "ml"]))},
+                  "since": kt([r for r in pos if tracked(r)]),
+                  "weeks": [{"week": wk, **kt([r for r in pos if r["week"] == wk])} for wk in sorted({r["week"] for r in pos})]},
         "weeks": [],
     }
     for wk in sorted({r["week"] for r in rows}):
@@ -159,7 +183,7 @@ def record(picks: list[dict], results: list[dict]) -> dict:
                              "potw": _tally([r for r in wr if r.get("potw")])})
     # Calibration: does a stated 55% win 55%? (pushes excluded)
     cal = []
-    decided = [r for r in straight if r["result"] != "P"]
+    decided = [r for r in graded if r.get("kind") != "parlay" and r["result"] != "P"]   # leans too: it is the model's word
     for lo in (0.45, 0.50, 0.53, 0.56, 0.60):
         hi = {0.45: 0.50, 0.50: 0.53, 0.53: 0.56, 0.56: 0.60, 0.60: 1.0}[lo]
         b = [r for r in decided if lo <= r["p_win"] / max(1 - r["p_push"], 1e-9) < hi]

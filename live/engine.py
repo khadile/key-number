@@ -44,6 +44,7 @@ from config import CLEAN, DATA, RAW
 from live import decide, ledger, notify, rubric_checks
 from live.feeds import MAX_AGE_S, DemoFeed, LiveFeed, SGOFeed, espn_to_gsis, sgo_player_map
 from live.model import LiveModel, LiveParams
+from model.staking import kelly_units
 from pipeline import propline, sgo
 from props.model import Simulator
 
@@ -845,16 +846,18 @@ class GameRunner(threading.Thread):
                 "fair": round(c.fair, 4), "ev": round(c.ev, 4), "stake": decide.STAKE_U, "reason": c.reason,
                 "at": t.isoformat(), "expires_at": (t + timedelta(seconds=ttl)).isoformat(), "window": window,
                 "status": "active", "fill": "pending", "score": dict(st["score"]), "seconds_left": st["seconds_left"],
-                "mode": self.e.mode, "quote_age_s": round(quote_age) if quote_age is not None else None}
+                "mode": self.e.mode, "quote_age_s": round(quote_age) if quote_age is not None else None,
+                "kelly_u": kelly_units(c.p, c.dec, c.push)}
         self.flags.append(card)
         self.e.add_card(card)
         ledger.append(ledger.FLAGS, {k: card[k] for k in ("id", "game_id", "kind", "key", "player", "group", "label", "market",
                                                           "side", "line", "book", "dec", "american", "p", "fair", "ev", "stake",
-                                                          "reason", "at", "score", "seconds_left", "mode", "quote_age_s", "window")})
+                                                          "reason", "at", "score", "seconds_left", "mode", "quote_age_s", "window",
+                                                          "kelly_u")})
         self._status(flags=len(self.flags))
         age = f" · quote {card['quote_age_s']}s old" if card["quote_age_s"] is not None else ""
         self.say("flag", f"{card['label']} {card['american']:+d} {BOOK_SHORT.get(card['book'], card['book'])} · "
-                         f"model {c.p:.0%} vs {c.fair:.0%} no-vig · EV {c.ev:+.1%} · paper 1u{age} · {c.reason}")
+                         f"model {c.p:.0%} vs {c.fair:.0%} no-vig · EV {c.ev:+.1%} · paper 1u (quarter Kelly {card['kelly_u']:g}u){age} · {c.reason}")
         notify.send(f"{card['label']} {card['american']:+d} {card['book']}",
                     f"Model {c.p:.0%} vs {c.fair:.0%} no-vig | EV {c.ev:+.1%} | 1u\nWhy: {c.reason}\nConfirm the price in your app first.",
                     self.e.url)

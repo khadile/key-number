@@ -11,6 +11,7 @@ import json
 from config import DATA, REPORTS
 from live import decide, ledger
 from live.model import LiveParams
+from model.staking import kelly_tally, kelly_units
 from pipeline import propline
 
 VARIANTS = [
@@ -34,7 +35,8 @@ def board_data(season: int) -> dict:
     flags = [{**{k: f.get(k) for k in ("id", "game_id", "label", "market", "side", "line", "book", "american", "p", "fair",
                                         "ev", "reason", "at", "fill", "fill_dec", "fill_line", "clv_units", "result",
                                         "actual", "units", "accepted", "expired", "passed", "score", "seconds_left", "window",
-                                        "replayed", "replay_note")}, "kind": kind(f)}
+                                        "replayed", "replay_note")}, "kind": kind(f),
+              "kelly_u": f.get("kelly_u") if f.get("kelly_u") is not None else kelly_units(f.get("p"), f["dec"])}
              for f in rec["flags"][:150]]
     # props vs game markets (user, 2026-10-13: which has the higher edge?): the paper record by kind, with the
     # stated edge at the flag, next to the replay of each kind's current rule on the 64 replay games
@@ -43,7 +45,9 @@ def board_data(season: int) -> dict:
     for k in ("prop", "game"):
         rows = [f for f in graded if kind(f) == k]
         by_kind[k] = {**ledger._tally(rows), "avg_ev": round(sum(f["ev"] for f in rows) / len(rows), 4) if rows else None,
-                      "flags": sum(kind(f) == k for f in rec["flags"])}
+                      "flags": sum(kind(f) == k for f in rec["flags"]),
+                      "kelly": kelly_tally([{"result": f.get("result"), "dec": f["dec"], "p_win": f.get("p"),
+                                             "kelly_u": f.get("kelly_u")} for f in rows])}
     PR = (_read(REPORTS / "live_props_rolling.json") or {}).get("rolling")
     GR = (_read(REPORTS / "live_game_refs2.json") or {}).get("both_noml")
     replay_by_kind = {
@@ -79,6 +83,7 @@ def board_data(season: int) -> dict:
                     "american": decide.american(r["dec"])} for r in F.iter_rows(named=True)]
     return {
         "record": {"paper": rec["paper"], "you": rec["you"], "missed": rec["missed"], "fill_checked": rec["fill_checked"],
+                   "paper_kelly": rec["paper_kelly"],
                    "by_kind": by_kind, "replay_by_kind": replay_by_kind},
         "shadow": ledger.shadow_record(),
         "flags": flags,

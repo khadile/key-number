@@ -193,6 +193,8 @@ have.
 
 `ledger/picks.jsonl` is append-only. A pick, once published, is never edited
 or deleted. Grading appends a result record; it does not rewrite the pick.
+A change of category is an appended `parlay_type` line and a change of stake
+an appended `stake` line, and only before the game kicks off.
 The same holds for `ledger/props_picks.jsonl` / `props_results.jsonl` and the
 live files (`live_flags`, `live_events`, `live_accepts`, `live_results`).
 Demo replays of the live engine write only to `data/live/demo_ledger/`.
@@ -201,8 +203,38 @@ Demo replays of the live engine write only to `data/live/demo_ledger/`.
 
 - Prices come from DraftKings and FanDuel only (`SHOP_BOOKS`); Pinnacle is
   the reference. Game-line picks before 2026-10-08 were shopped across 8 books.
-- Straight bets: risk 1.0u at the listed price. Same for props.
-- Live plays: 1.0u flat (user's choice), no Kelly sizing.
+- Stakes live in `model/staking.py` (user, 2026-10-15). A straight bet risks
+  1.0u at the listed price only when its EV is positive. A negative-EV side
+  is a **lean**: it stays on the board with `risk: 0` and stays out of the
+  record. Leans get their own line on the board, showing what they would have
+  made at 1u, which is the check on the rule itself. Props picks are all +EV
+  already, so props have no leans.
+- The lean rule starts with week 6. Week 6's 27 negative-EV game picks were
+  locked at 1u on 2026-10-13. They became leans through appended `stake`
+  lines at 07:06 ET on 2026-10-15, before any week 6 kickoff
+  (`ledger.read_picks` applies them). Weeks 1-5, replay and live, keep 1u:
+  they helped choose the rule, and re-staking them would add ~11u from the
+  same data that picked it. The replay forces 1u on its picks for that
+  reason. Never re-stake a pick after its game starts.
+- **Quarter Kelly is tracked; it is not the stake.**
+  - Every +EV pick, prop and live flag carries `kelly_u`: 0.25 × full Kelly
+    (pushes refunded) × 100, with 1u = 1% of the bankroll, rounded to
+    0.25 / 0.5 / 1 / 2u at geometric midpoints.
+  - Its record runs from week 1 as its own section, apart from the flat
+    record (user, 2026-10-15). "Same picks at 1u" and "week 6 on" sit beside
+    it. Week 6 on is the out-of-sample test, because weeks 1-5 helped choose
+    it.
+  - It becomes the stake only if it holds up for a few weeks.
+  - No cap on total weekly exposure: the bankroll is the user's call.
+- Why Kelly is tracked first: sizing by the model's confidence amplifies its
+  mistakes as much as its edge. On the 2022-26 backtest at closing prices,
+  quarter Kelly lost 6.4% per unit staked against flat's 2.7%, because the
+  model overrates its biggest edges. 2026 weeks 1-5 went its way, helped by
+  +EV spreads going 13-0-1 at stated ~50-58%, a run calibration says will not
+  last. Read the calibration table before promoting it.
+- Live plays: 1.0u flat on the record (user's choice). `kelly_u` rides on
+  every flag and in `paper_kelly`. Every live flag so far sized 2u, so that
+  record is the flat one × 2.
 - Golden Parlay: risk 0.5u.
 - Picks of the Week: top 3-5 by EV that clear the backtested threshold. If
   fewer clear it, show fewer. Zero is a valid week.
@@ -470,6 +502,14 @@ writes `board/nfl_board.html`. Republish that file to the same URL; omit
 - Interface: dotted terms and chart marks explain themselves (`GLOSSARY`,
   `data-tip`), detail lives in dropdowns (`details.acc`), props games are
   one dropdown each, and motion is off for reduced-motion viewers.
+- Stakes on the page:
+  - Every pick chip and call card carries a stake pill: 1u, or 0u with a
+    dashed "Lean" chip.
+  - The record page has a separate "Quarter Kelly" section: tiles, a chart
+    against the same picks at 1u, and a week-by-week table. The props record
+    has the same section.
+  - The week view puts one Kelly line under the flat strip.
+  - Live record cards show each kind's Kelly record.
 - Before every publish, after the LAST template edit: rebuild, load the exact
   built file in a browser, and confirm no console errors on every tab. A stray
   apostrophe inside a single-quoted JS string once blanked the whole page.

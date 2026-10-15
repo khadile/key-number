@@ -141,7 +141,7 @@ main { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 2
 .lines dt { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .lines dd { margin: 0; font-family: var(--f-mono); font-size: 14px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--surface-2); font-size: 13px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; max-width: 100%; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--surface-2); font-size: 13px; }
 .chip .m { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .chip b { font-family: var(--f-mono); font-weight: 500; font-size: 13px; }
 .chip .pr { color: var(--ink-2); font-family: var(--f-mono); font-size: 12px; }
@@ -241,6 +241,12 @@ th.sort[aria-sort] { color: var(--ink); }
 .chip.promo { border-color: var(--you); }
 .chip.lean { border-style: dashed; }
 .chip.lean .m { color: var(--accent); }
+/* stakes (model/staking.py): 1u on a positive-EV pick, nothing on a lean; quarter Kelly is its own record */
+.stk { font: 600 11px var(--f-mono); padding: 1px 6px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.stk.none { background: transparent; color: var(--muted); border: 1px dashed var(--line-2); }
+.call.lean { border-style: dashed; background: var(--surface-2); box-shadow: none; }
+.tag.lean { background: transparent; color: var(--muted); border: 1px dashed var(--line-2); }
+tr.lean td { color: var(--muted); }
 .plist { display: grid; gap: 2px; }
 .prow { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid var(--line); }
 .prow:first-child { border-top: 0; }
@@ -380,6 +386,10 @@ svg path.ser-sim, svg path.ser-live { fill: none; }
 svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 2; }
 .legend i.ser-sim { background: var(--muted); }
 .legend i.ser-live { background: var(--accent); }
+svg .ser-kelly { stroke: var(--gold); fill: var(--gold); }
+svg path.ser-kelly { fill: none; }
+svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
+.legend i.ser-kelly { background: var(--gold); }
 .finds { display: grid; gap: 12px; grid-template-columns: 1fr; }
 @media (min-width: 760px) { .finds { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .find { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; align-content: start; box-shadow: var(--shadow); }
@@ -464,6 +474,9 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
   const rec = (r) => (!r || r.n === 0 ? "–" : `${r.w}-${r.l}${r.p ? "-" + r.p : ""}`);
   const resChip = (r) => (r ? `<span class="res ${r}">${{ W: "WIN", L: "LOSS", P: "PUSH" }[r]}</span>` : "");
   const decOf = (a) => (a > 0 ? 1 + a / 100 : 1 + 100 / -a);
+  // stakes in units; quarter-Kelly tiers read as fractions (¼u, ½u)
+  const stakeU = (u) => (u == null ? "–" : ({ 0.25: "¼", 0.5: "½" }[u] || String(Math.round(u * 100) / 100)) + "u");
+  const stakePill = (p) => (p.risk === 0 ? '<span class="stk none">0u</span>' : `<span class="stk">${stakeU(p.risk == null ? 1 : p.risk)}</span>`);
 
   // ---------- plain-language help: hover or tap any dotted term or chart mark
   const GLOSSARY = {
@@ -474,7 +487,9 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
     fair: "Our fair number: the market's line moved part of the way toward the model, by the share lines have actually moved toward it this season.",
     novig: "No-vig: a book's two prices with its built-in margin taken out, which turns them into the market's true chances.",
     clv: "Line value: how much better our number was than the line at kickoff. Beating the closing line is the best early sign of a real edge, long before wins and losses settle.",
-    units: "1 unit is one standard bet. Straight picks risk 1 unit and each parlay 0.5, so units won shows profit whatever your bet size.",
+    units: "1 unit is one standard bet. Positive-EV straight picks risk 1 unit and each parlay 0.5; a lean risks nothing. Units won shows profit whatever your bet size.",
+    lean: "A lean: the side the model prefers, at a price with negative expected value. It stays on the board so the model's view is on record, but it risks nothing and is not in the record. From week 6; through week 5 these were 1-unit picks.",
+    kelly: "Quarter Kelly: a stake sized to the edge for the price, a quarter of what the Kelly formula says, rounded to ¼, ½, 1 or 2 units (1u = 1% of the bankroll). A solid favorite with an edge gets more, a long shot less. Kept as its own record beside the flat one, because sizing by the model's confidence amplifies its mistakes as much as its edge.",
     roi: "Return on investment: units won divided by units risked.",
     potw: "Picks of the week: the strongest picks by edge relative to the payout, one per game.",
     golden: "Golden Parlay: two or three positive-value picks from different games, priced +150 to +300. It should cash now and then.",
@@ -562,10 +577,10 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
       <div class="gauge-lbl"><span>${term("win", "Win chance")} <b>${pct(p, 1)}</b></span><span>${term("need", "Needs")} <b>${pct(need, 1)}</b></span></div></div>`;
   }
   // Cumulative units by week, one line for the whole record (weeks before launch included).
-  function unitsChart(A) {
-    const cum = (weeks) => { let c = 0; return weeks.map((w) => { c += w.all.units; return { wk: w.week, u: c, r: w.all }; }); };
-    const series = [];
-    if (A && A.weeks.length) series.push({ name: "Units", cls: "ser-live", pts: cum(A.weeks) });
+  function unitsChart(A, specs) {
+    const cum = (weeks, get) => { let c = 0; return weeks.map((w) => { const r = get(w); c += r.units; return { wk: w.week, u: c, r }; }); };
+    const series = (specs || (A && A.weeks.length ? [{ name: "Units", cls: "ser-live", weeks: A.weeks, get: (w) => w.all }] : []))
+      .filter((s) => s.weeks && s.weeks.length).map((s) => ({ ...s, pts: cum(s.weeks, s.get) }));
     const all = series.flatMap((s) => s.pts);
     if (!all.length) return "";
     const wmin = Math.min(...all.map((p) => p.wk)) - 1, wmax = Math.max(...all.map((p) => p.wk));
@@ -650,10 +665,51 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
       ${tile(term("ats", "ATS"), R.ats)}${tile("Over/under", R.ou)}${tile("Moneyline", R.ml)}
       ${tile(term("potw", "Picks of the week"), R.potw, "", true)}${tile(term("golden", "Golden parlay"), R.parlay, "", true)}${tile(term("lottery", "+EV lottery"), R.lottery)}
       <div class="tile"><span class="k">${term("units", "Units")}</span><span class="v ${cls(a.units)}"${a.n ? ` data-count="${a.units}" data-fmt="u"` : ""}>${a.n ? units(a.units) : "–"}</span>
-        <span class="s">${a.n ? term("roi", "ROI") + " " + pct(a.roi, 1) + " on " + a.n + " picks" : "1u straight, 0.5u per parlay"}</span></div>
+        <span class="s">${a.n ? term("roi", "ROI") + " " + pct(a.roi, 1) + " on " + a.n + " picks" : "1u on +EV picks, 0.5u per parlay"}</span></div>
       <div class="tile"><span class="k">${term("clv", "Line value")}</span><span class="v ${cls(clv)}"${clv == null ? "" : ` data-count="${clv}" data-fmt="s2"`}>${clv == null ? "–" : signed(clv, 2)}</span>
         <span class="s">${clv == null ? "Points beaten vs the close" : "pts vs closing line, " + a.clv_n + " picks"}</span></div>
     </div>`;
+  }
+
+  // Leans risk nothing and stay out of the record; what they would have made at 1u checks the lean rule itself.
+  function leansNote(R) {
+    const L = R && R.leans;
+    if (!L || !L.n) return "";
+    return `<p class="note">${term("lean", "Leans")} (negative EV, no units): ${rec(L)}, which at 1u each would be <span class="${cls(L.units_1u)}">${units(L.units_1u)}</span>.</p>`;
+  }
+
+  // ---------- quarter Kelly: its own record from week 1, apart from the flat one (model/staking.py)
+  function kTile(k, r) {
+    const empty = !r || r.n === 0;
+    return `<div class="tile"><span class="k">${k}</span><span class="v ${empty ? "" : cls(r.units)}">${empty ? "–" : units(r.units)}</span>
+      <span class="s">${empty ? "No graded picks" : `${rec(r)} · ${num(r.staked, 2)}u staked · ROI ${pct(r.roi, 1)}`}</span></div>`;
+  }
+  function kStrip(K, what) {
+    const a = K && K.all, f = a && a.flat;
+    const flat = `<div class="tile"><span class="k">Same ${what} at 1u</span><span class="v ${f && f.n ? cls(f.units) : ""}">${f && f.n ? units(f.units) : "–"}</span>
+      <span class="s">${f && f.n ? `${rec(f)} · ${f.n}u staked · ROI ${pct(f.roi, 1)}` : "No graded picks"}</span></div>`;
+    return `<div class="strip three">${kTile(term("kelly", "Quarter Kelly"), a)}${flat}${kTile("Quarter Kelly, week 6 on", K && K.since)}</div>`;
+  }
+  function kWeeks(K, liveStart, what) {
+    const W = (K && K.weeks) || [];
+    if (!W.length) return "";
+    return `<div class="scroll"><table class="t"><thead><tr><th>Week</th><th class="num">${what}</th><th class="num">Record</th><th class="num">Staked</th><th class="num">Quarter Kelly</th><th class="num">ROI</th><th class="num">Same at 1u</th></tr></thead><tbody>
+      ${W.map((w) => `<tr><td>${w.week}${w.week < liveStart ? ' <span class="note">replay</span>' : ""}</td><td class="num">${w.n}</td><td class="num">${rec(w)}</td><td class="num">${num(w.staked, 2)}u</td><td class="num ${cls(w.units)}">${units(w.units)}</td><td class="num">${pct(w.roi, 1)}</td><td class="num ${cls(w.flat.units)}">${units(w.flat.units)}</td></tr>`).join("")}
+    </tbody></table></div>`;
+  }
+  function kellySection(K, liveStart, what, extra) {
+    const W = (K && K.weeks) || [];
+    const chart = unitsChart(null, [{ name: "Quarter Kelly", cls: "ser-kelly", weeks: W, get: (w) => w },
+                                    { name: `Same ${what} at 1u`, cls: "ser-live", weeks: W, get: (w) => w.flat }]);
+    return `<section class="sec"><header><h2>Quarter Kelly <em>its own record, apart from the flat one</em></h2></header>
+      <p class="note">Every positive-EV ${what.replace(/s$/, "")} sized ¼, ½, 1 or 2 units by its edge for the price (${term("kelly", "quarter Kelly")}) instead of a flat 1u, from week 1. The official record above stays flat. Weeks 1–5 helped choose quarter Kelly, so they flatter it; week 6 on is the test.</p>
+      ${kStrip(K, what)}${extra || ""}
+      ${chart ? `<div class="box">${chart}</div>` : ""}${kWeeks(K, liveStart, what.charAt(0).toUpperCase() + what.slice(1))}</section>`;
+  }
+  // one line for the week view, kept apart from the flat strip
+  function kLine(K, what) {
+    const a = K && K.all;
+    return `<p class="note">${term("kelly", "Quarter Kelly")}, its own record: ${a && a.n ? `<span class="${cls(a.units)}">${units(a.units)}</span> on ${num(a.staked, 2)}u staked; the same ${a.n} ${what} at 1u: <span class="${cls(a.flat.units)}">${units(a.flat.units)}</span>` : "nothing graded yet"}.</p>`;
   }
 
   // ---------- this week
@@ -663,12 +719,16 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
     let s = "";
     if (g && g.model && p.market === "spread") s = `Model ${fav(g.home, g.away, g.model.spread, 1)}, market ${fav(g.home, g.away, p.market_spread)}. `;
     else if (p.market === "total") s = `Model total ${num(p.model_total, 1)}, market ${half(p.market_total)}. `;
-    return `${s}Wins ${pct(win, 1)} by our numbers; ${am(p.american)} needs ${pct(need, 1)} to break even. EV ${signed(100 * p.ev, 1)}%.`;
+    return `${s}Wins ${pct(win, 1)} by our numbers; ${am(p.american)} needs ${pct(need, 1)} to break even. EV ${signed(100 * p.ev, 1)}%. ${stakeWhy(p)}`;
   }
+  const stakeWhy = (p) => (p.risk === 0 ? "A lean: negative EV, so it risks nothing."
+    : p.ev <= 0 ? "Staked 1u: locked before the lean rule (week 6)."
+    : `Stake 1u. Quarter Kelly, its own record: ${stakeU(p.kelly_u)}.`);
   function pickChip(p, potw) {
     if (!p) return "";
-    return `<span class="chip${p.potw ? " potw" : ""}" data-tip="${esc(pickWhy(p))}"><span class="m">${p.potw ? "Pick of the week" : { spread: "Spread", total: "Total", ml: "Moneyline" }[p.market]}</span>
-      <b>${label(p.label)}</b><span class="pr">${am(p.american)} ${esc(p.book_name)}</span>${resChip(p.result)}</span>`;
+    const lean = p.risk === 0;
+    return `<span class="chip${p.potw ? " potw" : ""}${lean ? " lean" : ""}" data-tip="${esc(pickWhy(p))}"><span class="m">${p.potw ? "Pick of the week" : lean ? "Lean" : { spread: "Spread", total: "Total", ml: "Moneyline" }[p.market]}</span>
+      <b>${label(p.label)}</b><span class="pr">${am(p.american)} ${esc(p.book_name)}</span>${stakePill(p)}${resChip(p.result)}</span>`;
   }
   // A game with no moneyline pick still shows the model's view, so the pass reads as a decision.
   function mlPass(g) {
@@ -698,7 +758,7 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
   function potwPanel() {
     const potw = D.games.flatMap((g) => Object.values(g.picks || {}).filter((p) => p.potw).map((p) => ({ p, g }))).sort((a, b) => b.p.ev - a.p.ev);
     const rows = potw.map(({ p, g }, i) => `<div class="pick-row"><span class="n">${i + 1}</span><span class="lbl">${label(p.label)}</span>${resChip(p.result) || `<span class="mono">${am(p.american)}</span>`}
-      <div class="sub"><span>${badge(g.away, 1)} at ${badge(g.home, 1)} · ${esc(g.kickoff.short)}</span><span>${esc(p.book_name)} ${am(p.american)}</span><span>Win ${pct(p.p_win)}</span><span>EV ${signed(100 * p.ev, 1)}%</span></div></div>`).join("");
+      <div class="sub"><span>${badge(g.away, 1)} at ${badge(g.home, 1)} · ${esc(g.kickoff.short)}</span><span>${esc(p.book_name)} ${am(p.american)}</span><span>Win ${pct(p.p_win)}</span><span>EV ${signed(100 * p.ev, 1)}%</span><span>1u · ${term("kelly", "quarter Kelly")} ${stakeU(p.kelly_u)}</span></div></div>`).join("");
     const ticket = (P, empty) => {
       if (!P) return `<p class="note">${empty}</p>`;
       return `<div class="odds-big">${am(P.american)} ${resChip(P.result)}</div>
@@ -730,7 +790,8 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
         <p class="lede">Projected scores and picks for every game. Picks are locked when the week is published and graded at that line, win or lose.</p></section>
       <section class="sec"><header><h2>Record <em>season to date</em></h2><a class="more" href="#record">Full record →</a></header>
         ${strip(A)}
-        <p class="note">Weeks 1–${m.live_start - 1} were ${term("sim", "replayed before launch")} with the same rules; picks are live from week ${m.live_start}.</p></section>
+        <p class="note">Weeks 1–${m.live_start - 1} were ${term("sim", "replayed before launch")} with the same rules; picks are live from week ${m.live_start}. Every pick risked 1u through week 5; from week 6 a negative-EV side is a ${term("lean", "lean")} and risks nothing.</p>
+        ${leansNote(A)}${kLine(A.kelly, "picks")}</section>
       <section class="sec"><header><h2>This week's best</h2></header>${potwPanel()}</section>
       ${days.map((d) => `<section class="sec"><h3 class="day">${esc(d.day)}</h3><div class="cards">${d.games.map(card).join("")}</div></section>`).join("")}
       <p class="fine">Model output, not betting advice. Lines from ${esc(D.meta.books.join(", "))}, plus Pinnacle as the market reference. Updated ${esc(new Date(m.generated).toLocaleString())}.</p>`;
@@ -862,12 +923,13 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
     } else {
       say = `By our numbers ${esc(T[P.team].name)} win ${pct(win, 1)} of the time. At ${am(P.american)} they only need ${pct(need, 1)}.`;
     }
-    return `<article class="call${P.potw ? " potw" : ""}"><div class="mk"><span>${name}</span>${P.potw ? `<span class="tag">${term("potw", "Pick of the week")}</span>` : "<span>Pick</span>"}</div>
+    const lean = P.risk === 0;
+    return `<article class="call${P.potw ? " potw" : ""}${lean ? " lean" : ""}"><div class="mk"><span>${name}</span>${P.potw ? `<span class="tag">${term("potw", "Pick of the week")}</span>` : `<span>${lean ? term("lean", "Lean") : "Pick"}</span>`}</div>
       <div class="big">${label(P.label)} ${resChip(P.result)}</div>
-      <div class="px">${am(P.american)} at ${esc(P.book_name)}</div>
+      <div class="px">${am(P.american)} at ${esc(P.book_name)} ${stakePill(P)}</div>
       <p class="say">${say}</p>
       ${gauge(win, need)}
-      <div class="note">${term("ev", "Expected value")} ${signed(100 * P.ev, 1)}% per unit</div></article>`;
+      <div class="note">${term("ev", "Expected value")} ${signed(100 * P.ev, 1)}% per unit · ${lean ? "a lean risks nothing" : P.ev <= 0 ? "staked 1u: locked before the lean rule" : `${term("kelly", "quarter Kelly")} ${stakeU(P.kelly_u)}, its own record`}</div></article>`;
   }
   const chev = '<span class="chev" aria-hidden="true">›</span>';
   function renderGame(g) {
@@ -1066,20 +1128,25 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
     add(D.record.live_rows || [], false);
     return out;
   }
-  function subtotal(rows) {
-    const g = rows.filter((r) => r.result);
-    const t = { w: 0, l: 0, p: 0, units: 0 };
+  function subtotal(rows) {   // leans risk nothing, so they are counted apart from the record
+    const leans = rows.filter((r) => r.risk === 0), g = rows.filter((r) => r.risk !== 0 && r.result);
+    const t = { w: 0, l: 0, p: 0, units: 0 }, lt = { w: 0, l: 0, p: 0 };
     for (const r of g) { t[{ W: "w", L: "l", P: "p" }[r.result]]++; t.units += r.units; }
-    const pend = rows.length - g.length;
-    return `${g.length ? `${t.w}-${t.l}${t.p ? "-" + t.p : ""} · <span class="${cls(t.units)}">${units(t.units)}</span>` : ""}${pend ? `${g.length ? " · " : ""}${pend} pending` : ""}`;
+    const lg = leans.filter((r) => r.result);
+    for (const r of lg) lt[{ W: "w", L: "l", P: "p" }[r.result]]++;
+    const pend = rows.filter((r) => r.risk !== 0 && !r.result).length;
+    return [g.length ? `${t.w}-${t.l}${t.p ? "-" + t.p : ""} · <span class="${cls(t.units)}">${units(t.units)}</span>` : "",
+      leans.length ? `${leans.length} lean${leans.length > 1 ? "s" : ""}${lg.length ? ` (${lt.w}-${lt.l}${lt.p ? "-" + lt.p : ""})` : ""}` : "",
+      pend ? `${pend} pending` : ""].filter(Boolean).join(" · ");
   }
   function catTable(rows, isParlay) {
-    return `<div class="scroll"><table class="t"><thead><tr><th>Pick</th><th>${isParlay ? "Legs" : "Game"}</th><th class="num">Price</th><th class="num">Win chance</th><th>Result</th><th class="num">Units</th>${isParlay ? "" : '<th class="num">Line value</th>'}</tr></thead><tbody>
-      ${rows.map((h) => `<tr><td><b>${label(h.label)}</b>${h.potw ? ' <span class="tag">POTW</span>' : ""}</td>
+    return `<div class="scroll"><table class="t"><thead><tr><th>Pick</th><th>${isParlay ? "Legs" : "Game"}</th><th class="num">Price</th><th class="num">Win chance</th><th class="num">Stake</th>${isParlay ? "" : `<th class="num">${term("kelly", "Quarter Kelly")}</th>`}<th>Result</th><th class="num">Units</th>${isParlay ? "" : '<th class="num">Line value</th>'}</tr></thead><tbody>
+      ${rows.map((h) => `<tr${h.risk === 0 ? ' class="lean"' : ""}><td><b>${label(h.label)}</b>${h.potw ? ' <span class="tag">POTW</span>' : ""}${h.risk === 0 ? ' <span class="tag lean">Lean</span>' : ""}</td>
         <td>${isParlay ? h.legs.map((l) => label(l)).join(" · ") : esc(h.game)}</td>
         <td class="num">${am(h.american)}${h.book ? " " + esc(h.book) : ""}</td><td class="num">${pct(h.p_win)}</td>
+        <td class="num">${h.risk === 0 ? "0u" : stakeU(h.risk)}</td>${isParlay ? "" : `<td class="num">${h.kelly_u ? stakeU(h.kelly_u) : "–"}</td>`}
         <td>${h.result ? resChip(h.result) : '<span class="res P">PENDING</span>'}</td>
-        <td class="num ${cls(h.units)}">${h.units == null ? "–" : units(h.units)}</td>
+        <td class="num ${h.risk === 0 ? "" : cls(h.units)}">${h.units == null || h.risk === 0 ? "–" : units(h.units)}</td>
         ${isParlay ? "" : `<td class="num">${h.clv == null ? "–" : signed(h.clv, 1)}</td>`}</tr>`).join("")}
     </tbody></table></div>`;
   }
@@ -1090,7 +1157,7 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
     const W = weeks.find((w) => w.key === recWeek);
     const sections = CATS.map(([k, name]) => {
       const rows = W.rows.filter((r) => (k === "parlay" ? r.market === "golden" || r.market === "lottery" : r.market === k))
-        .sort((a, b) => (b.potw - a.potw) || ((b.p_win || 0) - (a.p_win || 0)));
+        .sort((a, b) => (b.potw - a.potw) || ((a.risk === 0) - (b.risk === 0)) || ((b.p_win || 0) - (a.p_win || 0)));
       if (!rows.length) return "";
       return `<div class="box"><h3>${name} <span class="note">${subtotal(rows)}</span></h3>${catTable(rows, k === "parlay")}</div>`;
     }).join("");
@@ -1103,8 +1170,10 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
     app.innerHTML = `
       <section class="hello"><h1>Record</h1><p class="lede">Every pick, graded at the line it was locked at. Line value is how many points better our number was than the closing line; beating the close is the best early sign of a real edge, long before win-loss records settle.</p></section>
       <section class="sec"><header><h2>Season to date</h2></header>${strip(A)}
-        <p class="note">Weeks 1–${D.meta.live_start - 1} were replayed before launch at Tuesday lines with only Tuesday information; picks are live from week ${D.meta.live_start}.</p></section>
+        <p class="note">Weeks 1–${D.meta.live_start - 1} were replayed before launch at Tuesday lines with only Tuesday information; picks are live from week ${D.meta.live_start}. Every pick risked 1u through week 5, and those weeks stay that way because they helped choose the lean rule; from week 6 a negative-EV side is a ${term("lean", "lean")} and risks nothing.</p>
+        ${leansNote(A)}</section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${unitsChart(A) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
+      ${kellySection(A.kelly, D.meta.live_start, "picks", `<div class="strip three">${kTile(term("ats", "ATS"), A.kelly.ats)}${kTile("Over/under", A.kelly.ou)}${kTile("Moneyline", A.kelly.ml)}</div>`)}
       <section class="sec"><header><h2>Picks by week</h2></header>${weekBrowser()}</section>
       <section class="sec"><header><h2>Week by week</h2></header>${weekTable(A)}</section>
       <section class="sec"><header><h2>Calibration</h2></header><p class="note">When the model gives a pick a 55% chance, it should win about 55% of the time.</p>${calTable(A)}</section>`;
@@ -1137,7 +1206,9 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
           <li>News after Tuesday. Lines that move on Friday injury news are not the model being right.</li>
           <li>Coaching changes, motivation and late-season resting.</li></ul>
         <h3>Rules</h3>
-        <ul><li>Straight picks risk 1 unit at the listed price; the Golden Parlay and the +EV Lottery each risk 0.5 units.</li>
+        <ul><li>Positive-EV straight picks risk 1 unit at the listed price; the Golden Parlay and the +EV Lottery each risk 0.5 units.</li>
+          <li>From week 6, a negative-EV side is a ${term("lean", "lean")}: it stays on the board, risks nothing and is kept out of the record. Through week 5 every pick risked 1 unit, and those weeks stay that way: they helped choose the rule.</li>
+          <li>${term("kelly", "Quarter Kelly")} sizes every positive-EV pick by its edge for the price (¼, ½, 1 or 2 units) and keeps its own record from week 1, apart from the flat one. In the 2022–26 backtest at closing prices it lost more per unit staked than flat 1u, because the model overrates its biggest edges; 2026's first five weeks went its way. It replaces flat units only if it keeps up from week 6 on.</li>
           <li>Picks lock when the week is published and are never changed. Each is graded at the line and price it was locked at.</li>
           <li>Results are graded Tuesday morning, after Monday night's game.</li></ul>
         <p class="fine">Data: nflverse play-by-play, schedules, rosters and injuries; FTN Data via nflverse (charting); Pro Football Reference (pressures); lines from OddsPapi; weather from Open-Meteo. Model output, not betting advice.</p>
@@ -1157,8 +1228,8 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
     ? ' <span class="tag shop" title="The model alone leans the other way. This call comes from DraftKings or FanDuel hanging a number off the Pinnacle line, the edge source that held up in testing.">Line shop</span>' : "");
   const roleTag = (p) => `<span class="role">${esc(p.role)}</span>${p.promoted ? ' <span class="tag promo" title="Moved up because a teammate who ranked above him last game is not playing">Promoted</span>' : ""}`;
   function propPickChip(p) {
-    return `<span class="chip${p.potw ? " potw" : ""}${p.promoted ? " promo" : ""}"><span class="m">${p.potw ? "Pick of the week" : PMK[p.market]}</span>
-      <b>${esc(p.side === "over" ? "Over" : "Under")} ${num(p.line, 1).replace(/\.0$/, "")}</b><span class="pr">${am(p.american)} ${esc(p.book_name)}</span>${shopTag(p.side, p.line, p.model_median)}${resChip(p.result)}</span>`;
+    return `<span class="chip${p.potw ? " potw" : ""}${p.promoted ? " promo" : ""}" data-tip="${esc(`EV ${signed(100 * p.ev, 1)}%. Stake 1u. Quarter Kelly, its own record: ${stakeU(p.kelly_u)}.`)}"><span class="m">${p.potw ? "Pick of the week" : PMK[p.market]}</span>
+      <b>${esc(p.side === "over" ? "Over" : "Under")} ${num(p.line, 1).replace(/\.0$/, "")}</b><span class="pr">${am(p.american)} ${esc(p.book_name)}</span>${shopTag(p.side, p.line, p.model_median)}${stakePill(p)}${resChip(p.result)}</span>`;
   }
   // When this game's props lock: the last board update before it (Thursday or Saturday, 10am ET).
   const lockAt = (gid) => {
@@ -1549,9 +1620,9 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
     add(PR.record.pre_rows || [], true); add(PR.record.live_rows || [], false);
     if (weeks.length && !weeks.some((w) => w.key === pRecWeek)) pRecWeek = weeks[weeks.length - 1].key;
     const W = weeks.find((w) => w.key === pRecWeek);
-    const table = (rows, isP) => `<div class="scroll"><table class="t"><thead><tr><th>Pick</th><th>${isP ? "Legs" : "Game"}</th><th class="num">Price</th><th class="num">Win chance</th><th class="num">Final</th><th>Result</th><th class="num">Units</th>${isP ? "" : '<th class="num">Line value</th>'}</tr></thead><tbody>
+    const table = (rows, isP) => `<div class="scroll"><table class="t"><thead><tr><th>Pick</th><th>${isP ? "Legs" : "Game"}</th><th class="num">Price</th><th class="num">Win chance</th>${isP ? "" : `<th class="num">${term("kelly", "Quarter Kelly")}</th>`}<th class="num">Final</th><th>Result</th><th class="num">Units</th>${isP ? "" : '<th class="num">Line value</th>'}</tr></thead><tbody>
       ${rows.map((h) => `<tr><td><b>${label(h.label)}</b>${h.potw ? ' <span class="tag">POTW</span>' : ""}${h.promoted ? ' <span class="tag promo">Promoted</span>' : ""}</td><td>${isP ? h.legs.map((l) => label(l)).join(" · ") : esc(h.game)}</td>
-        <td class="num">${am(h.american)}${h.book ? " " + esc(h.book) : ""}</td><td class="num">${pct(h.p_win)}</td><td class="num">${h.actual == null ? "" : num(h.actual, 0)}</td>
+        <td class="num">${am(h.american)}${h.book ? " " + esc(h.book) : ""}</td><td class="num">${pct(h.p_win)}</td>${isP ? "" : `<td class="num">${h.kelly_u ? stakeU(h.kelly_u) : "–"}</td>`}<td class="num">${h.actual == null ? "" : num(h.actual, 0)}</td>
         <td>${h.result ? resChip(h.result) : '<span class="res P">PENDING</span>'}</td><td class="num ${cls(h.units)}">${h.units == null ? "–" : units(h.units)}</td>
         ${isP ? "" : `<td class="num">${h.clv == null ? "–" : signed(h.clv, 1)}</td>`}</tr>`).join("")}</tbody></table></div>`;
     const sections = W ? PCATS.map(([k, name]) => { const rows = W.rows.filter((r) => (k === "parlay" ? r.market === "golden" || r.market === "lottery" : r.market === k)).sort((a, b) => (b.potw - a.potw) || (b.ev - a.ev));
@@ -1563,6 +1634,7 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
       <section class="sec"><header><h2>Season to date</h2></header>${pStrip(A)}
         <p class="note">Weeks 1–${PR.meta.live_start - 1} were replayed before launch at Saturday-morning lines; picks are live from week ${PR.meta.live_start}. Promoted players (moved up because a teammate is out): ${rec(A.promoted)} (${units(A.promoted.units)}).</p></section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${unitsChart(A) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
+      ${kellySection(A.kelly, PR.meta.live_start, "props")}
       <section class="sec"><header><h2>Picks by week</h2></header>${weeks.length ? `<div class="pills" role="tablist" aria-label="Week">${weeks.map((w) => `<button class="pill" data-pwk="${w.key}" aria-pressed="${w.key === pRecWeek}">Week ${w.week}</button>`).join("")}</div>
         <p class="note">Week ${W.week}${W.sim ? " (replayed before launch)" : ""}: ${subtotal(W.rows) || "no picks"}.</p>${sections}` : '<p class="note">No picks yet.</p>'}</section>
       <section class="sec"><header><h2>Week by week</h2></header>${wk(A)}</section>
@@ -1625,7 +1697,8 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
         <div class="scroll"><table class="t"><thead><tr><th>Book</th><th>Market</th><th class="num">Lines</th><th class="num">Priced over</th><th class="num">Over hit</th><th class="num">All overs</th><th class="num">All unders</th></tr></thead><tbody>${card}</tbody></table></div><p class="note">Small samples; nothing here clears the vig reliably.</p>` : ""}
         <h3>Rules</h3><ul><li>Tracked: QB1, RB1, WR1, WR2, TE1, and RB2 in a real timeshare. Roles come from projected usage among the players expected to suit up.</li>
           <li>Props lock at the last board update before each game. Thursday 10am ET: the Thursday game. Saturday 10am ET: every Saturday, Sunday and Monday game, after Friday's final injury reports and with Thursday night graded, plus the props Picks of the Week, Golden Parlay and Lottery. Prices from DraftKings and FanDuel only.</li>
-          <li>Straight picks risk 1 unit; the Golden Parlay and the +EV Lottery 0.5 units each, built from the strongest props of different games.</li>
+          <li>Straight picks risk 1 unit; the Golden Parlay and the +EV Lottery 0.5 units each, built from the strongest props of different games. Every prop pick has positive expected value, so there are no leans here.</li>
+          <li>${term("kelly", "Quarter Kelly")} sizes each pick by its edge for the price (¼, ½, 1 or 2 units) and keeps its own record from week 1, apart from the flat one. It replaces flat units only if it keeps up from week 6 on.</li>
           <li>Graded with nflverse stat lines (overtime included, passing yards before sacks, as books settle). A player who does not play is void.</li></ul>
         <h3>What it does not know</h3><ul><li>Route participation for ${D.meta.season} (not published yet); snaps stand in.</li><li>News after the lock, and in-game injuries.</li><li>Who will see the ball when a team changes its plan mid-week.</li></ul>
         <p class="fine">Data: nflverse (stats, snaps, rosters, injuries); prop lines from OddsPapi; 2025 closing prop lines and 2026 opening and closing lines from SportsGameOdds; live odds from PropLine. Model output, not betting advice.</p>
@@ -1676,7 +1749,7 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
     const flagCard = (f) => `<article class="flagcard">
         <div class="fc-top"><span>${esc(new Date(f.at).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }))}${f.seconds_left != null ? " · " + clock(f.seconds_left) : ""}${f.window ? " · " + esc(f.window) : ""}</span>
           <span>${resChip(f.result) || '<span class="res P">PENDING</span>'} <b class="${cls(f.units)}">${f.units == null ? "" : units(f.units)}</b>${f.accepted ? ' <span class="tag promo">You took it</span>' : ""}${f.replayed ? ` <span class="tag" title="${esc(f.replay_note || "")}">Replayed after the game</span>` : ""}</span></div>
-        <div class="fc-play"><b>${label(f.label)}</b><span class="mono">${am(f.american)}</span><span class="note">${esc(BOOKN[f.book] || f.book)} · 1u</span></div>
+        <div class="fc-play"><b>${label(f.label)}</b><span class="mono">${am(f.american)}</span><span class="note">${esc(BOOKN[f.book] || f.book)} · 1u · ${term("kelly", "quarter Kelly")} ${stakeU(f.kelly_u)}</span></div>
         <div class="fc-nums"><span>Model <b>${pct(f.p)}</b> vs <b>${pct(f.fair)}</b> ${term("novig", "no-vig")}</span><span>${term("ev", "EV")} <b>${signed(100 * f.ev, 1)}%</b></span>
           <span>${term("clv", "Line value")} <b class="${cls(f.clv_units)}">${f.clv_units == null ? "–" : signed(f.clv_units, 1)}</b></span><span>${esc(FILL[f.fill] || "")}</span></div>
         ${f.reason ? `<p class="fc-why">Why: ${esc(f.reason)}</p>` : ""}</article>`;
@@ -1748,7 +1821,8 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
           const card = (name, L, X) => `<div class="kind"><span class="k">${name}</span>
             <div class="kr"><span class="kl">Live (paper)</span><span class="big ${cls(L && L.units)}">${L && L.n ? `${L.w}-${L.l}${L.p ? "-" + L.p : ""}` : "–"}</span>
               <span class="ks">${L && L.n ? `<b class="${cls(L.units)}">${units(L.units)}</b> · ROI ${pct(L.roi, 1)} · ${L.n} graded` : "nothing graded yet"}</span>
-              <span class="ks">${L && L.n ? `Edge at the flag ${signed(100 * L.avg_ev, 1)}% · ${term("clv", "line value")} ${L.clv == null ? "–" : signed(L.clv, 2)}` : ""}</span></div>
+              <span class="ks">${L && L.n ? `Edge at the flag ${signed(100 * L.avg_ev, 1)}% · ${term("clv", "line value")} ${L.clv == null ? "–" : signed(L.clv, 2)}` : ""}</span>
+              <span class="ks">${L && L.kelly && L.kelly.n ? `${term("kelly", "Quarter Kelly")}, its own record: <b class="${cls(L.kelly.units)}">${units(L.kelly.units)}</b> on ${num(L.kelly.staked, 2)}u staked` : ""}</span></div>
             <div class="kr"><span class="kl">Replay of the rule</span><span class="mid ${cls(X && X.units)}">${X ? `${X.w}-${X.l}` : "–"}</span>
               <span class="ks">${X ? `<b class="${cls(X.units)}">${units(X.units)}</b> · ROI ${pct(X.roi, 1)} · ${X.plays} plays` : "no replay yet"}</span>
               <span class="ks note">${X ? esc(X.rule) : ""}</span></div></div>`;
@@ -1759,7 +1833,9 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
           return `<div class="kinds">${card("Player props", BK.prop, RK.prop)}${card("Game markets", BK.game, RK.game)}</div>
             <p class="note" style="margin-top:8px">${repLead ? `In the replay, ${repLead} earned more per play (${pct(RK.prop.roi, 1)} props, ${pct(RK.game.roi, 1)} game markets).` : ""}
               ${liveLead ? ` Live so far ${liveLead} lead, but ${nLive} graded plays is far too few to rank them: one or two results swing the order.` : ""}
-              Edge at the flag is what the model said the play was worth; ROI is what it returned.</p>`;
+              Edge at the flag is what the model said the play was worth; ROI is what it returned.
+              ${(() => { const K = R.paper_kelly || {}, ku = [...new Set(LV.flags.filter((f) => f.result).map((f) => f.kelly_u))];
+                return K.n ? `${term("kelly", "Quarter Kelly")}, kept apart from the paper record: ${units(K.units)} on ${num(K.staked, 2)}u staked, against ${units(K.flat.units)} at 1u.${ku.length === 1 ? ` Every graded play so far sized ${stakeU(ku[0])}, so this is the flat record times ${ku[0]}.` : ""}` : ""; })()}</p>`;
         })()}
         <div class="strip four" style="margin-top:12px">${liveTile("All plays (paper)", P, R.fill_checked ? ` · price still there 30 s later on ${R.fill_checked - R.missed} of ${R.fill_checked}` : "")}${liveTile("You (accepted)", Y)}
         <div class="tile"><span class="k">${term("clv", "Line value")}</span><span class="v ${cls(P.clv)}">${P.clv == null ? "–" : signed(P.clv, 2)}</span><span class="s">units the line moved our way in 5 min</span></div>
@@ -1772,7 +1848,7 @@ svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 
       <details class="acc"><summary><h3>Run it on game day</h3><span class="note">start the engine, phone, alerts, demo</span>${chev}</summary>
         <div class="acc-body"><ul class="steps"><li><code>python -m live.engine</code> in the nfl_model folder, then open <b>http://localhost:8770</b>. It watches today's games, as many as the free PropLine plan covers (about ${Math.floor(LV.budget.budget / LV.budget.calls_per_game)} a day).</li>
           <li>On your phone: start it with <code>--lan</code> and open the address it prints while on home Wi-Fi. Phone alerts: add <code>NTFY_TOPIC=…</code> to .env and subscribe in the free ntfy app.</li>
-          <li>Plays show up only at decision points: at ${esc((LV.rules.windows || ["halftime"]).join(" and ").toLowerCase())} for props, after each score and at halftime for game markets (spreads and totals). Each stays up ${LV.rules.ttl / 60} minutes (${2 * LV.rules.ttl / 60} at halftime) or until its line moves. <b>Accept</b> means you placed it; type the price you got. Every play is 1 unit.</li>
+          <li>Plays show up only at decision points: at ${esc((LV.rules.windows || ["halftime"]).join(" and ").toLowerCase())} for props, after each score and at halftime for game markets (spreads and totals). Each stays up ${LV.rules.ttl / 60} minutes (${2 * LV.rules.ttl / 60} at halftime) or until its line moves. <b>Accept</b> means you placed it; type the price you got. Every play is 1 unit on the record; its quarter-Kelly size shows on the card and keeps its own record.</li>
           <li>Try it with a finished game: <code>python -m live.engine --demo 2026_04_PIT_CLE</code> (no PropLine requests).</li></ul></div></details>
       ${vrows ? `<details class="acc" open><summary><h3>The rules we tested</h3><span class="note">when to decide, and how far from the market to trust the model</span>${chev}</summary>
         <div class="acc-body"><div class="scroll"><table class="t"><thead><tr><th>Player props</th><th class="num">Flags</th><th class="num">Record</th><th class="num">Units</th><th class="num">ROI</th><th class="num">Model said → won</th></tr></thead><tbody>${vrows}</tbody></table></div>

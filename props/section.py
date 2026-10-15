@@ -20,6 +20,7 @@ import polars as pl
 
 from board.market import american, build_parlays, kelly
 from config import PARLAY_RISK, RAW, REPORTS
+from model.staking import flat_risk, kelly_of, kelly_units
 from props import ledger
 from props.backtest import ROLE_MARKETS, assign_roles, baselines, load
 from props.data import PLAYER_GAMES
@@ -185,7 +186,9 @@ def make_picks(x: pl.DataFrame, samples: dict, books: dict, pricer: PropPricer, 
             "american": american(best["dec"]), "p_win": round(best["p_win"], 4), "p_push": round(best["p_push"], 4),
             "ev": round(best["ev"], 4), "model_median": round(best["model_median"], 1),
             "market_median": round(best["market_median"], 1), "fair_median": round(best["fair_median"], 1),
-            "anchor": best["anchor"], "locked_at": when_of[r["game_id"]].isoformat(), "potw": False})
+            "anchor": best["anchor"], "locked_at": when_of[r["game_id"]].isoformat(), "potw": False,
+            # the stake it locked with, and the quarter-Kelly size tracked beside it (model/staking.py)
+            "risk": flat_risk(best["ev"]), "kelly_u": kelly_units(best["p_win"], best["dec"], best["p_push"])})
     if flag_potw:
         seen, top = set(), []
         for p in sorted(out, key=lambda p: -kelly(p)):
@@ -237,6 +240,7 @@ def _rows(picks: list[dict], results: list[dict]) -> list[dict]:
             out.append({"week": p["week"], "market": p["market"], "label": p["label"], "game": f"{p['team']} vs {p['opp']}",
                         "legs": [], "american": p["american"], "book": p["book_name"], "potw": p.get("potw", False),
                         "promoted": p.get("promoted", False), "p_win": p["p_win"], "ev": p["ev"],
+                        "kelly_u": kelly_of(p),
                         "result": r.get("result"), "actual": r.get("actual"),
                         "units": round(r["units"], 2) if "units" in r else None, "clv": r.get("clv")})
     return out
@@ -385,7 +389,8 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
 
     # --- cards: every tracked player in this week's games with lines, projections, picks
     res_by = {r["id"]: r for r in live_results}
-    picks_by_player = {(q["game_id"], q["gsis_id"]): {**q, **({"result": res_by[q["id"]]["result"]} if q["id"] in res_by else {})}
+    picks_by_player = {(q["game_id"], q["gsis_id"]): {**q, "kelly_u": kelly_of(q),   # older picks carry no kelly_u
+                                                      **({"result": res_by[q["id"]]["result"]} if q["id"] in res_by else {})}
                        for q in live_picks if q.get("kind") == "prop" and q["week"] == week}
     week_rows = xw
     played_now = done.filter(pl.col("week") == week)

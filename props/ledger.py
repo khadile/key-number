@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 import numpy as np
 
 from config import LEDGER, PARLAY_RISK, STRAIGHT_RISK
+from model.staking import kelly_of, kelly_tally, tracked
 
 PICKS = LEDGER / "props_picks.jsonl"
 RESULTS = LEDGER / "props_results.jsonl"
@@ -63,7 +64,7 @@ def grade_all(picks: list[dict], stats: dict[tuple[str, str], dict], finished: s
         row = stats.get((p["game_id"], p["gsis_id"]))
         actual = None if row is None else row.get(p["market"])
         res = grade_one(p, actual)
-        out.append({"id": p["id"], "result": res, "units": units_for(res, p["dec"], STRAIGHT_RISK),
+        out.append({"id": p["id"], "result": res, "units": units_for(res, p["dec"], p.get("risk", STRAIGHT_RISK)),
                     "actual": actual, "clv": line_value(p, closes.get((p["game_id"], p["gsis_id"], p["market"], p["book"])))})
     graded = {r["id"]: r for r in out}
     for p in picks:
@@ -100,7 +101,7 @@ def _tally(rows: list[dict]) -> dict:
     l = sum(r["result"] == "L" for r in rows)
     p = sum(r["result"] == "P" for r in rows)
     units = sum(r["units"] for r in rows)
-    risked = sum(r.get("risk", PARLAY_RISK) if r.get("kind") == "parlay" else STRAIGHT_RISK for r in rows)
+    risked = sum(r.get("risk", PARLAY_RISK) if r.get("kind") == "parlay" else r.get("risk", STRAIGHT_RISK) for r in rows)
     clvs = [r["clv"] for r in rows if r.get("clv") is not None]
     moved = [c for c in clvs if c != 0]
     return {"w": w, "l": l, "p": p, "n": len(rows), "units": round(units, 2),
@@ -114,12 +115,18 @@ def record(picks: list[dict], results: list[dict]) -> dict:
     res = {r["id"]: r for r in results}
     rows = [dict(p, **res[p["id"]]) for p in picks if p["id"] in res]
     straight = [r for r in rows if r.get("kind") == "prop"]
+    pos = [r for r in straight if kelly_of(r) > 0]
+    kt = lambda v: {**kelly_tally(v), "flat": _tally(v)}
     out = {m: _tally([r for r in straight if r["market"] == m]) for m in MARKETS}
     out.update(potw=_tally([r for r in straight if r.get("potw")]),
                parlay=_tally([r for r in rows if r.get("kind") == "parlay" and r.get("type") == "golden"]),
                lottery=_tally([r for r in rows if r.get("kind") == "parlay" and r.get("type") == "lottery"]),
                promoted=_tally([r for r in straight if r.get("promoted")]),
-               all=_tally(rows), weeks=[])
+               all=_tally(rows), weeks=[],
+               # quarter-Kelly sizing, its own record from week 1 beside flat (model/staking.py): each tally with the
+               # same props' flat record, "since" week 6 on
+               kelly={"all": kt(pos), "since": kt([r for r in pos if tracked(r)]),
+                      "weeks": [{"week": wk, **kt([r for r in pos if r["week"] == wk])} for wk in sorted({r["week"] for r in pos})]})
     for wk in sorted({r["week"] for r in rows}):
         wr = [r for r in rows if r["week"] == wk]
         out["weeks"].append({"week": wk, "all": _tally(wr), "potw": _tally([r for r in wr if r.get("potw")]),

@@ -18,10 +18,11 @@ from board import defense, detail, ledger
 from board.market import (BOOK_NAMES, Lines, Pricer, american, build_parlays, fixture_map,
                           picks_of_the_week, reference)
 from board.weather import STADIUMS, forecast
-from config import PARLAY_RISK, RAW, REPORTS, ROOT
+from config import PARLAY_RISK, RAW, REPORTS, ROOT, STRAIGHT_RISK
 from model import features, project
 from model.probs import MARGIN_RANGE, TOTAL_RANGE, KeyDist, WinCurve
 from model.ratings import load_inputs
+from model.staking import flat_risk, kelly_units
 from pipeline.odds_history import SHOP_BOOKS, archive, publish_time
 
 LIVE_START_WEEK = 5  # first week whose picks were locked live; earlier 2026 weeks are simulated
@@ -65,6 +66,17 @@ def _team_meta(teams: list[str], games: pl.DataFrame, season: int) -> dict:
     return out
 
 
+def _stake(p: dict) -> dict:
+    """What a pick risks. Picks locked before 2026-10-15 carry no stake fields: they staked 1u flat (a parlay
+    0.5u), negative EV included, except week 6's, made leans by an appended stake line before kickoff
+    (ledger.read_picks). Their quarter-Kelly size is worked out from the locked price and chance."""
+    if p.get("kind") == "parlay":
+        return {"risk": p.get("risk", PARLAY_RISK), "kelly_u": None}
+    k = p.get("kelly_u")
+    return {"risk": p.get("risk", STRAIGHT_RISK),
+            "kelly_u": k if k is not None else kelly_units(p.get("p_win"), p["dec"], p.get("p_push") or 0.0)}
+
+
 def _pick_rows(picks: list[dict], results: list[dict]) -> list[dict]:
     """Every pick, graded or still pending, for the record page's week browser.
     `market` is spread / total / ml, or golden / lottery for the two parlays."""
@@ -84,6 +96,7 @@ def _pick_rows(picks: list[dict], results: list[dict]) -> list[dict]:
             game = f"{away} at {home}"
         out.append({"week": p["week"], "market": market, "label": label, "game": game, "legs": legs,
                     "american": p.get("american"), "book": p.get("book_name"), "potw": bool(p.get("potw")),
+                    **_stake(p),
                     "p_win": p.get("p_win") if p.get("kind") != "parlay" else p.get("p"),
                     "ev": p.get("ev"), "result": r.get("result"),
                     "units": round(r["units"], 2) if "units" in r else None, "clv": r.get("clv")})
@@ -229,7 +242,9 @@ def main() -> None:
                                 "ev": round(pk["ev"], 4), "dec": round(pk["dec"], 4),
                                 "model_margin": round(m["model_margin"], 2), "model_total": round(m["model_total"], 2),
                                 "market_spread": ref.get("spread"), "market_total": ref.get("total"),
-                                "locked_at": when.isoformat(), "potw": False})
+                                "locked_at": when.isoformat(), "potw": False,
+                                # a negative-EV side is a lean (no units); quarter Kelly tracked beside flat
+                                "risk": flat_risk(pk["ev"]), "kelly_u": kelly_units(pk["p_win"], pk["dec"], pk["p_push"])})
         if flag_potw:
             top = picks_of_the_week(out)
             ids = {p["id"] for p in top}
@@ -265,6 +280,8 @@ def main() -> None:
     sim = []
     for wk in sorted(finished.filter(pl.col("week") < LIVE_START_WEEK)["week"].unique()):
         wp = make_picks(finished.filter(pl.col("week") == wk), sim_when, sim_proj, True)
+        for p in wp:   # every pick staked 1u before week 6's lean rule (model/staking.py), and the replay stays that way
+            p["risk"] = STRAIGHT_RISK
         sim += wp + week_parlays(wp, season, wk)
     sim_results = ledger.grade_all(sim, finals, closes)
     pre = ledger.record(sim, sim_results)
@@ -335,7 +352,7 @@ def main() -> None:
     picks_by = {}
     for pk in live_picks:
         if pk.get("kind") == "pick":
-            picks_by.setdefault(pk["game_id"], {})[pk["market"]] = {**pk, **({"result": res_by[pk["id"]]["result"]} if pk["id"] in res_by else {})}
+            picks_by.setdefault(pk["game_id"], {})[pk["market"]] = {**pk, **_stake(pk), **({"result": res_by[pk["id"]]["result"]} if pk["id"] in res_by else {})}
     parlays = {}
     for p in live_picks:
         if p.get("kind") == "parlay" and p["week"] == week:

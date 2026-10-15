@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 import numpy as np
 
 from config import LEDGER
+from model.staking import kelly_tally
 
 FLAGS = LEDGER / "live_flags.jsonl"
 EVENTS = LEDGER / "live_events.jsonl"
@@ -120,9 +121,12 @@ def records() -> dict:
                                "units": units(ra["result"], a["dec"]) if ra.get("result") else None}
         rows.append(row)
     paper = [r for r in rows if r.get("units") is not None]
+    # quarter-Kelly sizing, its own record beside the flat 1u paper record from the first flag (model/staking.py)
+    kel = {**kelly_tally([{"result": r.get("result"), "dec": r["dec"], "p_win": r.get("p"), "kelly_u": r.get("kelly_u")}
+                          for r in paper]), "flat": _tally(paper)}
     you = [{**r["accepted"], "clv_units": r.get("clv_units")} for r in rows if r.get("accepted") and r["accepted"].get("units") is not None]
     decided_fill = [r for r in rows if r.get("fill") in ("filled", "missed")]
-    return {"paper": _tally(paper), "you": _tally(you),
+    return {"paper": _tally(paper), "you": _tally(you), "paper_kelly": kel,
             "missed": sum(r.get("fill") == "missed" for r in rows), "fill_checked": len(decided_fill),
             "filled": sum(r.get("fill") == "filled" for r in rows),
             "flags": sorted(rows, key=lambda r: r["at"], reverse=True)}
