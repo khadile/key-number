@@ -41,3 +41,5 @@
 {"id": "2026_05_HOU_TEN:00-0041438:receptions", "result": "W", "units": 0.7629999999999999, "actual": 1.0, "clv": 0.0, "graded_at": "2026-10-13T20:18:56.868085+00:00"}
 {"id": "2026_05:props:golden", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-10-13T20:18:56.868085+00:00"}
 {"id": "2026_05:props:lottery", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-10-13T20:18:56.868085+00:00"}
+{"id": "2026_06_SEA_DEN:00-0033881:rec_yds", "result": "L", "units": -1.0, "actual": 13.0, "clv": -1.0, "graded_at": "2026-10-17T17:08:16.663903+00:00"}
+{"id": "2026_06_SEA_DEN:00-0034348:receptions", "result": "L", "units": -1.0, "actual": 2.0, "clv": -1.0, "graded_at": "2026-10-17T17:08:16.663903+00:00"}
