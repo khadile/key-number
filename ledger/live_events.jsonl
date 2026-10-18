@@ -90,3 +90,7 @@
 {"id": "2026_06_CHI_ATL:game:spread:1792352084", "fill": "filled", "fill_dec": 1.9803921568627452, "fill_line": -20.5, "logged_at": "2026-10-18T19:35:13.830338+00:00"}
 {"id": "2026_06_CHI_ATL:game:spread:1792352084", "expired": "line moved to -21.5", "logged_at": "2026-10-18T19:36:28.697054+00:00"}
 {"id": "2026_06_CHI_ATL:game:spread:1792352084", "clv_units": -4.0, "logged_at": "2026-10-18T19:40:27.667631+00:00"}
+{"id": "2026_06_ARI_LA:00-0033110:rec_yds:1792356059", "expired": "pulled", "logged_at": "2026-10-18T20:41:35.149202+00:00"}
+{"id": "2026_06_ARI_LA:00-0033110:rec_yds:1792356059", "fill": "missed", "fill_dec": null, "fill_line": null, "logged_at": "2026-10-18T20:41:35.149376+00:00"}
+{"id": "2026_06_ARI_LA:game:total:1792356059", "expired": "pulled", "logged_at": "2026-10-18T20:41:35.149598+00:00"}
+{"id": "2026_06_ARI_LA:game:total:1792356059", "fill": "missed", "fill_dec": null, "fill_line": null, "logged_at": "2026-10-18T20:41:35.149760+00:00"}
