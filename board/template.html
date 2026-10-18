@@ -1864,24 +1864,19 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     app.innerHTML = `
       <section class="hello"><h1>Live betting</h1><p class="lede">The live engine watches every play and keeps pricing every tracked prop and the game lines, but it bets only at decision points: player props once, at ${esc((LV.rules.windows || ["halftime"]).join(" and ").toLowerCase())}, and spreads and totals after each score and at halftime. A play has to pass the rubric, and every flag counts at the price it was flagged. It runs on your laptop during games; this page keeps its record. ${term("paper", "Paper trading")} comes first: real money only after the go-live gate.</p></section>
       <section class="sec">${engineStatus()}</section>
-      <section class="sec"><header><h2>Record</h2><span class="note">props vs game markets: the live paper record, and the replay of each rule on ${WN.games || 64} games from weeks 1–4</span></header>
+      <section class="sec"><header><h2>Record</h2><span class="note">props vs game markets, live paper record (the replays that chose each rule are under "The rules we tested")</span></header>
         ${(() => {
-          const BK = R.by_kind || {}, RK = R.replay_by_kind || {};
-          const card = (name, L, X) => `<div class="kind"><span class="k">${name}</span>
+          const BK = R.by_kind || {};
+          const card = (name, L) => `<div class="kind"><span class="k">${name}</span>
             <div class="kr"><span class="kl">Live (paper)</span><span class="big ${cls(L && L.units)}">${L && L.n ? `${L.w}-${L.l}${L.p ? "-" + L.p : ""}` : "–"}</span>
               <span class="ks">${L && L.n ? `<b class="${cls(L.units)}">${units(L.units)}</b> · ROI ${pct(L.roi, 1)} · ${L.n} graded` : "nothing graded yet"}</span>
               <span class="ks">${L && L.n ? `Edge at the flag ${signed(100 * L.avg_ev, 1)}% · ${term("clv", "line value")} ${L.clv == null ? "–" : signed(L.clv, 2)}` : ""}</span>
-              <span class="ks">${L && L.kelly && L.kelly.n ? `${term("kelly", "Quarter Kelly")}, its own record: <b class="${cls(L.kelly.units)}">${units(L.kelly.units)}</b> on ${num(L.kelly.staked, 2)}u staked` : ""}</span></div>
-            <div class="kr"><span class="kl">Replay of the rule</span><span class="mid ${cls(X && X.units)}">${X ? `${X.w}-${X.l}` : "–"}</span>
-              <span class="ks">${X ? `<b class="${cls(X.units)}">${units(X.units)}</b> · ROI ${pct(X.roi, 1)} · ${X.plays} plays` : "no replay yet"}</span>
-              <span class="ks note">${X ? esc(X.rule) : ""}</span></div></div>`;
+              <span class="ks">${L && L.kelly && L.kelly.n ? `${term("kelly", "Quarter Kelly")}, its own record: <b class="${cls(L.kelly.units)}">${units(L.kelly.units)}</b> on ${num(L.kelly.staked, 2)}u staked` : ""}</span></div></div>`;
           const lead = (a, b, k) => (a && b && a[k] != null && b[k] != null ? (a[k] >= b[k] ? "props" : "game markets") : null);
           const liveLead = (BK.prop || {}).n && (BK.game || {}).n ? lead(BK.prop, BK.game, "roi") : null;
-          const repLead = lead(RK.prop, RK.game, "roi");
           const nLive = ((BK.prop || {}).n || 0) + ((BK.game || {}).n || 0);
-          return `<div class="kinds">${card("Player props", BK.prop, RK.prop)}${card("Game markets", BK.game, RK.game)}</div>
-            <p class="note" style="margin-top:8px">${repLead ? `In the replay, ${repLead} earned more per play (${pct(RK.prop.roi, 1)} props, ${pct(RK.game.roi, 1)} game markets).` : ""}
-              ${liveLead ? ` Live so far ${liveLead} lead, but ${nLive} graded plays is far too few to rank them: one or two results swing the order.` : ""}
+          return `<div class="kinds">${card("Player props", BK.prop)}${card("Game markets", BK.game)}</div>
+            <p class="note" style="margin-top:8px">${liveLead ? ` Live so far ${liveLead} lead, but ${nLive} graded plays is far too few to rank them: one or two results swing the order.` : ""}
               Edge at the flag is what the model said the play was worth; ROI is what it returned.
               ${(() => { const K = R.paper_kelly || {}, ku = [...new Set(LV.flags.filter((f) => f.result).map((f) => f.kelly_u))];
                 return K.n ? `${term("kelly", "Quarter Kelly")}, kept apart from the paper record: ${units(K.units)} on ${num(K.staked, 2)}u staked, against ${units(K.flat.units)} at 1u.${ku.length === 1 ? ` Every graded play so far sized ${stakeU(ku[0])}, so this is the flat record times ${ku[0]}.` : ""}` : ""; })()}</p>`;
