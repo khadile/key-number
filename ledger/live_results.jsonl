@@ -31,3 +31,5 @@
 {"id": "2026_06_PIT_TB:00-0023459:rush_yds:1792348495", "result": "L", "actual": -1.0, "logged_at": "2026-10-18T20:43:59.455768+00:00"}
 {"id": "2026_06_ARI_LA:00-0033110:rec_yds:1792356059", "result": "W", "actual": 22.0, "logged_at": "2026-10-18T23:00:11.389667+00:00"}
 {"id": "2026_06_ARI_LA:game:total:1792356059", "result": "L", "actual": null, "logged_at": "2026-10-18T23:00:11.390024+00:00"}
+{"id": "2026_06_LAC_KC:00-0039894:receptions:1792360242", "result": "W", "actual": 7.0, "logged_at": "2026-10-18T23:27:07.497541+00:00"}
+{"id": "2026_06_LAC_KC:game:spread:1792360337", "result": "W", "actual": null, "logged_at": "2026-10-18T23:27:07.497783+00:00"}
