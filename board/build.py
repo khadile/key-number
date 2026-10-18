@@ -15,15 +15,18 @@ import polars as pl
 
 from backtest.run import TRAIN_FIRST, load_params
 from board import defense, detail, ledger
+from board.checks import game_checks, qb_doubts
 from board.market import (BOOK_NAMES, Lines, Pricer, american, build_parlays, fixture_map,
                           picks_of_the_week, reference)
 from board.weather import STADIUMS, forecast
 from config import PARLAY_RISK, RAW, REPORTS, ROOT, STRAIGHT_RISK
+from model import checks as C
 from model import features, project
 from model.probs import MARGIN_RANGE, TOTAL_RANGE, KeyDist, WinCurve
 from model.ratings import load_inputs
 from model.staking import flat_risk, kelly_units
 from pipeline.odds_history import SHOP_BOOKS, archive, publish_time
+from props.pricing import lock_time
 
 LIVE_START_WEEK = 5  # first week whose picks were locked live; earlier 2026 weeks are simulated
 TEMPLATE = ROOT / "board" / "template.html"
@@ -77,10 +80,11 @@ def _stake(p: dict) -> dict:
             "kelly_u": k if k is not None else kelly_units(p.get("p_win"), p["dec"], p.get("p_push") or 0.0)}
 
 
-def _pick_rows(picks: list[dict], results: list[dict]) -> list[dict]:
+def _pick_rows(picks: list[dict], results: list[dict], verdict_by: dict | None = None) -> list[dict]:
     """Every pick, graded or still pending, for the record page's week browser.
     `market` is spread / total / ml, or golden / lottery for the two parlays."""
     res = {r["id"]: r for r in results}
+    vb = verdict_by or {}
     by_id = {p["id"]: p for p in picks}
     out = []
     for p in picks:
@@ -96,7 +100,7 @@ def _pick_rows(picks: list[dict], results: list[dict]) -> list[dict]:
             game = f"{away} at {home}"
         out.append({"week": p["week"], "market": market, "label": label, "game": game, "legs": legs,
                     "american": p.get("american"), "book": p.get("book_name"), "potw": bool(p.get("potw")),
-                    **_stake(p),
+                    **_stake(p), **vb.get(p["id"], {}),
                     "p_win": p.get("p_win") if p.get("kind") != "parlay" else p.get("p"),
                     "ev": p.get("ev"), "result": r.get("result"),
                     "units": round(r["units"], 2) if "units" in r else None, "clv": r.get("clv")})
@@ -271,7 +275,6 @@ def main() -> None:
         return max(publish_time(g["kickoff_utc"]), fs + timedelta(hours=1))
 
     def at_last_update(g, L):   # Thursday 10am ET for a Thursday game, Saturday 10am ET otherwise
-        from props.pricing import lock_time
         fs = L.first_seen("pinnacle") or L.first_seen("draftkings") or g["kickoff_utc"]
         return max(lock_time(g["kickoff_utc"]), fs + timedelta(hours=1))
 
@@ -353,6 +356,35 @@ def main() -> None:
     for pk in live_picks:
         if pk.get("kind") == "pick":
             picks_by.setdefault(pk["game_id"], {})[pk["market"]] = {**pk, **_stake(pk), **({"result": res_by[pk["id"]]["result"]} if pk["id"] in res_by else {})}
+    # --- is each +EV pick also a good pick? (model/checks.py) A game's verdict is the one frozen before its
+    # kickoff when there is one, else rebuilt from what was known at the last update before it; this week's
+    # upcoming picks are checked as of now, with the price now.
+    kick_of = dict(zip(season_games["game_id"], season_games["kickoff_utc"]))
+    game_of = {g["game_id"]: g for g in season_games.iter_rows(named=True)}
+    frozen, qbs = C.frozen(kick_of), {}
+    def checks_for(pk: dict, model: dict | None = None) -> dict:
+        g, k = game_of[pk["game_id"]], kick_of[pk["game_id"]]
+        if g["week"] not in qbs:
+            qbs[g["week"]] = qb_doubts(season, g["week"])
+        return game_checks(pk, g, lines_for(pk["game_id"], k), pricer, now if now < k else lock_time(k), qbs[g["week"]], model)
+    verdict_by: dict[str, dict] = {}
+    for pk in sim + live_picks:
+        if pk.get("kind") != "pick" or pk["ev"] <= 0 or _stake(pk)["risk"] <= 0:
+            continue   # leans and parlays get no verdict
+        k = kick_of[pk["game_id"]]
+        f = frozen.get(pk["id"]) if k <= now else None
+        shown = picks_by.get(pk["game_id"], {}).get(pk["market"], {}).get("id") == pk["id"]   # this week's cards
+        c = checks_for(pk, live_by.get(pk["game_id"]) if shown and k > now else None) if shown or not f else None
+        verdict_by[pk["id"]] = ({"verdict": f["verdict"], "failed": f["failed"]} if f
+                                else {"verdict": c["verdict"], "failed": C.failed(c["checks"])})
+        if shown:
+            picks_by[pk["game_id"]][pk["market"]]["checks"] = c
+    upcoming = [pk for pk in live_picks if pk["id"] in verdict_by and kick_of[pk["game_id"]] > now]
+    if upcoming and not args.dry_run:
+        n = C.freeze([{"kind": "game", "id": pk["id"], "game_id": pk["game_id"], **verdict_by[pk["id"]]} for pk in upcoming], now)
+        if n:
+            print(f"froze {n} verdicts")
+
     parlays = {}
     for p in live_picks:
         if p.get("kind") == "parlay" and p["week"] == week:
@@ -501,8 +533,9 @@ def main() -> None:
         "teams": meta,
         "record": {"live": live, "pre": pre,
                    "all": ledger.record(sim + live_picks, sim_results + live_results),
-                   "live_rows": _pick_rows(live_picks, live_results),
-                   "pre_rows": _pick_rows(sim, sim_results)},
+                   "live_rows": (lr := _pick_rows(live_picks, live_results, verdict_by)),
+                   "pre_rows": (pr := _pick_rows(sim, sim_results, verdict_by)),
+                   "verdicts": {"all": C.tally(pr + lr), "since": C.tally(lr, C.SINCE_WEEK)}},
         "games": cards,
         "parlays": parlays,
         "defense": {"rows": def_rows, "league": def_league, "roles": roles},

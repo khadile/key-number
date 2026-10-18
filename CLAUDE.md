@@ -251,6 +251,40 @@ Demo replays of the live engine write only to `data/live/demo_ledger/`.
 - Week 5's original +1423 parlay was reclassified as that week's Lottery by an
   appended `parlay_type` line; never rewrite ledger lines.
 
+## 4b. Good pick or +EV only (user, 2026-10-18)
+
+The user picks from the board rather than taking every pick, and +EV is not the same as a good pick. Every +EV
+pick (game lines and props, not leans or parlays) carries checks (`model/checks.py`; game lines
+`board/checks.py`, props `props/checks.py`). It is a **good pick** when every check that applies passes,
+otherwise **+EV only**, with the reasons shown on the pick.
+
+- **sharp**: still +EV with the market read from Pinnacle's no-vig *price*, juice included, then moved toward
+  the model by k as usual. The game-line pricer reads Pinnacle's line as a coin flip whatever its juice. In
+  weeks 1-5 that made 18 of 45 +EV game picks look +EV when they were not; for example CHI +3 -102 looked
+  +3.8% with Pinnacle at CHI +3 +104. Props are priced from the no-vig price already. A prop with no Pinnacle
+  line fails this check: its edge would be DK against FD.
+- **size**: EV of 2% or more. Line-shopping props at 2%+ beat the close 81% vs 70% for all (SGO 2026).
+- **lean** (props): overs on rec yds, rush yds and receptions need 5%+. Pinnacle's closes made those overs 2-5
+  points likelier than they turned out in 2025 and 2026; passing yards showed no such bias.
+- **market** (game lines): Pinnacle hasn't moved against the pick (1.5 points of win chance) since its Tuesday
+  lock. Props lock at the last update, so they have nothing to compare.
+- **who**:
+  - Props: not Questionable or Doubtful, not within 3 games of changing teams, not promoted.
+  - Game lines: no QB on either team Questionable or Doubtful. Out is settled news the model already uses.
+- **Deliberately not a check:** the model-market gap. In 2022-25 the model side covered 51/52/54/44/51% from a
+  gap under 1 point to over 4, so a big gap predicts nothing.
+- **Price now:** each pick also shows the best DK/FD price and EV as of the last build.
+- **Freezing:** each build appends a verdict line to `ledger/pick_checks.jsonl` (append-only) when a pick's
+  verdict changes before kickoff. The record uses the last line before kickoff. Older picks are rebuilt from what
+  was known before kickoff: Pinnacle at lock and at the last update, and that week's injury report.
+- **Record:** good vs +EV only, flat 1u. Weeks 1-5 are in-sample, because the checks were chosen with them in
+  view. Week 6 on (`SINCE_WEEK`) is the test.
+- **Weeks 1-5, in-sample:**
+  - Props: good 53-38 +10.4u (ROI 11.5%, line value +0.70) vs +EV only 114-93 +12.3u (5.9%, +0.40).
+  - Game lines: good 8-10 vs +EV only 16-6-1, mostly moneyline long shots; tells nothing yet.
+- **Open fix:** the game-line pricer should read Pinnacle's juice itself (see sharp above). Changing it changes
+  which picks lock, so test it on weeks 1-6 Tuesday lines first.
+
 ## 5. Weekly cadence
 
 The board updates three times a week (scheduled build, 10:05am ET, Tue / Thu /

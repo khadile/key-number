@@ -20,9 +20,11 @@ import polars as pl
 
 from board.market import american, build_parlays, kelly
 from config import PARLAY_RISK, RAW, REPORTS
+from model import checks as C
 from model.staking import flat_risk, kelly_of, kelly_units
 from props import ledger
 from props.backtest import ROLE_MARKETS, assign_roles, baselines, load
+from props.checks import Teams, prop_checks, prop_doubts
 from props.data import PLAYER_GAMES
 from props.lines import load as load_lines, main_lines
 from props.model import STAT_COL, Simulator, TeamModel, defense_frame, player_frame, project, team_frame
@@ -224,8 +226,9 @@ def _stat_lines(hist: pl.DataFrame) -> dict[tuple[str, str], dict]:
             for r in hist.select("game_id", "gsis_id", *STAT_COL.values()).iter_rows(named=True)}
 
 
-def _rows(picks: list[dict], results: list[dict]) -> list[dict]:
+def _rows(picks: list[dict], results: list[dict], verdict_by: dict | None = None) -> list[dict]:
     res = {r["id"]: r for r in results}
+    vb = verdict_by or {}
     by_id = {p["id"]: p for p in picks}
     out = []
     for p in picks:
@@ -240,7 +243,7 @@ def _rows(picks: list[dict], results: list[dict]) -> list[dict]:
             out.append({"week": p["week"], "market": p["market"], "label": p["label"], "game": f"{p['team']} vs {p['opp']}",
                         "legs": [], "american": p["american"], "book": p["book_name"], "potw": p.get("potw", False),
                         "promoted": p.get("promoted", False), "p_win": p["p_win"], "ev": p["ev"],
-                        "kelly_u": kelly_of(p),
+                        "kelly_u": kelly_of(p), **vb.get(p["id"], {}),
                         "result": r.get("result"), "actual": r.get("actual"),
                         "units": round(r["units"], 2) if "units" in r else None, "clv": r.get("clv")})
     return out
@@ -387,9 +390,32 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
                   for r in all_rows if r.get("kind") in ("prop", "parlay") and r["season"] == season]
     live = ledger.record(live_picks, live_results)
 
+    # --- is each prop also a good pick? (model/checks.py) A game's verdict is the one frozen before its kickoff
+    # when there is one, else rebuilt from what was known then; this week's picks are checked live, priced now.
+    teams, doubts, frozen = Teams(hist), prop_doubts(season), C.frozen(kick)
+    def checks_of(q: dict, live: bool = False) -> dict:
+        key = (q["game_id"], q["gsis_id"], q["market"])
+        return prop_checks(q, doubts.get((q["week"], q["gsis_id"])), teams.streak(q["gsis_id"], q["season"], q["week"], q["team"]),
+                           now_b.get(key) if live else None, s_week.get(key) if live else None, pricer)
+    verdict_by, checked = {}, {}
+    for q in [r for r in sim_picks + live_picks if r.get("kind") == "prop"]:
+        f = frozen.get(q["id"]) if kick[q["game_id"]] <= now else None
+        if f:
+            verdict_by[q["id"]] = {"verdict": f["verdict"], "failed": f["failed"]}
+            continue
+        c = checks_of(q, live=q["week"] == week and kick[q["game_id"]] > now)
+        checked[q["id"]] = c
+        verdict_by[q["id"]] = {"verdict": c["verdict"], "failed": C.failed(c["checks"])}
+    upcoming_ids = [q for q in live_picks if q.get("kind") == "prop" and kick[q["game_id"]] > now]
+    if upcoming_ids and not dry_run:
+        n = C.freeze([{"kind": "prop", "id": q["id"], "game_id": q["game_id"], **verdict_by[q["id"]]} for q in upcoming_ids], now)
+        if n:
+            print(f"props: froze {n} verdicts")
+
     # --- cards: every tracked player in this week's games with lines, projections, picks
     res_by = {r["id"]: r for r in live_results}
     picks_by_player = {(q["game_id"], q["gsis_id"]): {**q, "kelly_u": kelly_of(q),   # older picks carry no kelly_u
+                                                      "checks": checked.get(q["id"]) or checks_of(q),
                                                       **({"result": res_by[q["id"]]["result"]} if q["id"] in res_by else {})}
                        for q in live_picks if q.get("kind") == "prop" and q["week"] == week}
     week_rows = xw
@@ -470,7 +496,9 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
         "meta": {"live_start": PROPS_LIVE_START, "lock_note": "Saturday 10am ET (Thursday games: Thursday 10am ET)",
                  "k": kstudy, "tracked": len(players)},
         "locks": {g: lock_time(kick[g]).isoformat() for g in season_games.filter(pl.col("week") == week)["game_id"].to_list()},
-        "record": {"live": live, "pre": pre, "all": ledger.record(sim_picks + live_picks, sim_results + live_results), "live_rows": _rows(live_picks, live_results), "pre_rows": _rows(sim_picks, sim_results)},
+        "record": {"live": live, "pre": pre, "all": ledger.record(sim_picks + live_picks, sim_results + live_results),
+                   "live_rows": (lr := _rows(live_picks, live_results, verdict_by)), "pre_rows": (pr := _rows(sim_picks, sim_results, verdict_by)),
+                   "verdicts": {"all": C.tally(pr + lr), "since": C.tally(lr, C.SINCE_WEEK)}},
         "players": players, "games": games_out, "logs": logs, "parlays": parlays,
         "model": {"backtest": bt, "study": study, "sgo": sgo},
         "mypicks": {"lines": pickable, "results": results},

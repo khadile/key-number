@@ -247,6 +247,19 @@ th.sort[aria-sort] { color: var(--ink); }
 .call.lean { border-style: dashed; background: var(--surface-2); box-shadow: none; }
 .tag.lean { background: transparent; color: var(--muted); border: 1px dashed var(--line-2); }
 tr.lean td { color: var(--muted); }
+/* is a +EV pick also a good pick? (model/checks.py) */
+.vd { font: 700 10px var(--f-body); letter-spacing: .06em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
+.vd.good { background: var(--good-soft); color: var(--good); }
+.vd.ev { background: transparent; color: var(--muted); border: 1px solid var(--line-2); }
+.checkbox { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; }
+.checkbox .verdict { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.checks { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.checks li { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 6px; font-size: 13px; color: var(--ink-2); align-items: start; }
+.checks .ck { font-weight: 700; text-align: center; }
+.checks .ck.ok { color: var(--good); }
+.checks .ck.no { color: var(--bad); }
+.checks .ck.na { color: var(--muted); }
+.nowline { font-size: 13px; color: var(--ink-2); margin: 0; }
 .plist { display: grid; gap: 2px; }
 .prow { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid var(--line); }
 .prow:first-child { border-top: 0; }
@@ -477,6 +490,36 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
   // stakes in units; quarter-Kelly tiers read as fractions (¼u, ½u)
   const stakeU = (u) => (u == null ? "–" : ({ 0.25: "¼", 0.5: "½" }[u] || String(Math.round(u * 100) / 100)) + "u");
   const stakePill = (p) => (p.risk === 0 ? '<span class="stk none">0u</span>' : `<span class="stk">${stakeU(p.risk == null ? 1 : p.risk)}</span>`);
+  // ---------- is a +EV pick also a good pick? (model/checks.py) Each check passes, fails, or does not apply.
+  const CHECK_NAME = { sharp: "Pinnacle's price", size: "Edge size", lean: "Over premium", market: "Market since lock", who: "Who plays" };
+  const CHECK_IN_TEXT = { sharp: "Pinnacle's price", size: "edge size", lean: "over premium", market: "market since lock", who: "who plays" };
+  const failedNames = (keys) => (keys || []).map((k) => CHECK_IN_TEXT[k] || k).join(", ");
+  const vdTag = (v, failed) => (v === "good" ? '<span class="vd good" data-tip="+EV and passes every check">Good pick</span>'
+    : v === "ev" ? `<span class="vd ev" data-tip="${esc(failed && failed.length ? "+EV, but fails: " + failedNames(failed) : "+EV, but fails a check")}">+EV only</span>` : "");
+  const failedOf = (c) => c.checks.filter((k) => k.ok === false).map((k) => k.key);
+  const checksTip = (c) => (!c ? "" : c.verdict === "good" ? " Good pick: passes every check."
+    : " +EV only: " + c.checks.filter((k) => k.ok === false).map((k) => k.text).join(" "));
+  function checksBlock(c) {
+    if (!c) return "";
+    const mark = (k) => (k.ok === true ? ["ok", "✓", "passes"] : k.ok === false ? ["no", "✗", "fails"] : ["na", "–", "does not apply"]);
+    const li = c.checks.map((k) => { const [cl, sym, said] = mark(k);
+      return `<li><span class="ck ${cl}" role="img" aria-label="${said}">${sym}</span><span><b>${CHECK_NAME[k.key] || k.key}.</b> ${esc(k.text)}</span></li>`; }).join("");
+    const f = failedOf(c);
+    const n = c.now;
+    const now = n ? `<p class="nowline">Now, as of the last update: <b>${label(n.label)}</b> ${am(n.american)} at ${esc(n.book)}, ${term("ev", "EV")} <span class="${cls(n.ev)}">${signed(100 * n.ev, 1)}%</span>${n.ev <= 0 ? ": the value is gone at today's price" : ""}.</p>` : "";
+    return `<div class="checkbox"><div class="verdict">${vdTag(c.verdict, f)}<span class="note">${c.verdict === "good" ? "+EV and passes every check" : `+EV, but ${failedNames(f)} ${f.length > 1 ? "fail" : "fails"}`}</span></div>
+      <ul class="checks">${li}</ul>${now}</div>`;
+  }
+  function verdictSection(V, what) {
+    if (!V || !V.all) return "";
+    const S = V.since || {}, ns = ((S.good || {}).n || 0) + ((S.ev || {}).n || 0);
+    const t = (k, r) => tile(k, r, r && r.n ? ` · ROI ${pct(r.roi, 1)}` : "");
+    return `<section class="sec"><header><h2>Good picks vs +EV only <em>the checks on every +EV ${what}</em></h2></header>
+      <div class="strip three">${t("Good picks", V.all.good)}${t("+EV only", V.all.ev)}
+        <div class="tile"><span class="k">Week 6 on, the test</span><span class="v">${ns ? `${rec(S.good)} / ${rec(S.ev)}` : "–"}</span>
+          <span class="s">${ns ? `good ${units(S.good.units)} · +EV only ${units(S.ev.units)}` : "No graded picks yet"}</span></div></div>
+      <p class="note">Every +EV ${what} is checked against what has held up: it is still +EV at Pinnacle's real price, the edge is 2% or more${what === "prop" ? ", an over on receiving, rushing or receptions clears the premium books put on overs" : ", Pinnacle has not moved against it since it locked"}, and nothing about who plays is in doubt. Pass them all and it is a good pick; otherwise it is +EV only. Flat 1u. Weeks 1–5 are rebuilt from what was known before each kickoff, but the checks were chosen with those weeks in view, so week 6 on is their real test.</p></section>`;
+  }
 
   // ---------- plain-language help: hover or tap any dotted term or chart mark
   const GLOSSARY = {
@@ -727,8 +770,8 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
   function pickChip(p, potw) {
     if (!p) return "";
     const lean = p.risk === 0;
-    return `<span class="chip${p.potw ? " potw" : ""}${lean ? " lean" : ""}" data-tip="${esc(pickWhy(p))}"><span class="m">${p.potw ? "Pick of the week" : lean ? "Lean" : { spread: "Spread", total: "Total", ml: "Moneyline" }[p.market]}</span>
-      <b>${label(p.label)}</b><span class="pr">${am(p.american)} ${esc(p.book_name)}</span>${stakePill(p)}${resChip(p.result)}</span>`;
+    return `<span class="chip${p.potw ? " potw" : ""}${lean ? " lean" : ""}" data-tip="${esc(pickWhy(p) + checksTip(p.checks))}"><span class="m">${p.potw ? "Pick of the week" : lean ? "Lean" : { spread: "Spread", total: "Total", ml: "Moneyline" }[p.market]}</span>
+      <b>${label(p.label)}</b><span class="pr">${am(p.american)} ${esc(p.book_name)}</span>${stakePill(p)}${p.checks ? vdTag(p.checks.verdict, failedOf(p.checks)) : ""}${resChip(p.result)}</span>`;
   }
   // A game with no moneyline pick still shows the model's view, so the pass reads as a decision.
   function mlPass(g) {
@@ -758,7 +801,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
   function potwPanel() {
     const potw = D.games.flatMap((g) => Object.values(g.picks || {}).filter((p) => p.potw).map((p) => ({ p, g }))).sort((a, b) => b.p.ev - a.p.ev);
     const rows = potw.map(({ p, g }, i) => `<div class="pick-row"><span class="n">${i + 1}</span><span class="lbl">${label(p.label)}</span>${resChip(p.result) || `<span class="mono">${am(p.american)}</span>`}
-      <div class="sub"><span>${badge(g.away, 1)} at ${badge(g.home, 1)} · ${esc(g.kickoff.short)}</span><span>${esc(p.book_name)} ${am(p.american)}</span><span>Win ${pct(p.p_win)}</span><span>EV ${signed(100 * p.ev, 1)}%</span><span>1u · ${term("kelly", "quarter Kelly")} ${stakeU(p.kelly_u)}</span></div></div>`).join("");
+      <div class="sub"><span>${badge(g.away, 1)} at ${badge(g.home, 1)} · ${esc(g.kickoff.short)}</span><span>${esc(p.book_name)} ${am(p.american)}</span><span>Win ${pct(p.p_win)}</span><span>EV ${signed(100 * p.ev, 1)}%</span><span>1u · ${term("kelly", "quarter Kelly")} ${stakeU(p.kelly_u)}</span>${p.checks ? `<span>${vdTag(p.checks.verdict, failedOf(p.checks))}</span>` : ""}</div></div>`).join("");
     const ticket = (P, empty) => {
       if (!P) return `<p class="note">${empty}</p>`;
       return `<div class="odds-big">${am(P.american)} ${resChip(P.result)}</div>
@@ -929,7 +972,8 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
       <div class="px">${am(P.american)} at ${esc(P.book_name)} ${stakePill(P)}</div>
       <p class="say">${say}</p>
       ${gauge(win, need)}
-      <div class="note">${term("ev", "Expected value")} ${signed(100 * P.ev, 1)}% per unit · ${lean ? "a lean risks nothing" : P.ev <= 0 ? "staked 1u: locked before the lean rule" : `${term("kelly", "quarter Kelly")} ${stakeU(P.kelly_u)}, its own record`}</div></article>`;
+      <div class="note">${term("ev", "Expected value")} ${signed(100 * P.ev, 1)}% per unit · ${lean ? "a lean risks nothing" : P.ev <= 0 ? "staked 1u: locked before the lean rule" : `${term("kelly", "quarter Kelly")} ${stakeU(P.kelly_u)}, its own record`}</div>
+      ${checksBlock(P.checks)}</article>`;
   }
   const chev = '<span class="chev" aria-hidden="true">›</span>';
   function renderGame(g) {
@@ -1141,7 +1185,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
   }
   function catTable(rows, isParlay) {
     return `<div class="scroll"><table class="t"><thead><tr><th>Pick</th><th>${isParlay ? "Legs" : "Game"}</th><th class="num">Price</th><th class="num">Win chance</th><th class="num">Stake</th>${isParlay ? "" : `<th class="num">${term("kelly", "Quarter Kelly")}</th>`}<th>Result</th><th class="num">Units</th>${isParlay ? "" : '<th class="num">Line value</th>'}</tr></thead><tbody>
-      ${rows.map((h) => `<tr${h.risk === 0 ? ' class="lean"' : ""}><td><b>${label(h.label)}</b>${h.potw ? ' <span class="tag">POTW</span>' : ""}${h.risk === 0 ? ' <span class="tag lean">Lean</span>' : ""}</td>
+      ${rows.map((h) => `<tr${h.risk === 0 ? ' class="lean"' : ""}><td><b>${label(h.label)}</b>${h.potw ? ' <span class="tag">POTW</span>' : ""}${h.risk === 0 ? ' <span class="tag lean">Lean</span>' : ""}${h.verdict ? " " + vdTag(h.verdict, h.failed) : ""}</td>
         <td>${isParlay ? h.legs.map((l) => label(l)).join(" · ") : esc(h.game)}</td>
         <td class="num">${am(h.american)}${h.book ? " " + esc(h.book) : ""}</td><td class="num">${pct(h.p_win)}</td>
         <td class="num">${h.risk === 0 ? "0u" : stakeU(h.risk)}</td>${isParlay ? "" : `<td class="num">${h.kelly_u ? stakeU(h.kelly_u) : "–"}</td>`}
@@ -1173,6 +1217,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
         <p class="note">Weeks 1–${D.meta.live_start - 1} were replayed before launch at Tuesday lines with only Tuesday information; picks are live from week ${D.meta.live_start}. Every pick risked 1u through week 5, and those weeks stay that way because they helped choose the lean rule; from week 6 a negative-EV side is a ${term("lean", "lean")} and risks nothing.</p>
         ${leansNote(A)}</section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${unitsChart(A) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
+      ${verdictSection(D.record.verdicts, "pick")}
       ${kellySection(A.kelly, D.meta.live_start, "picks", `<div class="strip three">${kTile(term("ats", "ATS"), A.kelly.ats)}${kTile("Over/under", A.kelly.ou)}${kTile("Moneyline", A.kelly.ml)}</div>`)}
       <section class="sec"><header><h2>Picks by week</h2></header>${weekBrowser()}</section>
       <section class="sec"><header><h2>Week by week</h2></header>${weekTable(A)}</section>
@@ -1208,6 +1253,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
         <h3>Rules</h3>
         <ul><li>Positive-EV straight picks risk 1 unit at the listed price; the Golden Parlay and the +EV Lottery each risk 0.5 units.</li>
           <li>From week 6, a negative-EV side is a ${term("lean", "lean")}: it stays on the board, risks nothing and is kept out of the record. Through week 5 every pick risked 1 unit, and those weeks stay that way: they helped choose the rule.</li>
+          <li>Every positive-EV pick is also checked, because +EV is not the same as a good pick: it must still be +EV at Pinnacle's real price with its juice counted (the board's own number reads Pinnacle's line as a coin flip), the edge must be 2% or more, Pinnacle must not have moved against it since it locked, and no quarterback on either team can be Questionable or Doubtful. Pass them all and it is a <b>good pick</b>; otherwise it is <b>+EV only</b>, with the reasons on the pick. A big gap between the model and the market is not a check: in 2022–25 it did not predict worse results.</li>
           <li>${term("kelly", "Quarter Kelly")} sizes every positive-EV pick by its edge for the price (¼, ½, 1 or 2 units) and keeps its own record from week 1, apart from the flat one. In the 2022–26 backtest at closing prices it lost more per unit staked than flat 1u, because the model overrates its biggest edges; 2026's first five weeks went its way. It replaces flat units only if it keeps up from week 6 on.</li>
           <li>Picks lock when the week is published and are never changed. Each is graded at the line and price it was locked at.</li>
           <li>Results are graded Tuesday morning, after Monday night's game.</li></ul>
@@ -1228,8 +1274,8 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     ? ' <span class="tag shop" title="The model alone leans the other way. This call comes from DraftKings or FanDuel hanging a number off the Pinnacle line, the edge source that held up in testing.">Line shop</span>' : "");
   const roleTag = (p) => `<span class="role">${esc(p.role)}</span>${p.promoted ? ' <span class="tag promo" title="Moved up because a teammate who ranked above him last game is not playing">Promoted</span>' : ""}`;
   function propPickChip(p) {
-    return `<span class="chip${p.potw ? " potw" : ""}${p.promoted ? " promo" : ""}" data-tip="${esc(`EV ${signed(100 * p.ev, 1)}%. Stake 1u. Quarter Kelly, its own record: ${stakeU(p.kelly_u)}.`)}"><span class="m">${p.potw ? "Pick of the week" : PMK[p.market]}</span>
-      <b>${esc(p.side === "over" ? "Over" : "Under")} ${num(p.line, 1).replace(/\.0$/, "")}</b><span class="pr">${am(p.american)} ${esc(p.book_name)}</span>${shopTag(p.side, p.line, p.model_median)}${stakePill(p)}${resChip(p.result)}</span>`;
+    return `<span class="chip${p.potw ? " potw" : ""}${p.promoted ? " promo" : ""}" data-tip="${esc(`EV ${signed(100 * p.ev, 1)}%. Stake 1u. Quarter Kelly, its own record: ${stakeU(p.kelly_u)}.` + checksTip(p.checks))}"><span class="m">${p.potw ? "Pick of the week" : PMK[p.market]}</span>
+      <b>${esc(p.side === "over" ? "Over" : "Under")} ${num(p.line, 1).replace(/\.0$/, "")}</b><span class="pr">${am(p.american)} ${esc(p.book_name)}</span>${shopTag(p.side, p.line, p.model_median)}${stakePill(p)}${p.checks ? vdTag(p.checks.verdict, failedOf(p.checks)) : ""}${resChip(p.result)}</span>`;
   }
   // When this game's props lock: the last board update before it (Thursday or Saturday, 10am ET).
   const lockAt = (gid) => {
@@ -1284,7 +1330,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     }
     const list = rows.map((p, i) => { const g = GAMES[p.game_id];
       return `<div class="pick-row"><span class="n">${i + 1}</span><span class="lbl">${label(p.label)}</span>${resChip(p.result) || `<span class="mono">${am(p.american)}</span>`}
-        <div class="sub">${g ? `<span>${badge(g.away, 1)} at ${badge(g.home, 1)} · ${esc(g.kickoff.short)}</span>` : ""}<span>${esc(p.book_name)} ${am(p.american)}</span><span>Win ${pct(p.p_win)}</span><span>EV ${signed(100 * p.ev, 1)}%</span></div></div>`; }).join("");
+        <div class="sub">${g ? `<span>${badge(g.away, 1)} at ${badge(g.home, 1)} · ${esc(g.kickoff.short)}</span>` : ""}<span>${esc(p.book_name)} ${am(p.american)}</span><span>Win ${pct(p.p_win)}</span><span>EV ${signed(100 * p.ev, 1)}%</span>${p.checks ? `<span>${vdTag(p.checks.verdict, failedOf(p.checks))}</span>` : ""}</div></div>`; }).join("");
     const ticket = (P, empty) => {
       if (!P) return `<p class="note">${empty}</p>`;
       return `<div class="odds-big">${am(P.american)} ${resChip(P.result)}</div>
@@ -1465,6 +1511,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
       ${rangeStrip(m, c)}${bookLine(m)}
       <p class="say">${marketSay(m, c)}</p>
       ${c ? `${gauge(c.p, 1 / decOf(c.american))}<div class="note">${term("ev", "Expected value")} ${signed(100 * c.ev, 1)}% per unit${c.locked ? "" : p.pick ? ". A lean, not a pick: one prop per player is locked, his strongest." : ". Not locked yet; props lock " + esc(lockAt(p.game_id)) + "."}</div>` : ""}
+      ${c && c.locked && p.pick ? checksBlock(p.pick.checks) : ""}
       ${slider ? tryLine(p, m) : ""}
     </div>`;
   }
@@ -1621,7 +1668,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     if (weeks.length && !weeks.some((w) => w.key === pRecWeek)) pRecWeek = weeks[weeks.length - 1].key;
     const W = weeks.find((w) => w.key === pRecWeek);
     const table = (rows, isP) => `<div class="scroll"><table class="t"><thead><tr><th>Pick</th><th>${isP ? "Legs" : "Game"}</th><th class="num">Price</th><th class="num">Win chance</th>${isP ? "" : `<th class="num">${term("kelly", "Quarter Kelly")}</th>`}<th class="num">Final</th><th>Result</th><th class="num">Units</th>${isP ? "" : '<th class="num">Line value</th>'}</tr></thead><tbody>
-      ${rows.map((h) => `<tr><td><b>${label(h.label)}</b>${h.potw ? ' <span class="tag">POTW</span>' : ""}${h.promoted ? ' <span class="tag promo">Promoted</span>' : ""}</td><td>${isP ? h.legs.map((l) => label(l)).join(" · ") : esc(h.game)}</td>
+      ${rows.map((h) => `<tr><td><b>${label(h.label)}</b>${h.potw ? ' <span class="tag">POTW</span>' : ""}${h.promoted ? ' <span class="tag promo">Promoted</span>' : ""}${h.verdict ? " " + vdTag(h.verdict, h.failed) : ""}</td><td>${isP ? h.legs.map((l) => label(l)).join(" · ") : esc(h.game)}</td>
         <td class="num">${am(h.american)}${h.book ? " " + esc(h.book) : ""}</td><td class="num">${pct(h.p_win)}</td>${isP ? "" : `<td class="num">${h.kelly_u ? stakeU(h.kelly_u) : "–"}</td>`}<td class="num">${h.actual == null ? "" : num(h.actual, 0)}</td>
         <td>${h.result ? resChip(h.result) : '<span class="res P">PENDING</span>'}</td><td class="num ${cls(h.units)}">${h.units == null ? "–" : units(h.units)}</td>
         ${isP ? "" : `<td class="num">${h.clv == null ? "–" : signed(h.clv, 1)}</td>`}</tr>`).join("")}</tbody></table></div>`;
@@ -1634,6 +1681,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
       <section class="sec"><header><h2>Season to date</h2></header>${pStrip(A)}
         <p class="note">Weeks 1–${PR.meta.live_start - 1} were replayed before launch at Saturday-morning lines; picks are live from week ${PR.meta.live_start}. Promoted players (moved up because a teammate is out): ${rec(A.promoted)} (${units(A.promoted.units)}).</p></section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${unitsChart(A) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
+      ${verdictSection(PR.record.verdicts, "prop")}
       ${kellySection(A.kelly, PR.meta.live_start, "props")}
       <section class="sec"><header><h2>Picks by week</h2></header>${weeks.length ? `<div class="pills" role="tablist" aria-label="Week">${weeks.map((w) => `<button class="pill" data-pwk="${w.key}" aria-pressed="${w.key === pRecWeek}">Week ${w.week}</button>`).join("")}</div>
         <p class="note">Week ${W.week}${W.sim ? " (replayed before launch)" : ""}: ${subtotal(W.rows) || "no picks"}.</p>${sections}` : '<p class="note">No picks yet.</p>'}</section>
@@ -1699,6 +1747,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
           <li>Props lock at the last board update before each game. Thursday 10am ET: the Thursday game. Saturday 10am ET: every Saturday, Sunday and Monday game, after Friday's final injury reports and with Thursday night graded, plus the props Picks of the Week, Golden Parlay and Lottery. Prices from DraftKings and FanDuel only.</li>
           <li>Straight picks risk 1 unit; the Golden Parlay and the +EV Lottery 0.5 units each, built from the strongest props of different games. Every prop pick has positive expected value, so there are no leans here.</li>
           <li>${term("kelly", "Quarter Kelly")} sizes each pick by its edge for the price (¼, ½, 1 or 2 units) and keeps its own record from week 1, apart from the flat one. It replaces flat units only if it keeps up from week 6 on.</li>
+          <li>Every pick is also checked, because +EV is not the same as a good pick: Pinnacle must have the prop (otherwise the edge is one US book against the other), the edge must be 2% or more, an over on receiving yards, rushing yards or receptions needs 5% or more (Pinnacle's closing prices made those overs 2–5 points likelier than they turned out in 2025 and 2026), and the player cannot be Questionable or Doubtful, new to his team, or promoted into the role. Pass them all and it is a <b>good pick</b>; otherwise it is <b>+EV only</b>, with the reasons on the pick.</li>
           <li>Graded with nflverse stat lines (overtime included, passing yards before sacks, as books settle). A player who does not play is void.</li></ul>
         <h3>What it does not know</h3><ul><li>Route participation for ${D.meta.season} (not published yet); snaps stand in.</li><li>News after the lock, and in-game injuries.</li><li>Who will see the ball when a team changes its plan mid-week.</li></ul>
         <p class="fine">Data: nflverse (stats, snaps, rosters, injuries); prop lines from OddsPapi; 2025 closing prop lines and 2026 opening and closing lines from SportsGameOdds; live odds from PropLine. Model output, not betting advice.</p>
