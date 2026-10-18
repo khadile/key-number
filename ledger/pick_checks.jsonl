@@ -45,3 +45,4 @@
 {"kind": "prop", "id": "2026_06_TEN_IND:00-0038117:rec_yds", "game_id": "2026_06_TEN_IND", "verdict": "ev", "failed": ["size", "lean"], "at": "2026-10-18T08:10:40.573539+00:00"}
 {"kind": "prop", "id": "2026_06_WAS_SF:00-0033280:rush_yds", "game_id": "2026_06_WAS_SF", "verdict": "ev", "failed": ["size"], "at": "2026-10-18T08:10:40.573539+00:00"}
 {"kind": "prop", "id": "2026_06_WAS_SF:00-0031408:receptions", "game_id": "2026_06_WAS_SF", "verdict": "ev", "failed": ["size", "who"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "game", "id": "2026_06_DAL_GB:spread", "game_id": "2026_06_DAL_GB", "verdict": "ev", "failed": ["market"], "at": "2026-10-18T08:54:10.800278+00:00"}
