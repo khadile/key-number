@@ -60,3 +60,9 @@
 {"id": "2026_05_MIN_NO:00-0036040:receptions:replay-half", "expired": "replayed after the game", "logged_at": "2026-10-13T21:25:37.646640+00:00"}
 {"id": "2026_05_NYG_WAS:00-0041042:rec_yds:replay-half", "fill": "filled", "fill_dec": 1.833, "fill_line": 13.5, "logged_at": "2026-10-13T21:25:38.342548+00:00"}
 {"id": "2026_05_NYG_WAS:00-0041042:rec_yds:replay-half", "expired": "replayed after the game", "logged_at": "2026-10-13T21:25:38.342735+00:00"}
+{"id": "2026_06_HOU_JAX:game:total:1792334115", "fill": "filled", "fill_dec": 1.8696, "fill_line": 40.5, "logged_at": "2026-10-18T14:37:27.408485+00:00"}
+{"id": "2026_06_HOU_JAX:game:total:1792334115", "expired": "time", "logged_at": "2026-10-18T14:38:39.940188+00:00"}
+{"id": "2026_06_HOU_JAX:game:total:1792334115", "clv_units": 2.0, "logged_at": "2026-10-18T14:40:51.444822+00:00"}
+{"id": "2026_06_HOU_JAX:00-0040719:rush_yds:1792336845", "fill": "filled", "fill_dec": 1.8695652173913042, "fill_line": 44.5, "logged_at": "2026-10-18T15:21:17.886857+00:00"}
+{"id": "2026_06_HOU_JAX:00-0040719:rush_yds:1792336845", "expired": "pulled", "logged_at": "2026-10-18T15:24:12.650288+00:00"}
+{"id": "2026_06_HOU_JAX:00-0040719:rush_yds:1792336845", "clv_units": -3.0, "logged_at": "2026-10-18T15:26:59.647878+00:00"}

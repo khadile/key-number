@@ -19,3 +19,5 @@
 {"id": "2026_05_IND_PIT:00-0036223:rush_yds:replay-half", "result": "W", "actual": 45.0, "logged_at": "2026-10-13T21:25:36.956195+00:00"}
 {"id": "2026_05_MIN_NO:00-0036040:receptions:replay-half", "result": "L", "actual": 4, "logged_at": "2026-10-13T21:25:37.648809+00:00"}
 {"id": "2026_05_NYG_WAS:00-0041042:rec_yds:replay-half", "result": "L", "actual": 20.0, "logged_at": "2026-10-13T21:25:38.345521+00:00"}
+{"id": "2026_06_HOU_JAX:game:total:1792334115", "result": "W", "actual": null, "logged_at": "2026-10-18T16:49:09.733140+00:00"}
+{"id": "2026_06_HOU_JAX:00-0040719:rush_yds:1792336845", "result": "L", "actual": 39.0, "logged_at": "2026-10-18T16:49:09.733399+00:00"}
