@@ -87,6 +87,7 @@ WINDOW_RETRIES = 8      # ...this many times, until play resumes
 # that holds on two checks in a row is flagged; when nothing holds, what passes now becomes the new first
 # check. Play resuming ends the window: no flag, a pass. Capped so one break cannot drain PropLine's budget.
 ROLLING_MAX_CHECKS = 20
+BREAK_QUARTER = {"q1": 1, "half": 2, "q3": 3}   # the quarter each break follows: its plays, delivered late, never resume play
 # ESPN posts a touchdown at +6 and folds the try into the same play about a minute later: an after-score window
 # waits for it (the score changing again, or the next play), at most this long, so the model prices the settled score.
 TRY_WAIT_S = 150
@@ -733,8 +734,23 @@ class GameRunner(threading.Thread):
         now = time.monotonic()
         speed = self.feed.speed if self.demo else 1.0
         secs, pts = st["seconds_left"], sum(st["score"].values())
-        # play resumed: a scrimmage play that did not score (a scoring play is what froze the game)
-        snap = any(p.get("type") in SCRIM and not p.get("scoring") for p in new)
+        # play resumed: a scrimmage play that did not score (a scoring play is what froze the game), and one from
+        # after the break: ESPN's status turns to "Halftime" before its play list (40-60 s behind) delivers the half's
+        # last snaps. On 2026-10-18 the kneel-down that ended HOU-JAX's first half arrived 9 seconds into the halftime
+        # window and closed it after one check, so a play from the break's own quarter, or from before the play that
+        # froze the game, never resumes play.
+        W0 = self.window
+        last_q = BREAK_QUARTER.get(W0["name"]) if W0 and W0["rolling"] else None
+        since0 = self.dead["since"] if self.dead else None
+
+        def resumes(p: dict) -> bool:
+            if p.get("type") not in SCRIM or p.get("scoring"):
+                return False
+            if last_q and p.get("period") is not None and p["period"] <= last_q:
+                return False
+            w = _wall(p)
+            return not (since0 and w and w <= since0)
+        snap = any(resumes(p) for p in new)
         for p in new:
             w = _wall(p)
             if w and (self.last_wall is None or w > self.last_wall):
