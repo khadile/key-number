@@ -94,3 +94,17 @@
 {"id": "2026_06_ARI_LA:00-0033110:rec_yds:1792356059", "fill": "missed", "fill_dec": null, "fill_line": null, "logged_at": "2026-10-18T20:41:35.149376+00:00"}
 {"id": "2026_06_ARI_LA:game:total:1792356059", "expired": "pulled", "logged_at": "2026-10-18T20:41:35.149598+00:00"}
 {"id": "2026_06_ARI_LA:game:total:1792356059", "fill": "missed", "fill_dec": null, "fill_line": null, "logged_at": "2026-10-18T20:41:35.149760+00:00"}
+{"id": "2026_06_ARI_LA:00-0033110:rec_yds:1792356059", "clv_units": 1.0, "logged_at": "2026-10-18T20:46:03.251015+00:00"}
+{"id": "2026_06_ARI_LA:game:total:1792356059", "clv_units": -1.0, "logged_at": "2026-10-18T20:46:03.251199+00:00"}
+{"id": "2026_06_BUF_LV:game:total:1792358692", "fill": "filled", "fill_dec": 2.0, "fill_line": 54.5, "logged_at": "2026-10-18T21:25:29.023789+00:00"}
+{"id": "2026_06_BUF_LV:game:total:1792358692", "expired": "price now -122", "logged_at": "2026-10-18T21:27:11.773464+00:00"}
+{"id": "2026_06_BUF_LV:game:total:1792358692", "clv_units": 0.0, "logged_at": "2026-10-18T21:29:57.357162+00:00"}
+{"id": "2026_06_BUF_LV:00-0037261:receptions:1792360123", "expired": "line moved to 3.5", "logged_at": "2026-10-18T21:49:19.757868+00:00"}
+{"id": "2026_06_BUF_LV:00-0037261:receptions:1792360123", "fill": "filled", "fill_dec": 1.526315789473684, "fill_line": 3.5, "logged_at": "2026-10-18T21:49:19.758048+00:00"}
+{"id": "2026_06_LAC_KC:00-0039894:receptions:1792360242", "fill": "filled", "fill_dec": 2.05, "fill_line": 6.5, "logged_at": "2026-10-18T21:51:18.993134+00:00"}
+{"id": "2026_06_LAC_KC:game:spread:1792360337", "fill": "filled", "fill_dec": 1.8772, "fill_line": 17.5, "logged_at": "2026-10-18T21:52:54.203251+00:00"}
+{"id": "2026_06_BUF_LV:00-0037261:receptions:1792360123", "clv_units": -1.0, "logged_at": "2026-10-18T21:53:46.253199+00:00"}
+{"id": "2026_06_LAC_KC:00-0039894:receptions:1792360242", "clv_units": 0.0, "logged_at": "2026-10-18T21:55:55.826720+00:00"}
+{"id": "2026_06_LAC_KC:00-0039894:receptions:1792360242", "expired": "time", "logged_at": "2026-10-18T21:57:08.819822+00:00"}
+{"id": "2026_06_LAC_KC:game:spread:1792360337", "clv_units": 0.0, "logged_at": "2026-10-18T21:57:44.944059+00:00"}
+{"id": "2026_06_LAC_KC:game:spread:1792360337", "expired": "time", "logged_at": "2026-10-18T21:58:21.064274+00:00"}
