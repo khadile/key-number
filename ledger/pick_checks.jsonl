@@ -1,0 +1,47 @@
+{"kind": "game", "id": "2026_06_ARI_LA:ml", "game_id": "2026_06_ARI_LA", "verdict": "good", "failed": [], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "game", "id": "2026_06_DAL_GB:spread", "game_id": "2026_06_DAL_GB", "verdict": "ev", "failed": ["size", "market"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "game", "id": "2026_06_DAL_GB:ml", "game_id": "2026_06_DAL_GB", "verdict": "ev", "failed": ["market"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "game", "id": "2026_06_WAS_SF:ml", "game_id": "2026_06_WAS_SF", "verdict": "good", "failed": [], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_ARI_LA:00-0038559:receptions", "game_id": "2026_06_ARI_LA", "verdict": "ev", "failed": ["size", "lean"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_ARI_LA:00-0026498:pass_yds", "game_id": "2026_06_ARI_LA", "verdict": "good", "failed": [], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_ARI_LA:00-0037840:receptions", "game_id": "2026_06_ARI_LA", "verdict": "good", "failed": [], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_BAL_CLE:00-0032764:rec_yds", "game_id": "2026_06_BAL_CLE", "verdict": "good", "failed": [], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_BAL_CLE:00-0034753:receptions", "game_id": "2026_06_BAL_CLE", "verdict": "ev", "failed": ["size", "lean"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_BUF_LV:00-0037248:receptions", "game_id": "2026_06_BUF_LV", "verdict": "ev", "failed": ["size", "lean"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_BUF_LV:00-0038933:rec_yds", "game_id": "2026_06_BUF_LV", "verdict": "ev", "failed": ["lean"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_BUF_LV:00-0039338:rec_yds", "game_id": "2026_06_BUF_LV", "verdict": "ev", "failed": ["size", "lean"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_BUF_LV:00-0038563:receptions", "game_id": "2026_06_BUF_LV", "verdict": "ev", "failed": ["size"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_CAR_PHI:00-0040124:rec_yds", "game_id": "2026_06_CAR_PHI", "verdict": "good", "failed": [], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_CAR_PHI:00-0039491:receptions", "game_id": "2026_06_CAR_PHI", "verdict": "ev", "failed": ["size", "who"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_CHI_ATL:00-0038542:rec_yds", "game_id": "2026_06_CHI_ATL", "verdict": "ev", "failed": ["size"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_CHI_ATL:00-0037746:rush_yds", "game_id": "2026_06_CHI_ATL", "verdict": "ev", "failed": ["size"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_CHI_ATL:00-0036970:receptions", "game_id": "2026_06_CHI_ATL", "verdict": "ev", "failed": ["size"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_CHI_ATL:00-0037741:receptions", "game_id": "2026_06_CHI_ATL", "verdict": "ev", "failed": ["size"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_CHI_ATL:00-0039918:pass_yds", "game_id": "2026_06_CHI_ATL", "verdict": "ev", "failed": ["who"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_CHI_ATL:00-0036275:receptions", "game_id": "2026_06_CHI_ATL", "verdict": "good", "failed": [], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_DAL_GB:00-0036997:receptions", "game_id": "2026_06_DAL_GB", "verdict": "ev", "failed": ["size"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_DAL_GB:00-0038041:rec_yds", "game_id": "2026_06_DAL_GB", "verdict": "ev", "failed": ["size"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_DAL_GB:00-0038124:receptions", "game_id": "2026_06_DAL_GB", "verdict": "ev", "failed": ["size"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_HOU_JAX:00-0034383:rec_yds", "game_id": "2026_06_HOU_JAX", "verdict": "ev", "failed": ["size"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_HOU_JAX:00-0038608:receptions", "game_id": "2026_06_HOU_JAX", "verdict": "good", "failed": [], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_HOU_JAX:00-0040719:rec_yds", "game_id": "2026_06_HOU_JAX", "verdict": "good", "failed": [], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_HOU_JAX:00-0034960:rec_yds", "game_id": "2026_06_HOU_JAX", "verdict": "ev", "failed": ["size", "lean"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_LAC_KC:00-0033873:rush_yds", "game_id": "2026_06_LAC_KC", "verdict": "ev", "failed": ["size"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_LAC_KC:00-0038134:receptions", "game_id": "2026_06_LAC_KC", "verdict": "ev", "failed": ["size"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_LAC_KC:00-0030506:receptions", "game_id": "2026_06_LAC_KC", "verdict": "good", "failed": [], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_LAC_KC:00-0039894:rec_yds", "game_id": "2026_06_LAC_KC", "verdict": "ev", "failed": ["lean", "who"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_LAC_KC:00-0036355:pass_yds", "game_id": "2026_06_LAC_KC", "verdict": "ev", "failed": ["size"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_LAC_KC:00-0038544:receptions", "game_id": "2026_06_LAC_KC", "verdict": "ev", "failed": ["size", "who"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_LAC_KC:00-0039915:receptions", "game_id": "2026_06_LAC_KC", "verdict": "ev", "failed": ["size", "who"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_NO_NYG:00-0040743:pass_yds", "game_id": "2026_06_NO_NYG", "verdict": "ev", "failed": ["size"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_NO_NYG:00-0040715:rec_yds", "game_id": "2026_06_NO_NYG", "verdict": "ev", "failed": ["lean"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_NYJ_NE:00-0037740:rec_yds", "game_id": "2026_06_NYJ_NE", "verdict": "good", "failed": [], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_PIT_TB:00-0041489:receptions", "game_id": "2026_06_PIT_TB", "verdict": "ev", "failed": ["who"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_PIT_TB:00-0038129:receptions", "game_id": "2026_06_PIT_TB", "verdict": "ev", "failed": ["lean"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_TEN_IND:00-0040128:receptions", "game_id": "2026_06_TEN_IND", "verdict": "ev", "failed": ["size", "lean", "who"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_TEN_IND:00-0030279:rec_yds", "game_id": "2026_06_TEN_IND", "verdict": "ev", "failed": ["lean"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_TEN_IND:00-0038997:rec_yds", "game_id": "2026_06_TEN_IND", "verdict": "good", "failed": [], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_TEN_IND:00-0041438:receptions", "game_id": "2026_06_TEN_IND", "verdict": "ev", "failed": ["size"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_TEN_IND:00-0038117:rec_yds", "game_id": "2026_06_TEN_IND", "verdict": "ev", "failed": ["size", "lean"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_WAS_SF:00-0033280:rush_yds", "game_id": "2026_06_WAS_SF", "verdict": "ev", "failed": ["size"], "at": "2026-10-18T08:10:40.573539+00:00"}
+{"kind": "prop", "id": "2026_06_WAS_SF:00-0031408:receptions", "game_id": "2026_06_WAS_SF", "verdict": "ev", "failed": ["size", "who"], "at": "2026-10-18T08:10:40.573539+00:00"}
