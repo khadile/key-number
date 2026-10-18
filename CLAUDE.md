@@ -258,16 +258,25 @@ pick (game lines and props, not leans or parlays) carries checks (`model/checks.
 `board/checks.py`, props `props/checks.py`). It is a **good pick** when every check that applies passes,
 otherwise **+EV only**, with the reasons shown on the pick.
 
-- **sharp**: still +EV with the market read from Pinnacle's no-vig *price*, juice included, then moved toward
-  the model by k as usual. The game-line pricer reads Pinnacle's line as a coin flip whatever its juice. In
-  weeks 1-5 that made 18 of 45 +EV game picks look +EV when they were not; for example CHI +3 -102 looked
-  +3.8% with Pinnacle at CHI +3 +104. Props are priced from the no-vig price already. A prop with no Pinnacle
-  line fails this check: its edge would be DK against FD.
-- **size**: EV of 2% or more. Line-shopping props at 2%+ beat the close 81% vs 70% for all (SGO 2026).
+Each check was tested on its own market, with the EV at Pinnacle's closing no-vig price as the yardstick
+(less noisy than wins and losses). Props get sharp, size, lean and who. Game lines get market and who.
+
+- **sharp** (props): Pinnacle has the prop, so the edge is DK/FD against the sharp price. Without Pinnacle the
+  edge would be DK against FD.
+- **size** (props): EV of 2% or more. Line-shopping props at 2%+ beat the close 81% vs 70% for all (SGO 2026).
 - **lean** (props): overs on rec yds, rush yds and receptions need 5%+. Pinnacle's closes made those overs 2-5
   points likelier than they turned out in 2025 and 2026; passing yards showed no such bias.
 - **market** (game lines): Pinnacle hasn't moved against the pick (1.5 points of win chance) since its Tuesday
-  lock. Props lock at the last update, so they have nothing to compare.
+  lock. Tested on weeks 1-5, model side at Tuesday prices, 179 bets. When Pinnacle moved toward that side by
+  the last update, that update's price on it still closed at +0.8% EV (+3.0% on the +EV picks). When it moved
+  against, the close was -4.5% (-1.4%). Props lock at the last update, so they have nothing to compare.
+- **Rejected for game lines (2026-10-18, weeks 1-5 at Tuesday prices):**
+  - **Reading Pinnacle's juice**, in the pricer or as a check. The juice-aware pricer's 31 picks closed at +1.8%
+    EV against the board's 38 at +3.5%. The 15 board picks it would drop closed at +3.6% and the 8 it would add at
+    -2.9%. Tuesday juice is small (0.15 points) and barely tracks the close (correlation 0.12). The pricer stays
+    as it is: Pinnacle's line read as a coin flip.
+  - **A 2% edge minimum.** Model-side bets at 0-2% closed at +4.3%, 2-5% at +1.2%, and at or below 0% at -3.8%.
+    The sign of the EV matters, not its size, which also supports the lean rule.
 - **who**:
   - Props: not Questionable or Doubtful, not within 3 games of changing teams, not promoted.
   - Game lines: no QB on either team Questionable or Doubtful. Out is settled news the model already uses.
@@ -279,11 +288,8 @@ otherwise **+EV only**, with the reasons shown on the pick.
   was known before kickoff: Pinnacle at lock and at the last update, and that week's injury report.
 - **Record:** good vs +EV only, flat 1u. Weeks 1-5 are in-sample, because the checks were chosen with them in
   view. Week 6 on (`SINCE_WEEK`) is the test.
-- **Weeks 1-5, in-sample:**
-  - Props: good 53-38 +10.4u (ROI 11.5%, line value +0.70) vs +EV only 114-93 +12.3u (5.9%, +0.40).
-  - Game lines: good 8-10 vs +EV only 16-6-1, mostly moneyline long shots; tells nothing yet.
-- **Open fix:** the game-line pricer should read Pinnacle's juice itself (see sharp above). Changing it changes
-  which picks lock, so test it on weeks 1-6 Tuesday lines first.
+- **Weeks 1-5, in-sample:** props good 50-37 (+10.9% ROI) vs +EV only 111-101 (+0.8%), as published
+  2026-10-18. Game lines are too few to say.
 
 ## 5. Weekly cadence
 

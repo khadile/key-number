@@ -5,17 +5,24 @@ EV says a price beats our fair number. The user picks from the board rather than
 last board update before kickoff. A pick that passes every check that applies is a good pick; otherwise it is
 +EV only, with the reasons shown.
 
-- sharp: still +EV when the market's number is read from Pinnacle's price, juice included. Line shopping
-  DraftKings and FanDuel against the sharp price is the edge that held up (props at lock, 2026: +6.8% on 295
-  bets). Props are priced this way already; game lines are not (board/checks.py), so this is where a
-  game-line pick's EV gets corrected.
-- size: an edge of 2% or more. Props line-shopping bets at 2%+ beat the closing line 81% of the time against
-  70% for all of them (SGO, 2026 opens); below that the edge sits inside the error of taking out the vig.
+Props (props/checks.py): sharp, size, lean, who. Game lines (board/checks.py): market, who. Each was tested
+on its own market; the yardstick is EV at Pinnacle's closing no-vig price, far less noisy than wins and losses.
+
+- sharp (props): Pinnacle has the prop, so the edge is DraftKings or FanDuel against the sharp price, the edge
+  that held up (props at lock, 2026: +6.8% on 295 bets). Without Pinnacle it is one US book against the other.
+  Not a game-line check: reading Pinnacle's Tuesday juice into game lines made picks worse (2026 weeks 1-5:
+  the 15 board picks it would have dropped closed at +3.6% EV, the 8 it would have added at -2.9%; Tuesday
+  juice is small, 0.15 points, and barely tracks the close, correlation 0.12).
+- size (props): an edge of 2% or more. Props line-shopping bets at 2%+ beat the closing line 81% of the time
+  against 70% for all of them (SGO, 2026 opens). Not a game-line check: there, any +EV did (model-side bets at
+  0-2% closed at +4.3% EV, 2-5% at +1.2%, while those at or below 0% closed at -3.8%).
 - lean (props): overs on receiving yards, rushing yards and receptions need 5%+. Pinnacle's closing prices made
   those overs 2-5 points likelier than they turned out in 2025 and 2026, worth about 4-9% of EV at these prices
   (the 2026 picks: receiving-yards overs priced to win 56%, won 48.5%).
-- market (game lines): Pinnacle has not moved against the pick since it locked on Tuesday. Props lock at the
-  last update before their game, so they have no move to check.
+- market (game lines): Pinnacle has not moved against the pick since it locked on Tuesday. When it moved toward
+  the model's side by the last update, that update's price on the side still closed at +0.8% EV (+3.0% for
+  +EV picks); when it moved against, -4.5% (-1.4%). Props lock at the last update before their game, so they
+  have no move to check.
 - who: nothing about who plays is in doubt. Props: the player is not Questionable or Doubtful, has not just
   changed teams, and was not promoted into the role. Game lines: no QB on either team is Questionable or
   Doubtful (Out is settled news the model already uses).

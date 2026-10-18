@@ -1,11 +1,10 @@
-"""The good-pick checks for game-line picks (model/checks.py): Pinnacle's archived prices and the injury report.
+"""The good-pick checks for game-line picks (model/checks.py): did Pinnacle move against the pick since it locked,
+and is either quarterback in doubt.
 
-Sharp chance: the chance our exact bet wins with the market's number read from Pinnacle's no-vig PRICE, juice
-included (the median at which Pinnacle's line is a fair price, on the same key-number distributions the pricer
-uses), then moved toward the model by k as the board does. The board's own EV reads Pinnacle's line as a coin
-flip whatever its juice: in 2026 weeks 1-5 that made CHI +3 -102 look +3.8% when Pinnacle had CHI +3 at +104
-(-4.9% at Pinnacle's price), and moneylines lean on the model's win chance where Pinnacle's own moneyline is
-the sharper number. This check prices every pick the corrected way.
+Pinnacle's position for our exact bet is read from its no-vig price, juice included: the median at which its
+line is a fair price, on the same key-number distributions the pricer uses, so a pick at DraftKings +3 is
+compared fairly with Pinnacle at +2.5 -120 and a move in the juice alone counts. The pricer itself keeps reading
+Pinnacle's line as a coin flip: pricing Tuesday's juice in made 2026's picks worse (model/checks.py).
 """
 from datetime import datetime
 
@@ -44,22 +43,16 @@ def _mu_sharp(pricer: Pricer, market: str, row: dict) -> float | None:
     return None
 
 
-def bet_chance(pricer: Pricer, pk: dict, row: dict, model: float | None = None) -> tuple[float, float] | None:
-    """(p_win, p_push) of the pick's exact bet with the market read from Pinnacle's no-vig price in `row`, then,
-    given the model's number, moved toward it by k as the board does. None without a Pinnacle price."""
+def bet_chance(pricer: Pricer, pk: dict, row: dict) -> tuple[float, float] | None:
+    """(p_win, p_push) of the pick's exact bet with the market read from Pinnacle's no-vig price in `row`."""
     m, mu = pk["market"], _mu_sharp(pricer, pk["market"], row)
     if m == "ml":
         if not {"ml_home", "ml_away"} <= row.keys():
             return None
         ph = _novig(row["ml_home"], row["ml_away"])
-        if mu is not None and model is not None:   # the model's pull, carried through the win curve
-            ph += pricer.wins.home(mu + pricer.k_spread * (model - mu)) - pricer.wins.home(mu)
-        ph = min(max(ph, 0.001), 0.999)
         return (ph if pk["side"] == "home" else 1 - ph), 0.0
     if mu is None:
         return None
-    if model is not None:
-        mu += (pricer.k_spread if m == "spread" else pricer.k_total) * (model - mu)
     if m == "spread":
         over, push, under = pricer.mdist.side_probs(mu, -pk["line"] if pk["side"] == "home" else pk["line"])
     else:
@@ -122,15 +115,11 @@ def game_checks(pk: dict, g: dict, L: Lines, pricer: Pricer, as_of: datetime, qb
     """Checks, verdict and (before kickoff, given the model's current numbers) the price now."""
     pin_then = L.at("pinnacle", datetime.fromisoformat(pk["locked_at"]))
     pin_now = L.at("pinnacle", as_of)
-    bt = bet_chance(pricer, pk, pin_then) if pin_then else None          # the market alone, for its move
+    bt = bet_chance(pricer, pk, pin_then) if pin_then else None
     bn = bet_chance(pricer, pk, pin_now) if pin_now else None
-    model_then = pk.get("model_total") if pk["market"] == "total" else pk.get("model_margin")
-    bk = bet_chance(pricer, pk, pin_then, model_then) if pin_then else None   # the board's method, juice counted
-    ev_sharp = None if bk is None else bk[0] * (pk["dec"] - 1) - (1 - bk[0] - bk[1])
     p_then = None if bt is None else bt[0] / max(1 - bt[1], 1e-9)
     p_now = None if bn is None else bn[0] / max(1 - bn[1], 1e-9)
-    checks = [C.sharp(ev_sharp), C.size(pk["ev"]),
-              C.market(p_then, p_now, _pin_txt(pk, pin_then, p_then) if pin_then else "",
+    checks = [C.market(p_then, p_now, _pin_txt(pk, pin_then, p_then) if pin_then else "",
                        _pin_txt(pk, pin_now, p_now) if pin_now else ""),
               C.who(qb.get(g["home_team"], []) + qb.get(g["away_team"], []), "No quarterback on either team is in doubt.")]
     out = {"verdict": C.verdict(checks), "checks": checks}
