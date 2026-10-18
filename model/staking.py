@@ -1,7 +1,8 @@
 """How much each pick risks (user, 2026-10-15).
 
-- Flat units go only on positive-EV picks. A side the model leans to at negative EV is shown as a lean and
-  risks nothing: the board's 141 negative-EV spread and total picks in 2026 weeks 1-5 lost 11.2u (ROI -8%),
+- Flat units go only on positive-EV picks. A side the model leans to at negative EV is shown as a lean with no
+  stake: that is advice on the board. The record still counts every pick at 1u, leans included (user,
+  2026-10-18), so it stays the model's full record and differs from the +EV-only Kelly record. Why leans: the board's 141 negative-EV spread and total picks in 2026 weeks 1-5 lost 11.2u (ROI -8%),
   and over the 2022-26 backtest at closing prices they lost 0.5% on 1,618, never helping.
 - A quarter-Kelly size is tracked beside the flat record, not yet the stake: Kelly stakes in proportion to the
   edge for the price, so a solid favorite gets more and a long shot less (-147 at 62%: 2u; +575 at 16%: 0.25u),

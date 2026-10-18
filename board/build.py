@@ -103,7 +103,10 @@ def _pick_rows(picks: list[dict], results: list[dict], verdict_by: dict | None =
                     **_stake(p), **vb.get(p["id"], {}),
                     "p_win": p.get("p_win") if p.get("kind") != "parlay" else p.get("p"),
                     "ev": p.get("ev"), "result": r.get("result"),
-                    "units": round(r["units"], 2) if "units" in r else None, "clv": r.get("clv")})
+                    # straight picks at 1u in the record, leans included (board/ledger.record)
+                    "units": (None if "result" not in r else round(r["units"], 2) if p.get("kind") == "parlay"
+                              else round(ledger.units_for(r["result"], p["dec"], STRAIGHT_RISK), 2)),
+                    "clv": r.get("clv")})
     return out
 
 

@@ -530,8 +530,8 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     fair: "Our fair number: the market's line moved part of the way toward the model, by the share lines have actually moved toward it this season.",
     novig: "No-vig: a book's two prices with its built-in margin taken out, which turns them into the market's true chances.",
     clv: "Line value: how much better our number was than the line at kickoff. Beating the closing line is the best early sign of a real edge, long before wins and losses settle.",
-    units: "1 unit is one standard bet. Positive-EV straight picks risk 1 unit and each parlay 0.5; a lean risks nothing. Units won shows profit whatever your bet size.",
-    lean: "A lean: the side the model prefers, at a price with negative expected value. It stays on the board so the model's view is on record, but it risks nothing and is not in the record. From week 6; through week 5 these were 1-unit picks.",
+    units: "1 unit is one standard bet. The record counts every straight pick at 1 unit, leans included, and each parlay at 0.5, so units won shows the model's profit whatever your bet size.",
+    lean: "A lean: the side the model prefers, at a price with negative expected value. The board gives it no stake because the price is against it, but the record still counts it at 1 unit, so the record is the model's full output.",
     kelly: "Quarter Kelly: a stake sized to the edge for the price, a quarter of what the Kelly formula says, rounded to ¼, ½, 1 or 2 units (1u = 1% of the bankroll). A solid favorite with an edge gets more, a long shot less. Kept as its own record beside the flat one, because sizing by the model's confidence amplifies its mistakes as much as its edge.",
     roi: "Return on investment: units won divided by units risked.",
     potw: "Picks of the week: the strongest picks by edge relative to the payout, one per game.",
@@ -708,17 +708,18 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
       ${tile(term("ats", "ATS"), R.ats)}${tile("Over/under", R.ou)}${tile("Moneyline", R.ml)}
       ${tile(term("potw", "Picks of the week"), R.potw, "", true)}${tile(term("golden", "Golden parlay"), R.parlay, "", true)}${tile(term("lottery", "+EV lottery"), R.lottery)}
       <div class="tile"><span class="k">${term("units", "Units")}</span><span class="v ${cls(a.units)}"${a.n ? ` data-count="${a.units}" data-fmt="u"` : ""}>${a.n ? units(a.units) : "–"}</span>
-        <span class="s">${a.n ? term("roi", "ROI") + " " + pct(a.roi, 1) + " on " + a.n + " picks" : "1u on +EV picks, 0.5u per parlay"}</span></div>
+        <span class="s">${a.n ? term("roi", "ROI") + " " + pct(a.roi, 1) + " on " + a.n + " picks" : "1u every pick, 0.5u per parlay"}</span></div>
       <div class="tile"><span class="k">${term("clv", "Line value")}</span><span class="v ${cls(clv)}"${clv == null ? "" : ` data-count="${clv}" data-fmt="s2"`}>${clv == null ? "–" : signed(clv, 2)}</span>
         <span class="s">${clv == null ? "Points beaten vs the close" : "pts vs closing line, " + a.clv_n + " picks"}</span></div>
     </div>`;
   }
 
-  // Leans risk nothing and stay out of the record; what they would have made at 1u checks the lean rule itself.
+  // The full record (every pick at 1u) split by the price: the +EV picks, and the negative-EV sides.
   function leansNote(R) {
-    const L = R && R.leans;
-    if (!L || !L.n) return "";
-    return `<p class="note">${term("lean", "Leans")} (negative EV, no units): ${rec(L)}, which at 1u each would be <span class="${cls(L.units_1u)}">${units(L.units_1u)}</span>.</p>`;
+    const S = R && R.split;
+    if (!S || !(S.pos.n + S.neg.n)) return "";
+    const t = (r) => `${rec(r)}, <span class="${cls(r.units)}">${units(r.units)}</span>${r.n ? `, ROI ${pct(r.roi, 1)}` : ""}`;
+    return `<p class="note">Of these, +EV picks went ${t(S.pos)}; negative-EV sides (${term("lean", "leans")} on the board) went ${t(S.neg)}.</p>`;
   }
 
   // ---------- quarter Kelly: its own record from week 1, apart from the flat one (model/staking.py)
@@ -764,7 +765,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     else if (p.market === "total") s = `Model total ${num(p.model_total, 1)}, market ${half(p.market_total)}. `;
     return `${s}Wins ${pct(win, 1)} by our numbers; ${am(p.american)} needs ${pct(need, 1)} to break even. EV ${signed(100 * p.ev, 1)}%. ${stakeWhy(p)}`;
   }
-  const stakeWhy = (p) => (p.risk === 0 ? "A lean: negative EV, so it risks nothing."
+  const stakeWhy = (p) => (p.risk === 0 ? "A lean: negative EV, so no stake; the record still counts it at 1u."
     : p.ev <= 0 ? "Staked 1u: locked before the lean rule (week 6)."
     : `Stake 1u. Quarter Kelly, its own record: ${stakeU(p.kelly_u)}.`);
   function pickChip(p, potw) {
@@ -833,7 +834,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
         <p class="lede">Projected scores and picks for every game. Picks are locked when the week is published and graded at that line, win or lose.</p></section>
       <section class="sec"><header><h2>Record <em>season to date</em></h2><a class="more" href="#record">Full record →</a></header>
         ${strip(A)}
-        <p class="note">Weeks 1–${m.live_start - 1} were ${term("sim", "replayed before launch")} with the same rules; picks are live from week ${m.live_start}. Every pick risked 1u through week 5; from week 6 a negative-EV side is a ${term("lean", "lean")} and risks nothing.</p>
+        <p class="note">Weeks 1–${m.live_start - 1} were ${term("sim", "replayed before launch")} with the same rules; picks are live from week ${m.live_start}. The record counts every pick at 1u, ${term("lean", "leans")} included: the model's full record. The board gives leans no stake, and the quarter-Kelly line below covers only the +EV picks.</p>
         ${leansNote(A)}${kLine(A.kelly, "picks")}</section>
       <section class="sec"><header><h2>This week's best</h2></header>${potwPanel()}</section>
       ${days.map((d) => `<section class="sec"><h3 class="day">${esc(d.day)}</h3><div class="cards">${d.games.map(card).join("")}</div></section>`).join("")}
@@ -972,7 +973,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
       <div class="px">${am(P.american)} at ${esc(P.book_name)} ${stakePill(P)}</div>
       <p class="say">${say}</p>
       ${gauge(win, need)}
-      <div class="note">${term("ev", "Expected value")} ${signed(100 * P.ev, 1)}% per unit · ${lean ? "a lean risks nothing" : P.ev <= 0 ? "staked 1u: locked before the lean rule" : `${term("kelly", "quarter Kelly")} ${stakeU(P.kelly_u)}, its own record`}</div>
+      <div class="note">${term("ev", "Expected value")} ${signed(100 * P.ev, 1)}% per unit · ${lean ? "a lean: no stake, but the record counts it at 1u" : P.ev <= 0 ? "staked 1u: locked before the lean rule" : `${term("kelly", "quarter Kelly")} ${stakeU(P.kelly_u)}, its own record`}</div>
       ${checksBlock(P.checks)}</article>`;
   }
   const chev = '<span class="chev" aria-hidden="true">›</span>';
@@ -1172,25 +1173,22 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     add(D.record.live_rows || [], false);
     return out;
   }
-  function subtotal(rows) {   // leans risk nothing, so they are counted apart from the record
-    const leans = rows.filter((r) => r.risk === 0), g = rows.filter((r) => r.risk !== 0 && r.result);
-    const t = { w: 0, l: 0, p: 0, units: 0 }, lt = { w: 0, l: 0, p: 0 };
+  function subtotal(rows) {   // every pick at 1u, leans included (the record is the model's full record)
+    const g = rows.filter((r) => r.result), nl = rows.filter((r) => r.risk === 0).length;
+    const t = { w: 0, l: 0, p: 0, units: 0 };
     for (const r of g) { t[{ W: "w", L: "l", P: "p" }[r.result]]++; t.units += r.units; }
-    const lg = leans.filter((r) => r.result);
-    for (const r of lg) lt[{ W: "w", L: "l", P: "p" }[r.result]]++;
-    const pend = rows.filter((r) => r.risk !== 0 && !r.result).length;
+    const pend = rows.length - g.length;
     return [g.length ? `${t.w}-${t.l}${t.p ? "-" + t.p : ""} · <span class="${cls(t.units)}">${units(t.units)}</span>` : "",
-      leans.length ? `${leans.length} lean${leans.length > 1 ? "s" : ""}${lg.length ? ` (${lt.w}-${lt.l}${lt.p ? "-" + lt.p : ""})` : ""}` : "",
-      pend ? `${pend} pending` : ""].filter(Boolean).join(" · ");
+      nl ? `${nl} lean${nl > 1 ? "s" : ""} included` : "", pend ? `${pend} pending` : ""].filter(Boolean).join(" · ");
   }
   function catTable(rows, isParlay) {
-    return `<div class="scroll"><table class="t"><thead><tr><th>Pick</th><th>${isParlay ? "Legs" : "Game"}</th><th class="num">Price</th><th class="num">Win chance</th><th class="num">Stake</th>${isParlay ? "" : `<th class="num">${term("kelly", "Quarter Kelly")}</th>`}<th>Result</th><th class="num">Units</th>${isParlay ? "" : '<th class="num">Line value</th>'}</tr></thead><tbody>
-      ${rows.map((h) => `<tr${h.risk === 0 ? ' class="lean"' : ""}><td><b>${label(h.label)}</b>${h.potw ? ' <span class="tag">POTW</span>' : ""}${h.risk === 0 ? ' <span class="tag lean">Lean</span>' : ""}${h.verdict ? " " + vdTag(h.verdict, h.failed) : ""}</td>
+    return `<div class="scroll"><table class="t"><thead><tr><th>Pick</th><th>${isParlay ? "Legs" : "Game"}</th><th class="num">Price</th><th class="num">Win chance</th>${isParlay ? "" : `<th class="num">${term("kelly", "Quarter Kelly")}</th>`}<th>Result</th><th class="num">Units</th>${isParlay ? "" : '<th class="num">Line value</th>'}</tr></thead><tbody>
+      ${rows.map((h) => `<tr><td><b>${label(h.label)}</b>${h.potw ? ' <span class="tag">POTW</span>' : ""}${h.risk === 0 ? ' <span class="tag lean">Lean</span>' : ""}${h.verdict ? " " + vdTag(h.verdict, h.failed) : ""}</td>
         <td>${isParlay ? h.legs.map((l) => label(l)).join(" · ") : esc(h.game)}</td>
         <td class="num">${am(h.american)}${h.book ? " " + esc(h.book) : ""}</td><td class="num">${pct(h.p_win)}</td>
-        <td class="num">${h.risk === 0 ? "0u" : stakeU(h.risk)}</td>${isParlay ? "" : `<td class="num">${h.kelly_u ? stakeU(h.kelly_u) : "–"}</td>`}
+        ${isParlay ? "" : `<td class="num">${h.kelly_u ? stakeU(h.kelly_u) : "–"}</td>`}
         <td>${h.result ? resChip(h.result) : '<span class="res P">PENDING</span>'}</td>
-        <td class="num ${h.risk === 0 ? "" : cls(h.units)}">${h.units == null || h.risk === 0 ? "–" : units(h.units)}</td>
+        <td class="num ${cls(h.units)}">${h.units == null ? "–" : units(h.units)}</td>
         ${isParlay ? "" : `<td class="num">${h.clv == null ? "–" : signed(h.clv, 1)}</td>`}</tr>`).join("")}
     </tbody></table></div>`;
   }
@@ -1214,7 +1212,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     app.innerHTML = `
       <section class="hello"><h1>Record</h1><p class="lede">Every pick, graded at the line it was locked at. Line value is how many points better our number was than the closing line; beating the close is the best early sign of a real edge, long before win-loss records settle.</p></section>
       <section class="sec"><header><h2>Season to date</h2></header>${strip(A)}
-        <p class="note">Weeks 1–${D.meta.live_start - 1} were replayed before launch at Tuesday lines with only Tuesday information; picks are live from week ${D.meta.live_start}. Every pick risked 1u through week 5, and those weeks stay that way because they helped choose the lean rule; from week 6 a negative-EV side is a ${term("lean", "lean")} and risks nothing.</p>
+        <p class="note">Weeks 1–${D.meta.live_start - 1} were replayed before launch at Tuesday lines with only Tuesday information; picks are live from week ${D.meta.live_start}. Every pick counts at 1u here, ${term("lean", "leans")} included, so this is the model's full record; the board gives leans no stake because their price is against them. The Quarter Kelly section below is the +EV picks only.</p>
         ${leansNote(A)}</section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${unitsChart(A) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
       ${verdictSection(D.record.verdicts, "pick")}
@@ -1252,7 +1250,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
           <li>Coaching changes, motivation and late-season resting.</li></ul>
         <h3>Rules</h3>
         <ul><li>Positive-EV straight picks risk 1 unit at the listed price; the Golden Parlay and the +EV Lottery each risk 0.5 units.</li>
-          <li>From week 6, a negative-EV side is a ${term("lean", "lean")}: it stays on the board, risks nothing and is kept out of the record. Through week 5 every pick risked 1 unit, and those weeks stay that way: they helped choose the rule.</li>
+          <li>From week 6, a negative-EV side is a ${term("lean", "lean")}: the board shows it with no stake, because a bet at that price is expected to lose. The record still counts every pick at 1 unit, leans included, so it stays the model's full record.</li>
           <li>Every positive-EV pick is also checked, because +EV is not the same as a good pick: Pinnacle must not have moved against it since it locked (when it moved toward the model's side, that side's later price still beat the close; when it moved against, it lost to the close), and no quarterback on either team can be Questionable or Doubtful. Pass both and it is a <b>good pick</b>; otherwise it is <b>+EV only</b>, with the reasons on the pick. Tested and left out: the size of the edge (game-line picks under 2% did as well at the close as bigger ones), reading Pinnacle's Tuesday juice into the price (it made picks worse), and the gap between the model and the market (it predicted nothing in 2022–25).</li>
           <li>${term("kelly", "Quarter Kelly")} sizes every positive-EV pick by its edge for the price (¼, ½, 1 or 2 units) and keeps its own record from week 1, apart from the flat one. In the 2022–26 backtest at closing prices it lost more per unit staked than flat 1u, because the model overrates its biggest edges; 2026's first five weeks went its way. It replaces flat units only if it keeps up from week 6 on.</li>
           <li>Picks lock when the week is published and are never changed. Each is graded at the line and price it was locked at.</li>

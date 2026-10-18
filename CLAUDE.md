@@ -203,12 +203,15 @@ Demo replays of the live engine write only to `data/live/demo_ledger/`.
 
 - Prices come from DraftKings and FanDuel only (`SHOP_BOOKS`); Pinnacle is
   the reference. Game-line picks before 2026-10-08 were shopped across 8 books.
-- Stakes live in `model/staking.py` (user, 2026-10-15). A straight bet risks
-  1.0u at the listed price only when its EV is positive. A negative-EV side
-  is a **lean**: it stays on the board with `risk: 0` and stays out of the
-  record. Leans get their own line on the board, showing what they would have
-  made at 1u, which is the check on the rule itself. Props picks are all +EV
-  already, so props have no leans.
+- Stakes live in `model/staking.py` (user, 2026-10-15). A straight bet is
+  staked 1.0u only when its EV is positive. A negative-EV side is a **lean**:
+  it stays on the board with `risk: 0`, meaning no stake. That is advice.
+- **The record counts every pick at 1u, leans included** (user, 2026-10-18).
+  It is the model's full record. Without the leans it would just repeat the
+  Kelly section's "same picks at 1u". `ledger.record` and `grade_all` grade
+  straight picks at 1u whatever their stake; the TNF leans already graded at
+  0u are recomputed. A note splits the record into +EV picks and negative-EV
+  sides. Props picks are all +EV already, so props have no leans.
 - The lean rule starts with week 6. Week 6's 27 negative-EV game picks were
   locked at 1u on 2026-10-13. They became leans through appended `stake`
   lines at 07:06 ET on 2026-10-15, before any week 6 kickoff
