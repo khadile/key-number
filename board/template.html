@@ -550,7 +550,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     evclose: "EV at the close: what each pick's locked price was worth against Pinnacle's no-vig line just before tip. A market-anchored edge is only real if the price beats where the market settled, and this shows it long before wins and losses do.",
     golden: "Golden Parlay: two or three positive-value picks from different games, priced +150 to +300. It should cash now and then.",
     lottery: "+EV Lottery: three to five positive-value picks priced over +500. It misses most weeks and is here for the occasional big payout.",
-    ladder: "Ladder: two or three likely legs (60%+ each), main or alternate lines, each worth 1%+ at its price, from different games, priced +100 to +150. A parlay only multiplies its legs' value, so every leg must have value on its own.",
+    ngolden: "Golden Parlay (NBA): the confident ticket. Two or three legs from different games, each 60%+ likely and worth 1%+ at its price (main or alternate lines), priced +100 to +300, chosen for the best chance of cashing. A parlay only multiplies its legs' value, so every leg must have value on its own; on a day nothing qualifies there is none.",
     k: "The share of the gap between the model and the market that lines have actually closed by kickoff this season. A small number means the market already knows most of what the model knows.",
     median: "The model's middle outcome: half of its 4,000 simulated games land above it and half below.",
     range80: "In 8 of 10 simulated games the stat lands inside this range.",
@@ -1997,8 +1997,8 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
       <span class="s">${a.n ? term("roi", "ROI") + " " + pct(a.roi, 1) + " on " + a.n + " picks" : "1u every pick, 0.5u per parlay"}</span></div>`;
   }
   function nStrip(R) {
-    return `<div class="strip">${tile(term("ats", "ATS"), R.ats)}${tile("Over/under", R.ou)}
-      ${tile(term("potd", "Picks of the day"), R.potd, "", true)}${tile(term("golden", "Golden parlay"), R.parlay, "", true)}${tile(term("ladder", "Ladder"), R.ladder, "", true)}${tile(term("lottery", "+EV lottery"), R.lottery)}
+    return `<div class="strip">${tile(term("ats", "ATS"), R.ats)}${tile("Over/under", R.ou)}${tile("Moneyline", R.ml)}
+      ${tile(term("potd", "Picks of the day"), R.potd, "", true)}${tile(term("ngolden", "Golden parlay"), R.parlay, "", true)}${tile(term("lottery", "+EV lottery"), R.lottery)}
       ${unitsTile(R.all)}${evTile(R.all)}</div>`;
   }
   function npStrip(R) {
@@ -2023,19 +2023,16 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
         <div class="kv"><div><span>Hits</span><b>${pct(P.p)}</b></div><div><span>0.5u pays</span><b>+${(0.5 * (P.dec - 1)).toFixed(2)}u</b></div>
         <div><span>EV</span><b class="${cls(P.ev)}">${evPct(P.ev)}</b></div></div>`;
     };
-    const G = (parlays || {}).golden, Lt = (parlays || {}).lottery, Ld = (parlays || {}).ladder;
-    const ladder = what === "picks" ? `<section class="panel gold"><h3>Ladder <span class="tag">+100 to +150</span></h3>
-          ${Ld ? ticket(Ld, "") : '<p class="note">No two or three likely legs with value today. Most days there will not be: see How it works.</p>'}
-          <p class="note">Two or three legs each 60%+ likely and each worth 1%+ at its price, main or alternate lines, from different games: the likely side of an alternate line is where books keep the least margin.</p></section>` : "";
+    const G = (parlays || {}).golden, Lt = (parlays || {}).lottery;
     return `<div class="featured">
       <section class="panel gold"><h3>Picks of the day <span class="tag">Top ${picks.length}</span></h3>
         ${rows || `<p class="note">No ${what} cleared the bar today, or today's ${what} have not locked yet. Zero is a valid day.</p>`}
         <p class="note">Positive expected value only, at the better of ${esc(N.meta.books.join(" and "))}, one per game, ranked by edge relative to the payout.</p></section>
       <div class="stack">
-        <section class="panel gold"><h3>Golden parlay <span class="tag">+150 to +300</span></h3>
-          ${ticket(G, `No combination of today's positive-EV ${what} lands between +150 and +500.`)}
-          <p class="note">Two or three positive-EV legs from different games, priced +150 to +300 (up to +500 only when nothing fits).</p></section>
-        ${ladder}<section class="panel lotto"><h3>+EV lottery <span class="tag">Over +500</span></h3>
+        <section class="panel gold"><h3>Golden parlay <span class="tag">Most likely to cash</span></h3>
+          ${ticket(G, `No two or three ${what === "picks" ? "likely legs with value" : "positive-EV props"} combine to +100 or longer today. No Golden beats a forced one.`)}
+          <p class="note">${what === "picks" ? "Two or three legs from different games, each 60%+ likely and worth 1%+ at its price, main or alternate spreads, totals or moneylines" : "Two or three positive-EV props from different games"}: the combination priced +100 to +300 with the best chance of cashing. Every leg has value on its own, so the ticket does too.</p></section>
+        <section class="panel lotto"><h3>+EV lottery <span class="tag">Over +500</span></h3>
           ${ticket(Lt, "No long-shot combination with positive expected value today.")}
           <p class="note">The best expected value among 3 to 5 legs priced over +500. It misses most days.</p></section>
       </div>
@@ -2220,8 +2217,14 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
       const ps = byGame[g.id] || [];
       const side = (t) => ps.filter((p) => p.team === t);
       const lock = locked.has(String(g.id)) ? "Props locked" : `Props lock ${etTime(g.locks.props)}`;
-      return `<section class="sec"><header><h2>${nbadge(g.away)} at ${nbadge(g.home)} <em>${esc(g.tip.time)} · ${lock}</em></h2></header>
-        ${[g.away, g.home].map((t) => side(t).length ? `<div class="pcards n">${side(t).map(npCard).join("")}</div>` : "").join("") || '<p class="note">No tracked players yet.</p>'}</section>`;
+      const picks = ps.filter((p) => p.pick).sort((a, b) => b.pick.ev - a.pick.ev), best = picks[0];
+      const when = g.status === "final" ? "Final" : g.status === "live" ? "In progress" : esc(g.tip.time);
+      return `<details class="acc gacc">
+        <summary><span class="mu">${nbadge(g.away)}<span class="at">at</span>${nbadge(g.home)}</span>
+          <span class="gm"><b>${nnick(g.away)} at ${nnick(g.home)}</b><span class="note">${when} · ${lock}</span></span>
+          <span class="gs">${picks.length ? `<span class="cnt">${picks.length} pick${picks.length > 1 ? "s" : ""}</span>` : '<span class="cnt none">No picks</span>'}${best ? `<span class="bestc">Best: ${esc(best.name)} ${best.pick.side === "over" ? "Over" : "Under"} ${num(best.pick.line, 1).replace(/\.0$/, "")} ${esc(NMK[best.pick.market].toLowerCase())}, EV ${evPct(best.pick.ev)}</span>` : ""}</span>
+          ${chev}</summary>
+        <div class="acc-body">${[g.away, g.home].map((t) => side(t).length ? `<div class="pcards n">${side(t).map(npCard).join("")}</div>` : "").join("") || '<p class="note">No tracked players yet.</p>'}</div></details>`;
     }).join("");
     app.innerHTML = `
       <section class="hello"><h1>NBA props · ${esc(N.meta.day_label)}</h1>
@@ -2229,8 +2232,8 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
       <section class="sec"><header><h2>Record <em>${esc(N.meta.label)} season</em></h2><a class="more" href="#nba-props-record">Full record →</a></header>
         ${npStrip(R)}${nKelly(R.kelly, "props")}</section>
       <section class="sec"><header><h2>Today's best</h2></header>${nBest(potd, PR.parlays, "props")}</section>
+      <section class="sec"><header><h2>Games <em>tap a game for its players</em></h2></header>${games || '<p class="note">No games today.</p>'}</section>
       ${lsSection()}
-      ${games || '<section class="sec"><p class="note">No games today.</p></section>'}
       <p class="fine">Model output, not betting advice. A void (the player sits) risks nothing and stays out of the record.</p>`;
   }
   function renderNbaPropsRecord() {
@@ -2275,7 +2278,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
         <h3>Edges being tested</h3>
         <ul><li>Line shopping against Pinnacle, game lines and props (the record's EV at the close shows first whether it is real).</li>
           <li>Unders: books shade popular overs; overs and unders are recorded apart.</li>
-          <li>The Ladder: the likely side of an alternate line carries the least margin (opening night, FanDuel's 70-90% alternate totals cost 0-3% against the fair line, the long-shot side 15-35%), so when a book's whole ladder trails Pinnacle those legs can have value.</li>
+          <li>The Golden Parlay's legs: the likely side of an alternate line carries the least margin (opening night, FanDuel's 70-90% alternate totals cost 0-3% against the fair line, the long-shot side 15-35%), so when a book's whole ladder trails Pinnacle those legs can have value.</li>
           <li>Long shots: every "N+" rung is graded against its price, so whether books misprice them shows up without trusting the model's tail.</li>
           <li>The model's early-season lean, while ratings still carry last season.</li>
           <li>Back-to-backs and rest, a teammate's props when a starter sits, and referee crews on totals: next, as data comes in.</li></ul>

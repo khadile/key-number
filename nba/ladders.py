@@ -105,11 +105,14 @@ if __name__ == "__main__":
     main()
 
 
-# ---------------------------------------------------------------- the Ladder: likely legs with value, strung together
+# ---------------------------------------------------------------- the Golden Parlay: likely legs with value, strung together
+# The user's Golden Parlay (2026-10-20): "my most confident picks, it should most likely cash", main or alternate
+# lines. It replaced both the old NBA Golden (most EV among +EV main-line picks at +150 to +300) and the Ladder
+# (likely +EV legs at +100 to +150), which did the same job.
 
 LADDER_P_MIN = 0.60       # a leg the user would call likely
 LADDER_EV_MIN = 0.01      # and worth at least 1% at the book's price
-LADDER_BAND = (2.0, 2.5)  # +100 to +150 (user, 2026-10-20)
+LADDER_BAND = (2.0, 4.0)  # +100 to +300; the most likely ticket usually lands near +100 to +150
 
 
 def ladder_legs(h: pl.DataFrame, cut: datetime, fair: dict, pr: GamePricer, game: dict) -> list[dict]:
@@ -147,21 +150,22 @@ def ladder_legs(h: pl.DataFrame, cut: datetime, fair: dict, pr: GamePricer, game
     return [x for x in out if x["p_win"] >= LADDER_P_MIN and x["ev"] >= LADDER_EV_MIN]
 
 
-def best_ladder(legs_by_game: dict[int, list[dict]]) -> list[dict] | None:
-    """The 2-3 leg combination from different games priced +100 to +150 with the most expected value (each leg
-    already has value, so the ticket does). Per game only its five best legs are tried."""
+def best_ladder(legs_by_game: dict[int, list[dict]], band: tuple[float, float] = LADDER_BAND) -> list[dict] | None:
+    """The 2-3 leg combination from different games priced in `band` most likely to cash (each leg already has
+    value, so the ticket does; ties go to more value). Per game only its five likeliest legs are tried."""
     import itertools
     import math
-    pools = {g: sorted(v, key=lambda x: -x["ev"])[:5] for g, v in legs_by_game.items() if v}
-    best, best_ev = None, 0.0
+    pools = {g: sorted(v, key=lambda x: (-x["p_win"], -x["ev"]))[:5] for g, v in legs_by_game.items() if v}
+    best, best_key = None, (0.0, 0.0)
     games_ = list(pools)
     for n in (2, 3):
         for gs in itertools.combinations(games_, n):
             for legs in itertools.product(*(pools[g] for g in gs)):
                 dec = math.prod(l["dec"] for l in legs)
-                if not LADDER_BAND[0] <= dec <= LADDER_BAND[1]:
+                if not band[0] <= dec <= band[1]:
                     continue
                 ev = math.prod(l["p_win"] * l["dec"] + l["p_push"] for l in legs) - 1
-                if ev > best_ev:
-                    best, best_ev = list(legs), ev
+                hit = math.prod(l["p_win"] + l["p_push"] for l in legs) - math.prod(l["p_push"] for l in legs)
+                if ev > 0 and (hit, ev) > best_key:
+                    best, best_key = list(legs), (hit, ev)
     return best

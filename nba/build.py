@@ -263,6 +263,23 @@ def parlays(picks: list[dict], day: date, prefix: str, now: datetime, want=("gol
     return out
 
 
+def props_golden(pool: list[dict], day: date, now: datetime) -> dict | None:
+    import math
+    by: dict = {}
+    for p in pool:
+        if p["ev"] > 0:
+            by.setdefault(p["game_id"], []).append(p)
+    legs = best_ladder(by)
+    if not legs:
+        return None
+    dec = math.prod(l["dec"] for l in legs)
+    return {"kind": "parlay", "type": "golden", "id": f"{day.isoformat()}:props:golden", "day": day.isoformat(),
+            "legs": [l["id"] for l in legs], "dec": round(dec, 3), "american": american(dec),
+            "p": round(math.prod(l["p_win"] + l["p_push"] for l in legs) - math.prod(l["p_push"] for l in legs), 4),
+            "ev": round(math.prod(l["p_win"] * l["dec"] + l["p_push"] for l in legs) - 1, 4), "risk": PARLAY_RISK,
+            "locked_at": now.isoformat()}
+
+
 def ladder_rows(legs: list[dict], games_by: dict, fair_now: dict, day: date, now: datetime) -> list[dict]:
     """The Ladder's legs (kind "alt": a main or alternate line, graded like a pick but kept out of the picks'
     record) and the ticket itself."""
@@ -279,7 +296,7 @@ def ladder_rows(legs: list[dict], games_by: dict, fair_now: dict, day: date, now
     dec = math.prod(r["dec"] for r in rows)
     ev = math.prod(r["p_win"] * r["dec"] + r["p_push"] for r in rows) - 1
     hit = math.prod(r["p_win"] + r["p_push"] for r in rows) - math.prod(r["p_push"] for r in rows)
-    rows.append({"kind": "parlay", "type": "ladder", "id": f"{day.isoformat()}:ladder", "day": day.isoformat(), "legs": [r["id"] for r in rows],
+    rows.append({"kind": "parlay", "type": "golden", "id": f"{day.isoformat()}:golden", "day": day.isoformat(), "legs": [r["id"] for r in rows],
                  "dec": round(dec, 3), "american": american(dec), "p": round(hit, 4), "ev": round(ev, 4), "risk": PARLAY_RISK,
                  "locked_at": now.isoformat()})
     return rows
@@ -490,11 +507,11 @@ def main() -> None:
         pool = [p for p in existing + writes if p.get("kind") == "pick" and p["game_id"] in day_ids and tips[p["game_id"]] > now]
         if f"{today}:potd" not in have:
             writes.append({"kind": "potd", "id": f"{today}:potd", "day": today.isoformat(), "picks": potd(pool), "at": now.isoformat()})
-        want = tuple(t for t in ("golden", "lottery") if f"{today}:{t}" not in have)
-        if want:
-            writes += parlays(pool, today, "", now, want)
-        # the Ladder (user, 2026-10-20): 2-3 likely legs with value, main or alternate lines, priced +100 to +150
-        if f"{today}:ladder" not in have:
+        if f"{today}:lottery" not in have:
+            writes += parlays(pool, today, "", now, ("lottery",))
+        # the Golden Parlay (user, 2026-10-20): the 2-3 likely legs with value, main or alternate lines, most likely to
+        # cash at +100 or longer (nba/ladders.py); none on a day nothing qualifies
+        if f"{today}:golden" not in have:
             games_by = {g["game_id"]: g for g in day_games}
             legs_by = {gid: [{**l, "game_id": gid} for l in ladder_legs(lines_obj[gid].h, now, fair_now[gid], pricer, games_by[gid])]
                        for gid in day_ids if tips[gid] > now and lines_obj[gid].h.height}
@@ -502,7 +519,7 @@ def main() -> None:
             if lad:
                 writes += ladder_rows(lad, games_by, fair_now, today, now)
             else:
-                print(f"ladder: no 2-3 leg ticket from {sum(map(len, legs_by.values()))} likely +EV legs")
+                print(f"golden: no 2-3 leg ticket from {sum(map(len, legs_by.values()))} likely +EV legs")
     if writes:
         if a.dry_run:
             print(f"dry run: would lock {sum(w['kind'] == 'pick' for w in writes)} game-line picks and {sum(w['kind'] != 'pick' for w in writes)} daily items")
@@ -543,9 +560,11 @@ def main() -> None:
         pool = [p for p in p_existing + p_writes if p.get("kind") == "prop" and p["game_id"] in day_ids and tips[p["game_id"]] > now]
         if f"{today}:props:potd" not in p_have:
             p_writes.append({"kind": "potd", "id": f"{today}:props:potd", "day": today.isoformat(), "picks": potd(pool), "at": now.isoformat()})
-        want = tuple(t for t in ("golden", "lottery") if f"{today}:props:{t}" not in p_have)
-        if want:
-            p_writes += parlays(pool, today, "props:", now, want)
+        if f"{today}:props:lottery" not in p_have:
+            p_writes += parlays(pool, today, "props:", now, ("lottery",))
+        # the props Golden Parlay: the +EV props most likely to cash together, +100 to +300, different games
+        if f"{today}:props:golden" not in p_have and (gold := props_golden(pool, today, now)):
+            p_writes.append(gold)
     if p_writes:
         if a.dry_run:
             print(f"props dry run: would lock {sum(w['kind'] == 'prop' for w in p_writes)} props, {[w['id'] for w in p_writes if w['kind'] not in ('prop', 'props_locked')]}")

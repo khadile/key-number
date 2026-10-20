@@ -137,7 +137,6 @@ def record_games(picks: list[dict], results: list[dict]) -> dict:
         "ml": _tally([r for r in st if r["market"] == "ml"]), "potd": _tally([r for r in st if r.get("potd")]),
         "parlay": _tally([r for r in rows if r.get("kind") == "parlay" and r.get("type") == "golden"]),
         "lottery": _tally([r for r in rows if r.get("kind") == "parlay" and r.get("type") == "lottery"]),
-        "ladder": _tally([r for r in rows if r.get("kind") == "parlay" and r.get("type") == "ladder"]),
         "all": _tally(rows), "split": {"pos": _tally([r for r in st if r["ev"] > 0]), "neg": _tally([r for r in st if r["ev"] <= 0])},
         "with_model": {"with": _tally([r for r in st if r.get("with_model") is True]),
                        "against": _tally([r for r in st if r.get("with_model") is False])},
