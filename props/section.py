@@ -8,6 +8,8 @@ board update before each game (Thursday 10am ET for a Thursday game, Saturday
 10am ET for Saturday, Sunday and Monday games), graded once nflverse posts the
 stat lines.
 Weeks before PROPS_LIVE_START are a labeled simulation at the same lock times.
+From RULE_WEEK a pick needs 2%+ expected value, 4%+ when its edge is the price alone (clears()); the picks
+the old rule would have added are kept off the books and judged at Pinnacle's close.
 
 Only tracked roles get projected and picked: QB1, RB1 (RB2 in a real
 timeshare), WR1, WR2, TE1. A player who moved up because a teammate is out is
@@ -28,11 +30,17 @@ from props.checks import Teams, prop_checks, prop_doubts
 from props.data import PLAYER_GAMES
 from props.lines import load as load_lines, main_lines
 from props.model import STAT_COL, Simulator, TeamModel, defense_frame, player_frame, project, team_frame
-from props.pricing import ET, MARKET_LABEL, PropPricer, lock_time
+from props.pricing import ET, MARKET_LABEL, PropPricer, lock_time, shift_to, side_probs
 
 PROPS_LIVE_START = 5
 SIZE = 4000
-EV_MIN = 0.0          # a prop is a pick when its best price has positive expected value
+EV_MIN = 0.0          # weeks 1-6: a prop is a pick when its best price has positive expected value
+# From week 7 (user, 2026-10-20; props/edge_source.py): 2% or more, and 4% or more when the edge is the price alone
+# (DraftKings or FanDuel at Pinnacle's number, a worse number, or no Pinnacle number to check). In weeks 1-6 edges
+# under 2% were gone by Pinnacle's close, and price-only edges mostly were too unless large. The picks the old rule
+# would have added go to ledger/props_shadow.jsonl, off the books, to check on live data that they were worth nothing.
+RULE_WEEK = 7
+EV_FLOOR, EV_FLOOR_PRICE = 0.02, 0.04
 POTW_N = 5
 BOOK_NAMES = {"draftkings": "DraftKings", "fanduel": "FanDuel", "pinnacle": "Pinnacle"}
 ROLE_ORDER = {"QB1": 0, "RB1": 1, "RB2": 2, "WR1": 3, "WR2": 4, "TE1": 5}
@@ -162,9 +170,28 @@ def measure_k(samples: dict, lines_lock: dict, lines_close: dict) -> dict:
             "clv_sd": round(float((np.sign(g) * m).mean()), 4)}
 
 
+def edge_from(pk: dict, books: dict) -> str:
+    """Where a priced side's edge comes from, against Pinnacle's number at the same moment: a better number
+    (DraftKings or FanDuel hung a line off Pinnacle's, our side's way), the same number (only a better price), a
+    worse number, or no Pinnacle number to compare."""
+    pin = books.get("pinnacle")
+    if pin is None:
+        return "no pinnacle"
+    rel = (pin["line"] - pk["line"]) * (1 if pk["side"] == "over" else -1)
+    return "better number" if rel > 0 else ("same number" if rel == 0 else "worse number")
+
+
+def clears(pk: dict, src: str, rule: bool) -> bool:
+    """The bar a prop's best price clears to be a pick: positive EV, or with the week-7 rule 2%+ and 4%+ unless
+    the edge is a better number than Pinnacle's."""
+    if not rule:
+        return pk["ev"] > EV_MIN
+    return pk["ev"] >= EV_FLOOR and (src == "better number" or pk["ev"] >= EV_FLOOR_PRICE)
+
+
 def make_picks(x: pl.DataFrame, samples: dict, books: dict, pricer: PropPricer, when_of: dict,
-               flag_potw: bool = True) -> list[dict]:
-    """Best positive-EV prop per tracked player (DK or FanDuel), Picks of the Week flagged."""
+               flag_potw: bool = True, rule: bool = False) -> list[dict]:
+    """Best prop per tracked player (DK or FanDuel) that clears the bar (clears()), Picks of the Week flagged."""
     out = []
     for r in x.iter_rows(named=True):
         best = None
@@ -173,8 +200,11 @@ def make_picks(x: pl.DataFrame, samples: dict, books: dict, pricer: PropPricer, 
             if key not in samples or key not in books:
                 continue
             pk = pricer.price(samples[key], books[key])
-            if pk and pk["ev"] > EV_MIN and (best is None or kelly(pk) > kelly(best)):
-                best = {**pk, "market": m}
+            if not pk:
+                continue
+            src = edge_from(pk, books[key])
+            if clears(pk, src, rule) and (best is None or kelly(pk) > kelly(best)):
+                best = {**pk, "market": m, "edge_from": src}
         if not best:
             continue
         side = "Over" if best["side"] == "over" else "Under"
@@ -188,7 +218,7 @@ def make_picks(x: pl.DataFrame, samples: dict, books: dict, pricer: PropPricer, 
             "american": american(best["dec"]), "p_win": round(best["p_win"], 4), "p_push": round(best["p_push"], 4),
             "ev": round(best["ev"], 4), "model_median": round(best["model_median"], 1),
             "market_median": round(best["market_median"], 1), "fair_median": round(best["fair_median"], 1),
-            "anchor": best["anchor"], "locked_at": when_of[r["game_id"]].isoformat(), "potw": False,
+            "anchor": best["anchor"], "edge_from": best["edge_from"], "locked_at": when_of[r["game_id"]].isoformat(), "potw": False,
             # the stake it locked with, and the quarter-Kelly size tracked beside it (model/staking.py)
             "risk": flat_risk(best["ev"]), "kelly_u": kelly_units(best["p_win"], best["dec"], best["p_push"])})
     if flag_potw:
@@ -247,6 +277,30 @@ def _rows(picks: list[dict], results: list[dict], verdict_by: dict | None = None
                         "result": r.get("result"), "actual": r.get("actual"),
                         "units": round(r["units"], 2) if "units" in r else None, "clv": r.get("clv")})
     return out
+
+
+def _ev_close(q: dict, samples: dict, close_b: dict) -> float | None:
+    """A pick's expected value at Pinnacle's closing number, priced the board's way (k = 0): the yardstick of
+    props/edge_source.py, which settles long before wins and losses do. None without Pinnacle's close."""
+    key = (q["game_id"], q["gsis_id"], q["market"])
+    s, pc = samples.get(key), (close_b.get(key) or {}).get("pinnacle")
+    if s is None or pc is None:
+        return None
+    over, push, under = side_probs(s + shift_to(s, pc["line"], pc["p_over"]), q["line"])
+    p = over if q["side"] == "over" else under
+    return p * (q["dec"] - 1) - (1 - p - push)
+
+
+def _rule_tally(picks: list[dict], results: list[dict], samples: dict, close_b: dict) -> dict:
+    """Picks locked, their graded record, and their value at the lock and at Pinnacle's close."""
+    res = {r["id"]: r for r in results}
+    rows = [dict(q, **res[q["id"]]) for q in picks if q["id"] in res]
+    played = [r for r in rows if r["result"] != "V"]
+    evc = [e for e in (_ev_close(r, samples, close_b) for r in played) if e is not None]
+    return {**ledger._tally(rows), "locked": len(picks),
+            "ev": round(float(np.mean([r["ev"] for r in played])), 4) if played else None,
+            "ev_close": round(float(np.mean(evc)), 4) if evc else None,
+            "still": round(float(np.mean([e > 0 for e in evc])), 3) if evc else None, "ev_close_n": len(evc)}
 
 
 def _player_logs(ids: list[str], hist_all: pl.DataFrame, season: int, close_by: dict) -> dict:
@@ -336,13 +390,19 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
                             _candidates(season, week, upcoming).select("game_id", "team", "gsis_id"))
     s_week = _samples(sim, xw)
     existing = ledger.read(ledger.PICKS)
-    locked_games = {r["game_id"] for r in existing if r.get("kind") == "prop"}
-    new_locks, new_parlays = [], []
+    # a game is locked once it has picks, or picks passed on: under the 2%/4% rule a game can lock with none
+    locked_games = {r["game_id"] for r in existing + ledger.read(ledger.SHADOW) if r.get("kind") == "prop"}
+    new_locks, new_parlays, new_shadow = [], [], []
     if week >= PROPS_LIVE_START and xw.height:
         due = [g for g in upcoming["game_id"].to_list() if _lock_at(kick[g], now, lock_now) <= now < kick[g] and g not in locked_games]
         if due:
             xd = xw.filter(pl.col("game_id").is_in(due))
-            new_locks = make_picks(xd, s_week, now_b, pricer, {g: now for g in due}, flag_potw=False)
+            when = {g: now for g in due}
+            new_locks = make_picks(xd, s_week, now_b, pricer, when, flag_potw=False, rule=week >= RULE_WEEK)
+            if week >= RULE_WEEK:
+                # what the old rule would have added, off the books: is what the rule passes on worth nothing?
+                kept = {q["id"] for q in new_locks}
+                new_shadow = [q for q in make_picks(xd, s_week, now_b, pricer, when, flag_potw=False) if q["id"] not in kept]
         # Parlays and Picks of the Week lock with the weekend slate (Saturday morning), from
         # locked picks whose games have not started.
         have = {r["type"] for r in existing if r.get("kind") == "parlay" and r["season"] == season and r["week"] == week}
@@ -372,6 +432,12 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
             else:
                 ledger.append(ledger.PICKS, writes)
                 print(f"props: locked {len(new_locks)} picks, {[w.get('type', w['kind']) for w in new_parlays]}")
+        if new_shadow:
+            if dry_run:
+                print(f"props dry run: would keep {len(new_shadow)} picks the old rule would have added, off the books")
+            else:
+                ledger.append(ledger.SHADOW, new_shadow)
+                print(f"props: {len(new_shadow)} picks the old rule would have added, kept off the books")
 
     # --- live record: grade, then apply Picks-of-the-Week markers
     all_rows = existing + (new_locks + new_parlays if dry_run else [])
@@ -389,6 +455,14 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
     live_picks = [{**r, "potw": r["id"] in potw_ids} if r.get("kind") == "prop" else r
                   for r in all_rows if r.get("kind") in ("prop", "parlay") and r["season"] == season]
     live = ledger.record(live_picks, live_results)
+
+    # --- the week-7 rule on live data: its picks against the ones it passed on, judged at Pinnacle's close
+    shadow = list({q["id"]: q for q in ledger.read(ledger.SHADOW) + (new_shadow if dry_run else [])
+                   if q["season"] == season}.values())
+    rule = {"week": RULE_WEEK, "floor": EV_FLOOR, "floor_price": EV_FLOOR_PRICE,
+            "picks": _rule_tally([q for q in live_picks if q.get("kind") == "prop" and q["week"] >= RULE_WEEK],
+                                 live_results, s_done, close_b),
+            "passed": _rule_tally(shadow, ledger.grade_all(shadow, stats, graded_ids, closes), s_done, close_b)}
 
     # --- is each prop also a good pick? (model/checks.py) A game's verdict is the one frozen before its kickoff
     # when there is one, else rebuilt from what was known then; this week's picks are checked live, priced now.
@@ -435,13 +509,15 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
                 continue
             bk = now_b.get(key) or lock_b.get(key) or {}
             priced = pricer.price(s, bk) if bk else None
+            src = edge_from(priced, bk) if priced else None
             books = {b: {"line": v["line"], "over": american(v["over"]), "under": american(v["under"])} for b, v in bk.items()}
             mk.append({"market": m, "median": round(float(np.median(s)), 1), "mean": round(float(np.mean(s)), 1),
                        "q": _quant(s), "qq": [round(float(v), 1) for v in np.quantile(s, np.linspace(0.05, 0.95, 19))],
                        "books": books,
                        "fair": round(priced["fair_median"], 1) if priced else None,
                        "lean": ({"side": priced["side"], "line": priced["line"], "book": BOOK_NAMES[priced["book"]],
-                                 "american": american(priced["dec"]), "p": round(priced["p_win"], 3), "ev": round(priced["ev"], 4)}
+                                 "american": american(priced["dec"]), "p": round(priced["p_win"], 3), "ev": round(priced["ev"], 4),
+                                 "edge_from": src, "clears": clears(priced, src, week >= RULE_WEEK)}
                                 if priced else None),
                        "actual": stats.get((r["game_id"], r["gsis_id"]), {}).get(m)})
         pick = picks_by_player.get((r["game_id"], r["gsis_id"]))
@@ -502,12 +578,12 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
         bt = {"holdout": saved.get("holdout"), "pit": saved.get("pit")}
 
     return {
-        "meta": {"live_start": PROPS_LIVE_START, "lock_note": "Saturday 10am ET (Thursday games: Thursday 10am ET)",
+        "meta": {"live_start": PROPS_LIVE_START, "rule_week": RULE_WEEK, "lock_note": "Saturday 10am ET (Thursday games: Thursday 10am ET)",
                  "k": kstudy, "tracked": len(players)},
         "locks": {g: lock_time(kick[g]).isoformat() for g in season_games.filter(pl.col("week") == week)["game_id"].to_list()},
         "record": {"live": live, "pre": pre, "all": ledger.record(sim_picks + live_picks, sim_results + live_results),
                    "live_rows": (lr := _rows(live_picks, live_results, verdict_by)), "pre_rows": (pr := _rows(sim_picks, sim_results, verdict_by)),
-                   "verdicts": {"all": C.tally(pr + lr), "since": C.tally(lr, C.SINCE_WEEK)}},
+                   "verdicts": {"all": C.tally(pr + lr), "since": C.tally(lr, C.SINCE_WEEK)}, "rule": rule},
         "players": players, "games": games_out, "logs": logs, "parlays": parlays,
         "model": {"backtest": bt, "study": study, "sgo": sgo, "edge": edge},
         "mypicks": {"lines": pickable, "results": results},

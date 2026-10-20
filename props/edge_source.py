@@ -14,8 +14,8 @@ off Pinnacle's, our side's way) or only a better PRICE at the same number. The s
   one-prop-a-player rule filled up with small price-only edges.
 
 The SportsGameOdds 2026 opens (independent data, a different moment) gave the same split; see the commit and
-CLAUDE.md 6b. A rule on top (EV 2%+, and 4%+ when the edge is the price alone) is the user's call: until then
-this is a finding on the board, not a pick rule.
+CLAUDE.md 6b. The user adopted the rule on top (EV 2%+, and 4%+ when the edge is the price alone) as the pick
+rule from week 7: props/section.py RULE_WEEK and clears().
 
     python -m props.edge_source      # -> reports/props_edge_source.json (the board's props "How it works")
 """

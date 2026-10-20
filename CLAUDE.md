@@ -272,6 +272,7 @@ Each check was tested on its own market, with the EV at Pinnacle's closing no-vi
 - **sharp** (props): Pinnacle has the prop, so the edge is DK/FD against the sharp price. Without Pinnacle the
   edge would be DK against FD.
 - **size** (props): EV of 2% or more. Line-shopping props at 2%+ beat the close 81% vs 70% for all (SGO 2026).
+  From week 7 the pick rule itself needs 2%+ (6b), so every new prop passes it; it still grades weeks 1-6.
 - **lean** (props): overs on rec yds, rush yds and receptions need 5%+. Pinnacle's closes made those overs 2-5
   points likelier than they turned out in 2025 and 2026; passing yards showed no such bias.
 - **market** (game lines): Pinnacle hasn't moved against the pick (1.5 points of win chance) since its Tuesday
@@ -397,8 +398,22 @@ the closing line, the board says so.
   1-4 replay's +4.0%). Week 6's 18-26 had a 7.6% chance at the stated
   chances; injuries and game script explained 2-3 losses a week, not more.
   A rule of 2%+ EV, and 4%+ when the edge is the price alone, keeps 155 of
-  the 392 bets (+6.9% at the close, 82% still +EV). It is the user's call:
-  until they decide it is a finding, not a pick rule.
+  the 392 bets (+6.9% at the close, 82% still +EV).
+- The pick rule from week 7 (user, 2026-10-20; props/section.py `RULE_WEEK`,
+  `clears()`): 2%+ EV, and 4%+ unless DK/FD hang a better number than
+  Pinnacle's at the lock (the same number, a worse one, or no Pinnacle number
+  all need 4%). Weeks 1-6 keep any positive EV: the replay and the ledger stay
+  as they locked. One prop a player, the best by Kelly among those that clear.
+  Card leans follow the same bar (`clears` in the payload). The 2% part is the
+  main gain; the 4% part rests on thinner samples.
+- Shadow record (ledger/props_shadow.jsonl, append-only, from week 7): at each
+  lock, the picks the old rule would have added. Off the books: graded each
+  build and judged at Pinnacle's close (`_ev_close`, k = 0, the edge_source
+  yardstick) on the props Record page beside the rule's own picks. A game with
+  picks or shadow picks counts as locked. Revisit after a few weeks: if what
+  the rule passes on is worth about nothing at the close, the rule holds; if it
+  closes clearly +EV, the rule is costing value (split the shadow into its
+  under-2% and 2-4% price-only parts before changing anything).
 
 ## 6c. Live engine (live/)
 

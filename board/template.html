@@ -967,7 +967,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     roi: "Return on investment: units won divided by units risked.",
     potw: "Picks of the week: the strongest picks by edge relative to the payout, one per game.",
     potd: "Picks of the day: the day's strongest positive-EV picks by edge relative to the payout, one per game.",
-    evclose: "EV at the close: what each pick's locked price was worth against Pinnacle's no-vig line just before tip. A market-anchored edge is only real if the price beats where the market settled, and this shows it long before wins and losses do.",
+    evclose: "EV at the close: what each pick's locked price was worth against Pinnacle's no-vig line just before the game started. A market-anchored edge is only real if the price beats where the market settled, and this shows it long before wins and losses do.",
     golden: "Golden Parlay: two or three positive-value picks from different games, priced +150 to +300. It should cash now and then.",
     lottery: "+EV Lottery: three to five positive-value picks priced over +500. It misses most weeks and is here for the occasional big payout.",
     ngolden: "Golden Parlay (NBA): the confident ticket. Two or three legs from different games, each 60%+ likely and worth 1%+ at its price (main or alternate lines), priced +100 to +300, chosen for the best chance of cashing. A parlay only multiplies its legs' value, so every leg must have value on its own; on a day nothing qualifies there is none.",
@@ -1873,17 +1873,24 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     return !!((g && g.status !== "upcoming") || (t && Date.parse(t) <= Date.now()));
   };
   const NO_PICK = '<span class="chip pass" title="Props for this game have locked; this player has no pick."><span class="m">Props</span><b>No pick</b></span>';
-  function bestLean(pl) {
+  const leanOk = (L) => !!L && (L.clears != null ? L.clears : L.ev > 0);
+  // a lean with value that the week-7 rule passes on: what its edge is, and the bar it misses
+  const underBar = (L) => `${L.edge_from === "better number" ? "A better number than Pinnacle's" : L.edge_from === "no pinnacle" ? "Price only, no Pinnacle number to check" : "Price only, at Pinnacle's number or worse"}, worth ${signed(100 * L.ev, 1)}%: under the ${L.edge_from === "better number" ? "2%" : "4%"} bar for a pick.`;
+  function bestLean(pl) {   // a lean that clears the bar first, then the most value
     if (closed(pl.game_id)) return null;
     let best = null;
-    for (const m of pl.markets) if (m.lean && (!best || m.lean.ev > best.lean.ev)) best = m;
+    for (const m of pl.markets) {
+      if (!m.lean) continue;
+      const a = leanOk(m.lean), b = best && leanOk(best.lean);
+      if (!best || (a && !b) || (a === b && m.lean.ev > best.lean.ev)) best = m;
+    }
     return best;
   }
   function leanChip(m, locked, p) {
     if (!m && p && closed(p.game_id)) return NO_PICK;
     if (!m) return '<span class="chip pass"><span class="m">Props</span><b>No line yet</b></span>';
     const L = m.lean;
-    if (L.ev <= 0 || locked) return `<span class="chip pass" title="Best price available has no value against the market's number.">
+    if (!leanOk(L) || locked) return `<span class="chip pass" title="${!locked && L.ev > 0 ? esc(underBar(L)) : "Best price available has no value against the market's number."}">
       <span class="m">${PMK[m.market]}</span><b>No play</b><span class="pr">model ${num(m.median, 1)} · fair ${num(m.fair, 1)}</span></span>`;
     return `<span class="chip lean" title="Not locked yet: props lock ${esc(p ? lockAt(p.game_id) : PR.meta.lock_note)}."><span class="m">Lean · ${PMK[m.market]}</span>
       <b>${L.side === "over" ? "Over" : "Under"} ${num(L.line, 1).replace(/\.0$/, "")}</b><span class="pr">${am(L.american)} ${esc(L.book)} · EV ${signed(100 * L.ev, 1)}%</span>${shopTag(L.side, L.line, m.median)}</span>`;
@@ -1907,7 +1914,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       rows = potw; title = "Picks of the week";
       note = "The five strongest locked props by edge relative to the payout, one per game, positive expected value only.";
     } else {
-      const leans = PR.players.map((p) => ({ p, m: bestLean(p) })).filter((x) => x.m && x.m.lean.ev > 0)
+      const leans = PR.players.map((p) => ({ p, m: bestLean(p) })).filter((x) => x.m && leanOk(x.m.lean))
         .sort((a, b) => b.m.lean.ev - a.m.lean.ev).slice(0, 5);
       rows = leans.map(({ p, m }) => ({ label: `${p.name} ${m.lean.side === "over" ? "Over" : "Under"} ${m.lean.line} ${PMK[m.market].toLowerCase()}`,
         game_id: p.game_id, american: m.lean.american, book_name: m.lean.book, p_win: m.lean.p, ev: m.lean.ev, lean: true }));
@@ -1935,7 +1942,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   const pOpen = new Set((() => { try { return JSON.parse(localStorage.getItem("kn-props-open") || "[]"); } catch (e) { return []; } })());
   let pOpenSeeded = pOpen.size > 0;
   function saveOpen() { try { localStorage.setItem("kn-props-open", JSON.stringify([...pOpen])); } catch (e) { /* blocked storage: it still works for this visit */ } }
-  const hasCall = (p) => !!(p.pick || ((bestLean(p) || {}).lean || {}).ev > 0);
+  const hasCall = (p) => !!(p.pick || leanOk((bestLean(p) || {}).lean));
   const keepP = (p) => pFilter === "all" || (pFilter === "calls" && hasCall(p)) || (pFilter === "promoted" && p.promoted);
   const byRole = (a, b) => ROLE_ORDER[PLAYERS[a].role] - ROLE_ORDER[PLAYERS[b].role];
   const sideWord = (s) => (s === "over" ? "Over" : "Under");
@@ -2037,7 +2044,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   function callOf(p, m) {   // the locked pick on this market, else a lean with value
     if (p.pick && p.pick.market === m.market) return { side: p.pick.side, line: p.pick.line, book: p.pick.book_name, american: p.pick.american,
       p: p.pick.p_win / Math.max(1 - (p.pick.p_push || 0), 1e-9), ev: p.pick.ev, locked: true, potw: p.pick.potw, result: p.pick.result };
-    if (m.lean && m.lean.ev > 0 && !closed(p.game_id)) return { side: m.lean.side, line: m.lean.line, book: m.lean.book, american: m.lean.american, p: m.lean.p, ev: m.lean.ev, locked: false };
+    if (leanOk(m.lean) && !closed(p.game_id)) return { side: m.lean.side, line: m.lean.line, book: m.lean.book, american: m.lean.american, p: m.lean.p, ev: m.lean.ev, locked: false };
     return null;
   }
   function marketSay(m, c) {
@@ -2045,7 +2052,8 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     const mid = `The model's ${term("median", "middle outcome")} is <b>${num(m.median, 1)}</b> ${unit} (${term("range80", "80% range")} ${num(m.q[0], 0)}–${num(m.q[4], 0)}); the market's number is <b>${m.fair == null ? "–" : num(m.fair, 1)}</b>.`;
     if (!c) {
       const L = m.lean;
-      return mid + (L ? ` No play: the best price, ${esc(L.book)} ${sideWord(L.side)} ${L.line} at ${am(L.american)}, does not beat that number after the vig.` : " No lines posted yet.");
+      return mid + (!L ? " No lines posted yet." : L.ev > 0 ? ` No play: the best price, ${esc(L.book)} ${sideWord(L.side)} ${L.line} at ${am(L.american)}. ${esc(underBar(L))}`
+        : ` No play: the best price, ${esc(L.book)} ${sideWord(L.side)} ${L.line} at ${am(L.american)}, does not beat that number after the vig.`);
     }
     if (isShop(c.side, c.line, m.median) && m.fair != null) {
       return `${mid} ${esc(c.book)} hangs ${c.line}, ${num(Math.abs(m.fair - c.line), 1)} ${unit} ${c.line < m.fair ? "below" : "above"} the market, so the ${c.side} wins more often than its price implies even though the model alone leans the other way.`;
@@ -2290,11 +2298,19 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       return rows.length ? `<div class="box"><h3>${name} <span class="note">${subtotal(rows)}</span></h3>${table(rows, k === "parlay")}</div>` : ""; }).join("") : "";
     const wk = (R) => R.weeks.length ? `<div class="scroll"><table class="t"><thead><tr><th>Week</th>${PMK_ORDER.map((m) => `<th class="num">${PMK[m]}</th>`).join("")}<th class="num">POTW</th><th class="num">All</th><th class="num">Units</th><th class="num">Line value</th></tr></thead><tbody>
       ${R.weeks.map((w) => `<tr><td>${w.week}</td>${PMK_ORDER.map((m) => `<td class="num">${rec(w[m])}</td>`).join("")}<td class="num">${rec(w.potw)}</td><td class="num">${rec(w.all)}</td><td class="num ${cls(w.all.units)}">${units(w.all.units)}</td><td class="num">${w.all.clv == null ? "–" : signed(w.all.clv, 2)}</td></tr>`).join("")}</tbody></table></div>` : '<p class="note">Nothing graded yet.</p>';
+    const RU = PR.record.rule;
+    const ruRow = (name, r) => `<tr><td>${name}</td><td class="num">${r.locked}</td><td class="num">${rec(r)}</td><td class="num ${cls(r.units)}">${r.n ? units(r.units) : "–"}</td>
+      <td class="num">${evPct(r.ev)}</td><td class="num ${cls(r.ev_close)}">${evPct(r.ev_close)}</td><td class="num">${r.still == null ? "–" : pct(r.still)}</td></tr>`;
+    const ruleSec = RU ? `<section class="sec"><header><h2>The week ${RU.week} rule</h2></header>
+      <p class="note">From week ${RU.week} a prop is a pick at ${pct(RU.floor, 0)} expected value or more, ${pct(RU.floor_price, 0)} when the edge is the price alone. The picks the old rule (any positive EV) would have added are kept off the books and graded here: if the rule is right, they are worth about nothing at the close.</p>
+      <div class="scroll"><table class="t"><thead><tr><th>From week ${RU.week}</th><th class="num">Locked</th><th class="num">Record</th><th class="num">Units</th><th class="num">EV at lock</th><th class="num">${term("evclose", "EV at the close")}</th><th class="num">Still +EV</th></tr></thead><tbody>
+        ${ruRow("Picks", RU.picks)}${ruRow("Passed on, off the books", RU.passed)}</tbody></table></div></section>` : "";
     app.innerHTML = `
       <section class="hello"><h1>Props record</h1><p class="lede">Every prop pick, graded at the line it locked at. Line value is how many yards (or catches) better our number was than the same book's closing line. A player who did not play is a void: no units either way.</p></section>
       <section class="sec"><header><h2>Season to date</h2></header>${pStrip(A)}
         <p class="note">Weeks 1–${PR.meta.live_start - 1} were replayed before launch at Saturday-morning lines; picks are live from week ${PR.meta.live_start}. Promoted players (moved up because a teammate is out): ${rec(A.promoted)} (${units(A.promoted.units)}).</p></section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${unitsChart(A) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
+      ${ruleSec}
       ${verdictSection(PR.record.verdicts, "prop")}
       ${kellySection(A.kelly, PR.meta.live_start, "props")}
       <section class="sec"><header><h2>Picks by week</h2></header>${weeks.length ? `<div class="pills" role="tablist" aria-label="Week">${weeks.map((w) => `<button class="pill" data-pwk="${w.key}" aria-pressed="${w.key === pRecWeek}">Week ${w.week}</button>`).join("")}</div>
@@ -2335,7 +2351,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
         <div class="scroll"><table class="t"><thead><tr><th>Edge from, size</th>${eHead}</tr></thead><tbody>${eBkt}</tbody></table></div>
         <p>Under 2% the value is gone by kickoff either way, and an edge from the price alone mostly is too unless it is large. Week by week, the better-number chances (and their size at the lock):</p>
         <div class="scroll"><table class="t"><thead><tr><th>Week</th><th class="num">Better number</th><th class="num">Their EV</th><th class="num">Same number</th><th class="num">Their EV</th></tr></thead><tbody>${eWk}</tbody></table></div>
-        <p>From week 5 DraftKings and FanDuel hung numbers off Pinnacle's far less often and by less, so the one-prop-a-player rule filled up with small price-only edges: the live picks were worth about nothing at the close. The SportsGameOdds 2026 opens, independent data at a different moment, split the same way. ${eRule.kept && eRule.kept.n ? `Keeping only edges of 2%+, and 4%+ when the edge is the price alone, leaves ${eRule.kept.n} of these bets worth ${evPct(eRule.kept.ev_close)} at the close (${pct(eRule.kept.still)} still +EV); the other ${eRule.dropped.n}, ${evPct(eRule.dropped.ev_close)}.` : ""} <b>Not a pick rule yet</b>: it is the user's call, and until then the picks follow the rule below.</p>` : "";
+        <p>From week 5 DraftKings and FanDuel hung numbers off Pinnacle's far less often and by less, so the one-prop-a-player rule filled up with small price-only edges: the live picks were worth about nothing at the close. The SportsGameOdds 2026 opens, independent data at a different moment, split the same way. ${eRule.kept && eRule.kept.n ? `Keeping only edges of 2%+, and 4%+ when the edge is the price alone, leaves ${eRule.kept.n} of these bets worth ${evPct(eRule.kept.ev_close)} at the close (${pct(eRule.kept.still)} still +EV); the other ${eRule.dropped.n}, ${evPct(eRule.dropped.ev_close)}.` : ""} <b>The pick rule from week ${PR.meta.rule_week || 7}</b>, adopted October 20: weeks 5 and 6 stay graded as they locked, and the picks the old rule would have added are graded off the books on the Record page.</p>` : "";
     const sgo = sgShop ? `<h3>Two seasons of closing lines</h3>
         <p>Four weeks of lines cannot tell skill from luck. A pull from the SportsGameOdds archive (October 2026) adds the whole 2025 regular season (every prop with Pinnacle's and bet365's closing prices) and 2026's opening and closing lines at every book. 2025 is out of sample: the model was tuned on 2018–2021. DraftKings and FanDuel trade props in-game, so their 2025 closes were not kept; bet365, a US book that prices props the same way, stands in.</p>
         <p><b>1. The projections know nothing the closing line does not.</b> At Pinnacle's closing line, tracked players. ${term("logloss", "Log loss")}, lower is better:</p>
@@ -2372,12 +2388,12 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
         <p>Close to a coin flip: the model adds little the market does not know. What did show up is <b>line shopping</b>: when DraftKings or FanDuel hangs a number off Pinnacle's, betting the soft number returned a few percent in testing, and in the pre-launch simulation the lines of our picks moved our way ${pct(PR.record.pre.all.beat)} of the time they moved.</p>` : ""}
         ${sgo}
         ${edge}
-        <h3>How picks are priced</h3><p>Start from the market's number: Pinnacle's no-vig line where it has the player, else the DraftKings/FanDuel average. Move it toward the model by k (now ${num(k.k, 3)}, re-measured every build). Bet only where DraftKings or FanDuel beats that fair number after the vig. One pick per player, his best market. With k this small, picks are mostly soft numbers, not model opinions.</p>
+        <h3>How picks are priced</h3><p>Start from the market's number: Pinnacle's no-vig line where it has the player, else the DraftKings/FanDuel average. Move it toward the model by k (now ${num(k.k, 3)}, re-measured every build). Bet only where DraftKings or FanDuel beats that fair number by 2% or more after the vig, 4% when the edge is the price alone (from week ${PR.meta.rule_week || 7}; weeks 1–6 took any positive EV). One pick per player, his best market. With k this small, picks are mostly soft numbers, not model opinions.</p>
         ${card ? `<h3>Report card: blind overs and unders</h3><p>Closing lines this season, every tracked player. If betting every over or every under paid, the books would be mispricing a whole side:</p>
         <div class="scroll"><table class="t"><thead><tr><th>Book</th><th>Market</th><th class="num">Lines</th><th class="num">Priced over</th><th class="num">Over hit</th><th class="num">All overs</th><th class="num">All unders</th></tr></thead><tbody>${card}</tbody></table></div><p class="note">Small samples; nothing here clears the vig reliably.</p>` : ""}
         <h3>Rules</h3><ul><li>Tracked: QB1, RB1, WR1, WR2, TE1, and RB2 in a real timeshare. Roles come from projected usage among the players expected to suit up.</li>
           <li>Props lock at the last board update before each game. Thursday 10am ET: the Thursday game. Saturday 10am ET: every Saturday, Sunday and Monday game, after Friday's final injury reports and with Thursday night graded, plus the props Picks of the Week, Golden Parlay and Lottery. Prices from DraftKings and FanDuel only.</li>
-          <li>Straight picks risk 1 unit; the Golden Parlay and the +EV Lottery 0.5 units each, built from the strongest props of different games. Every prop pick has positive expected value, so there are no leans here.</li>
+          <li>Straight picks risk 1 unit; the Golden Parlay and the +EV Lottery 0.5 units each, built from the strongest props of different games. Every prop pick has 2% expected value or more, and 4% when DraftKings or FanDuel only beats Pinnacle on price (the same number, a worse one, or no Pinnacle number to check), so there are no leans here. Weeks 1–6 took any positive EV and stay graded as they locked.</li>
           <li>${term("kelly", "Quarter Kelly")} sizes each pick by its edge for the price (¼, ½, 1 or 2 units) and keeps its own record from week 1, apart from the flat one. It replaces flat units only if it keeps up from week 6 on.</li>
           <li>Every pick is also checked, because +EV is not the same as a good pick: Pinnacle must have the prop (otherwise the edge is one US book against the other), the edge must be 2% or more, an over on receiving yards, rushing yards or receptions needs 5% or more (Pinnacle's closing prices made those overs 2–5 points likelier than they turned out in 2025 and 2026), and the player cannot be Questionable or Doubtful, new to his team, or promoted into the role. Pass them all and it is a <b>good pick</b>; otherwise it is <b>+EV only</b>, with the reasons on the pick.</li>
           <li>Graded with nflverse stat lines (overtime included, passing yards before sacks, as books settle). A player who does not play is void.</li></ul>

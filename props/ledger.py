@@ -4,6 +4,9 @@ ledger/props_picks.jsonl and ledger/props_results.jsonl are append-only, like
 the game-line ledger: a pick is written once when its game's props lock and is
 never edited; grading appends a result line.
 
+ledger/props_shadow.jsonl (from week 7, append-only too): the picks the old rule (any positive EV) would have
+added at each lock, which the 2%/4% rule passes on. Off the books: graded each build, never on the record.
+
 Results: W, L, P (stat landed exactly on a whole-number line) or V (void: the
 player did not play, which books refund). Voids risk nothing and stay out of
 the record. Line value is how many yards (or catches) better our number was
@@ -19,6 +22,7 @@ from model.staking import kelly_of, kelly_tally, tracked
 
 PICKS = LEDGER / "props_picks.jsonl"
 RESULTS = LEDGER / "props_results.jsonl"
+SHADOW = LEDGER / "props_shadow.jsonl"
 MARKETS = ("pass_yds", "rush_yds", "rec_yds", "receptions")
 
 
