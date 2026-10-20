@@ -382,8 +382,9 @@ def main() -> None:
     ap.add_argument("--offline", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--lock-now", action="store_true")
+    ap.add_argument("--now", help="replay a build at this moment (ISO time with offset); use with --offline --dry-run")
     a = ap.parse_args()
-    now = datetime.now(timezone.utc)
+    now = datetime.fromisoformat(a.now).astimezone(timezone.utc) if a.now else datetime.now(timezone.utc)
     today = now.astimezone(ET).date()
 
     if not a.offline:

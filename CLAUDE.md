@@ -597,6 +597,9 @@ budget with the NFL) comes after the pregame side is stable.
   Picks of the Day and parlays. Run by hand with
   `gh workflow run nba.yml -R khadile/key-number -f force=true`; a forced
   build before 10:30am locks nothing and does not use up the morning slot.
+  Only GitHub writes the NBA ledgers: on the laptop run `python -m nba.build
+  --offline --dry-run` (add `--now 2026-10-20T10:35:00-04:00` to replay a slot),
+  never a real build, or picks would lock twice.
 - Ledgers: ledger/nba_picks.jsonl, nba_results.jsonl, nba_props_picks.jsonl,
   nba_props_results.jsonl; append-only like the NFL's, keyed by `day` (the
   game's Eastern date). Results carry `ev_close` (the locked price against
