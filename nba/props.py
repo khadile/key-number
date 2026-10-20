@@ -7,8 +7,20 @@ Tracked (user, 2026-10-20): each team's five starters and its sixth man. Markets
   much, so the first weeks lean on it), plus STARTER_BUMP for a starter, with 1.2 x his recent spread (at least
   5.5) as the uncertainty. A rotation player ruled out who played in the last three weeks hands his minutes to
   the available rotation; in a lopsided game the starters sit late (BLOWOUT per point of spread past 7).
-- Rates: each stat per minute over the same games, pulled toward his position's average (PRIOR_MIN minutes of
-  it) so a hot week does not run away, and scaled by the game's projected pace.
+- Age is counted in league game days, not calendar days: the summer and the All-Star break do not age a
+  player's games. On the calendar, last season's games were six months old on opening night and weighed about
+  0.3 minutes against PRIOR_MIN's 150, so every player was priced at his position's average (2026-27 opening
+  night: Gilgeous-Alexander 0.49 points a minute against his 0.94), and a starter out since the spring never
+  handed his minutes on.
+- After an absence he comes in short (BACK_MIN, by league game days missed, fading over BACK_RAMP's four
+  games), and so does everyone in the season's first games (SUMMER_MIN: the summer is a short absence of its own).
+  His usual minutes keep his ramp-up games as they were: counting them at full minutes instead (and leaving out
+  the game he left hurt) made every kind of game worse out of sample in 2023-24 and 2024-25 (first games back
+  -0.7 -> -1.4 minutes, games 2-4 back 0.0 -> -1.3, normal games -0.8 -> -1.1). Players back from an absence
+  stay below their old minutes for a while, so their latest games are the better guide.
+- Rates: each stat per minute over the same games, pulled toward his own record over both seasons (PRIOR_MIN
+  minutes of it, itself pulled toward his position's average by as much) so a hot week does not run away, and
+  scaled by the game's projected pace.
 - Outcomes: 4,000 simulated games: minutes, then each stat as a negative binomial around rate x minutes
   (dispersion DISP, variance over mean given minutes); combos are the sums of the same simulated games.
 
@@ -39,6 +51,13 @@ HALF_LIFE, PREV_W, PRIOR_MIN = 21.0, 0.4, 150.0
 SD_MIN_SCALE, SD_MIN_FLOOR, SD_MIN_CAP = 1.2, 5.5, 10.0
 STARTER_BUMP = 1.5
 BLOWOUT = 0.012
+# Minutes after an absence, 2025-26 walk-forward (every starter and sixth man with 18+ expected minutes, where a
+# normal game ran 1.0 under): the first game back ran 3.8 under after missing 8-15 league game days, 5.3 after
+# 15-30 and 8.4 after 30+, and the shortfall faded over about four games (-5.0, -3.7, -2.0, -1.8, then -1.1). The
+# season's first four games ran 3.3, 2.8, 2.2 and 1.9 under. Below: the shortfall beyond a normal game.
+BACK_MIN = ((30, 7.5), (15, 4.4), (8, 2.9))     # league game days missed -> minutes short in the first game back
+SUMMER_MIN = 2.3                                # the season's first game
+BACK_RAMP = (1.0, 0.7, 0.4, 0.3)                # its share in games 1-4 back
 N_SIM = 4000
 
 
@@ -56,22 +75,70 @@ def _pos(p: str | None) -> str:
     return "C" if p.startswith("C") else "G" if p.startswith(("G", "P", "S")) else "F"
 
 
+def game_day_age(h: pl.DataFrame) -> pl.DataFrame:
+    """Each game's age in league game days: 1 for the last day anyone played, counting back only days with games."""
+    days = h.select("date").unique().sort("date", descending=True).with_columns(age=pl.int_range(1, pl.len() + 1).cast(pl.Float64))
+    return h.join(days, on="date", how="left")
+
+
+def _short(missed) -> pl.Expr:
+    """BACK_MIN as an expression on league game days missed."""
+    e = pl.when(missed >= BACK_MIN[0][0]).then(BACK_MIN[0][1])
+    for lo, m in BACK_MIN[1:]:
+        e = e.when(missed >= lo).then(m)
+    return e.otherwise(0.0)
+
+
 def profiles(bx: pl.DataFrame, before: date, season: int) -> pl.DataFrame:
-    """Per player: expected minutes, minutes spread, per-minute rates (shrunk), starts share, last team."""
-    h = bx.filter((pl.col("date") < before) & (pl.col("season") >= season - 1) & (pl.col("min") > 0))
-    h = h.with_columns(w=0.5 ** ((before - pl.col("date")).dt.total_days() / HALF_LIFE) * pl.when(pl.col("season") < season).then(PREV_W).otherwise(1.0),
+    """Per player: expected minutes, minutes spread, per-minute rates (shrunk), starts share, last team;
+    `last_age`, the league game days since he last played; his latest return from an absence (`back_short`, the
+    minutes it cost his first game back, and `back_n`, his games since) and `season_days`, this season's game
+    days so far."""
+    h = game_day_age(bx.filter((pl.col("date") < before) & (pl.col("season") >= season - 1) & (pl.col("min") > 0)))
+    h = h.with_columns(w=0.5 ** (pl.col("age") / HALF_LIFE) * pl.when(pl.col("season") < season).then(PREV_W).otherwise(1.0),
                        pg=pl.col("pos").map_elements(_pos, return_dtype=pl.String))
+    # returns: a game after 8+ league game days without one, or his first of a season (its days missed are the
+    # new season's days before it)
+    first_age = h.filter(pl.col("season") == season)["age"].max() or 0.0
+    g = h.sort("athlete_id", "date").with_columns(prev_age=pl.col("age").shift(1).over("athlete_id"),
+                                                  prev_season=pl.col("season").shift(1).over("athlete_id"))
+    new = pl.col("prev_season") < pl.col("season")
+    g = g.with_columns(short=pl.when(new).then(pl.max_horizontal(_short(first_age - pl.col("age")), pl.lit(SUMMER_MIN)))
+                             .otherwise(_short(pl.col("prev_age") - pl.col("age") - 1)))
+    ev = (g.filter(pl.col("short") > 0).group_by("athlete_id")
+           .agg(back_short=pl.col("short").sort_by("age").first(), back_age=pl.col("age").min()))
+    back = (h.join(ev, on="athlete_id").filter(pl.col("age") <= pl.col("back_age"))
+             .group_by("athlete_id").agg(back_short=pl.col("back_short").first(), back_n=pl.len()))
     prior = h.filter(pl.col("min") >= 10).group_by("pg").agg(*[(pl.col(k).sum() / pl.col("min").sum()).alias(f"prior_{k}") for k in STATS])
     agg = (h.sort("date").group_by("athlete_id")
              .agg(name=pl.col("name").last(), team=pl.col("team").last(), pg=pl.col("pg").last(),
                   exp_min=(pl.col("min") * pl.col("w")).sum() / pl.col("w").sum(),
                   sd_min=((pl.col("w") * (pl.col("min") - (pl.col("min") * pl.col("w")).sum() / pl.col("w").sum()) ** 2).sum() / pl.col("w").sum()).sqrt(),
-                  wmin=(pl.col("min") * pl.col("w")).sum(), starts=(pl.col("starter").cast(pl.Float64) * pl.col("w")).sum() / pl.col("w").sum(),
-                  games_now=(pl.col("season") == season).sum(), last=pl.col("date").max(),
-                  *[(pl.col(k) * pl.col("w")).sum().alias(f"s_{k}") for k in STATS])
+                  wmin=(pl.col("min") * pl.col("w")).sum(), amin=pl.col("min").sum(),
+                  starts=(pl.col("starter").cast(pl.Float64) * pl.col("w")).sum() / pl.col("w").sum(),
+                  games_now=(pl.col("season") == season).sum(), last=pl.col("date").max(), last_age=pl.col("age").min(),
+                  *[(pl.col(k) * pl.col("w")).sum().alias(f"s_{k}") for k in STATS],
+                  *[pl.col(k).sum().alias(f"a_{k}") for k in STATS])
              .join(prior, on="pg", how="left"))
-    return agg.with_columns(sd_min=pl.col("sd_min").clip(3.5, 9.0),
-                            *[((pl.col(f"s_{k}") + PRIOR_MIN * pl.col(f"prior_{k}")) / (pl.col("wmin") + PRIOR_MIN)).alias(f"r_{k}") for k in STATS])
+    # the prior for his recent form: his own record over both seasons, pulled toward his position's average (on
+    # 2025-26 walk-forward this cut the points error from 4.77 to 4.64 a game, and from 5.37 to 4.72 in the
+    # season's first three weeks, with the ranges still holding 50% / 80%)
+    agg = agg.with_columns(*[((pl.col(f"a_{k}") + PRIOR_MIN * pl.col(f"prior_{k}")) / (pl.col("amin") + PRIOR_MIN)).alias(f"base_{k}") for k in STATS])
+    return (agg.join(back, on="athlete_id", how="left")
+               .with_columns(season_days=pl.lit(float(first_age)), sd_min=pl.col("sd_min").clip(3.5, 9.0),
+                             *[((pl.col(f"s_{k}") + PRIOR_MIN * pl.col(f"base_{k}")) / (pl.col("wmin") + PRIOR_MIN)).alias(f"r_{k}") for k in STATS]))
+
+
+def minutes_short(p: dict) -> float:
+    """The minutes he is likely to come in short tonight after an absence (BACK_MIN), the summer included."""
+    if not p.get("games_now"):                                      # his first game of the season
+        missed = p.get("season_days") or 0.0
+        return max(next((m for lo, m in BACK_MIN if missed >= lo), 0.0), SUMMER_MIN)
+    missed = (p.get("last_age") or 1.0) - 1                         # league game days since his last game
+    if missed >= BACK_MIN[-1][0]:
+        return next(m for lo, m in BACK_MIN if missed >= lo)
+    k = p.get("back_n")
+    return float(p["back_short"]) * BACK_RAMP[k] if p.get("back_short") and k is not None and k < len(BACK_RAMP) else 0.0
 
 
 def tracked(prof: pl.DataFrame, roster: pl.DataFrame, out_ids: set[int]) -> pl.DataFrame:
@@ -160,15 +227,15 @@ def history(season: int, positions: dict[int, str]) -> pl.DataFrame:
 
 def expected_minutes(prof: pl.DataFrame, roster: pl.DataFrame, team: str, out_ids: set[int], before: date) -> dict[int, float]:
     """Each available player's expected minutes: his recent average, plus his share of the minutes of rotation
-    players (12+ a game) ruled out who played in the last three weeks (an older absence is already in everyone's
-    recent averages), capped at 40; the top ten scaled down if they add up to more than 245."""
+    players (12+ a game) ruled out who played in the last three weeks of games (an older absence is already in
+    everyone's recent averages; the summer does not count, so a starter hurt since the spring hands his minutes
+    on at the start of the season), capped at 40; the top ten scaled down if they add up to more than 245."""
     r = (roster.filter(pl.col("team") == team).select("athlete_id")
-         .join(prof.select("athlete_id", "exp_min", "last"), on="athlete_id", how="left")
+         .join(prof.select("athlete_id", "exp_min", "last_age"), on="athlete_id", how="left")
          .with_columns(pl.col("exp_min").fill_null(4.0)))
     out = r.filter(pl.col("athlete_id").is_in(list(out_ids)))
     avail = r.filter(~pl.col("athlete_id").is_in(list(out_ids)))
-    recent = out.filter((pl.col("exp_min") >= 12) & pl.col("last").is_not_null()
-                        & ((pl.lit(before) - pl.col("last")).dt.total_days() <= 21))
+    recent = out.filter((pl.col("exp_min") >= 12) & pl.col("last_age").is_not_null() & (pl.col("last_age") <= 21))
     lost = float(recent["exp_min"].sum())
     m = dict(zip(avail["athlete_id"].to_list(), avail["exp_min"].to_list()))
     rot = {a: v for a, v in m.items() if v >= 12}
@@ -198,12 +265,13 @@ def slate(games: list[dict], prof: pl.DataFrame, roster: pl.DataFrame, injuries:
                 aid = p["athlete_id"]
                 if p.get("r_pts") is None:      # no NBA minutes in the last two seasons: nothing to project from
                     continue
-                em = mins.get(aid, p["exp_min"]) + (STARTER_BUMP if p["role"] == "Starter" else 0.0)
+                short = minutes_short(p)
+                em = mins.get(aid, p["exp_min"]) + (STARTER_BUMP if p["role"] == "Starter" else 0.0) - short
                 if p["role"] == "Starter" and spread > 7:
                     em *= 1 - BLOWOUT * (spread - 7)
                 rows.append({"game_id": g["game_id"], "athlete_id": aid, "name": p["now_name"] or p["name"],
                              "team": team, "opp": opp, "home": sign == 1, "pos": p["now_pos"] or p["pg"], "role": p["role"],
-                             "status": status.get(aid), "exp_min": float(min(em, 42.0)),
+                             "status": status.get(aid), "exp_min": float(min(em, 42.0)), "min_short": float(short),
                              "sd_min": float(min(max((p["sd_min"] or 6.0) * SD_MIN_SCALE, SD_MIN_FLOOR), SD_MIN_CAP)),
                              "pace_factor": float(g.get("pace_factor") or 1.0), "games_now": int(p["games_now"] or 0),
                              **{f"r_{k}": float(p[f"r_{k}"]) for k in STATS}})

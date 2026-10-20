@@ -591,7 +591,13 @@ budget with the NFL) comes after the pregame side is stable.
   (`PROP_EV_MIN`). The market sets the level by scaling the player's rate (a
   count is not shifted: shifting made 1.5-threes lines look like +6% edges), the
   model's negative binomial over minutes sets the shape (calibrated on 2025-26
-  starters). When DraftKings and FanDuel both sit on the same side of
+  starters). Ages count league game days, not calendar days (on the calendar the
+  summer made last season weigh ~0.3 minutes, so every player was priced at his
+  position's average on opening night 2026-27); rates shrink toward the player's
+  own two-season record; after an absence, the summer included, he comes in
+  short (`BACK_MIN`, fading over four games; validated out of sample on 2023-24
+  and 2024-25). Counting ramp-up games at full minutes made things worse: kept
+  out. When DraftKings and FanDuel both sit on the same side of
   Pinnacle's line, Pinnacle is taken as behind the news (its props update
   ~100x less often) and the two of them set the level.
 - Schedule (`nba/slot.py`, `.github/workflows/nba.yml`, every 15 minutes in

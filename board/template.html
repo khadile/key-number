@@ -1180,8 +1180,12 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       renderRail();
     };
     // the old view fades as the new one rises in, where the browser can (View Transitions)
-    if (routed && !resized && !REDUCED && document.startViewTransition) document.startViewTransition(draw);
-    else draw();
+    if (routed && !resized && !REDUCED && document.startViewTransition) {
+      const vt = document.startViewTransition(draw);
+      // a quick second click skips this transition, which is not an error; a failed draw still reports, once
+      vt.ready.catch(() => {}); vt.finished.catch(() => {});
+      vt.updateCallbackDone.catch((x) => { if (!x || x.name !== "AbortError") console.error(x); });
+    } else draw();
     routed = true;
   }
   window.addEventListener("hashchange", route);
@@ -2787,7 +2791,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     const rows = p.markets.filter((m) => Object.keys(m.books || {}).length).map((m) => ({ name: NMK[m.market], median: m.median, q: m.q, fair: m.fair,
       books: m.books, lean: m.lean, hl: !!(p.pick && p.pick.market === m.market), ...nbaForm(p, m.market) }));
     return `<article class="pcard"><header class="phead"><div>${headshot(p.name, p.img, NT[p.team], p.team)}<span class="pwho"><b class="pname">${esc(p.name)}</b>
-        <span class="meta"><span class="role">${p.role === "Starter" ? "Starter" : "6th man"}</span>${st}<span>${num(p.min, 1)} min projected${p.games_now ? "" : " · from last season"}</span></span></span></div></header>
+        <span class="meta"><span class="role">${p.role === "Starter" ? "Starter" : "6th man"}</span>${st}<span${p.min_short >= 1 ? ` data-tip="Players coming back from time off, the summer included, play fewer minutes for a few games: ${num(p.min_short, 1)} are taken off his usual."` : ""}>${num(p.min, 1)} min projected${p.games_now ? " from last season" : ""}${p.min_short >= 1 ? `, ${num(p.min_short, 1)} fewer ${p.games_now ? "back from time off" : "in his first game"}` : ""}</span></span></span></div></header>
       <div class="chips">${p.pick ? npChip(p.pick) : '<span class="note">No prop with 1%+ value.</span>'}</div>
       ${p.pick ? ctxList(p.pick) : p.matchup ? `<ul class="ctx"><li>${esc(p.matchup)}</li></ul>` : ""}
       ${fm.vals.length ? `<div class="l5row" data-tip="His last ${fm.vals.length} games: green would have won this ${p.pick ? "pick" : "side"}, red would have lost. Tap a number for the game."><span class="note">Last ${fm.vals.length} · ${f.side === "under" ? "under" : "over"} ${num(f.line, 1).replace(/\.0$/, "")} ${NMK[f.m].toLowerCase()}</span>${formStrip(fm.vals, f.line, f.side, fm.tips)}</div>` : ""}
@@ -2876,7 +2880,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
         <h3>Why the model does not set the price</h3>
         <p>Over six seasons of walk-forward tests (${esc(B.seasons || "2020-21 to 2025-26")}), team ratings plus who plays missed the final margin by ${num(B.mae_margin_model, 2)} points on average against the closing line's ${num(B.mae_margin_close, 2)}, and added nothing the close did not already know (β ${num(B.beta_spread, 2)}). In each season's first three weeks it did a little better (β ${num(B.beta_spread_first3wk, 2)} over ${num(B.games_first3wk, 0)} games), not enough to trust. So the board records whether each pick sat on the model's side, and the first checkup reads that.</p>
         <h3>Props</h3>
-        <p>Each team's five starters and sixth man, in eight markets. Minutes come from his recent games (last season counts for less as this one fills in), with a teammate ruled out handing over his minutes; each stat per minute is pulled toward his position's average. Given minutes, a stat is a negative binomial whose spread was measured on 2025-26 starters: the ranges held 50% of outcomes in their middle half and 79% in their 10–90% band. The market sets the level: the model's rate is scaled until it gives Pinnacle's no-vig chance at Pinnacle's line (DraftKings and FanDuel's when Pinnacle has no line, or when both sit on the same side of a Pinnacle line that has stopped moving). A pick is the one market per player with 1% or more of value at DraftKings or FanDuel.</p>
+        <p>Each team's five starters and sixth man, in eight markets. Minutes come from his recent games, counted in league game days so the summer does not age last season (which counts for less as this one fills in), with a teammate ruled out handing over his minutes. After time out, the summer included, he plays fewer minutes for a few games: in 2023-24 and 2024-25 (out of sample) the first game back ran 4.5 to 5.3 minutes under a player's usual and fading over four games, and the board takes that off. Each stat per minute is pulled toward his own record over two seasons, itself pulled toward his position's average. Given minutes, a stat is a negative binomial whose spread was measured on 2025-26 starters: the ranges held 50% of outcomes in their middle half and 79% in their 10–90% band. The market sets the level: the model's rate is scaled until it gives Pinnacle's no-vig chance at Pinnacle's line (DraftKings and FanDuel's when Pinnacle has no line, or when both sit on the same side of a Pinnacle line that has stopped moving). A pick is the one market per player with 1% or more of value at DraftKings or FanDuel.</p>
         <h3>When things lock</h3>
         <ul><li><b>10:30am ET.</b> Last night graded from ESPN's box scores; the day's game lines lock with the game-line Picks of the Day and parlays; props lock for games before 6:30pm.</li>
           <li><b>5:30pm ET</b>, after the league's 5pm injury report: the rest of the props lock, then the props Picks of the Day and parlays.</li></ul>

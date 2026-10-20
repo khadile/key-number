@@ -706,7 +706,7 @@ def main() -> None:
             players.append({"img": f"https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/{r['athlete_id']}.png&w=96&h=70&scale=crop",
                             "matchup": pnotes.matchup(r["opp"], r["pos"], pm), "recent": pnotes.recent(r["athlete_id"]),
                             "id": r["athlete_id"], "name": r["name"], "team": r["team"], "opp": r["opp"], "game_id": r["game_id"],
-                            "role": r["role"], "status": r["status"], "min": round(r["exp_min"], 1), "games_now": r["games_now"],
+                            "role": r["role"], "status": r["status"], "min": round(r["exp_min"], 1), "min_short": round(r.get("min_short") or 0.0, 1), "games_now": r["games_now"],
                             "markets": mk, "pick": p_by.get((r["game_id"], r["athlete_id"]))})
 
     def daily(rows, results, prefix):
