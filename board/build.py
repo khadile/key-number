@@ -476,6 +476,17 @@ def main() -> None:
     # --- defense tab
     def_rows, def_league = defense.season_table(season)
 
+    # --- context notes on each pick (user, 2026-10-20): situation records, matchups and form, computed from data
+    from board.notes import GameTrends, prop_notes
+    trends = GameTrends(games.filter((pl.col("season") < season) | (pl.col("week") < week)))
+    game_row = {g["game_id"]: g for g in week_games.iter_rows(named=True)}
+    for c in cards:
+        for pk in c["picks"].values():
+            pk["notes"] = trends.notes(pk, game_row[c["id"]])
+    for pp in props_data_out["players"]:
+        if pp.get("pick"):
+            pp["pick"]["notes"] = prop_notes(pp["pick"], roles, def_rows, props_data_out["logs"].get(pp["id"], []), season)
+
     # --- how it works: backtest headline numbers, computed from saved reports
     model_card = {"clv": clv_study, "sigma_margin": round(sm, 1), "sigma_total": round(st, 1)}
     proj_path = REPORTS / "projections.parquet"

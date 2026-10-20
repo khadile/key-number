@@ -660,6 +660,18 @@ def main() -> None:
             "injuries": {"home": outs_by_team.get(g["home"], []), "away": outs_by_team.get(g["away"], [])},
         })
 
+    # --- context notes on each pick (user, 2026-10-20): situation records, matchups and form (nba/notes.py)
+    from nba.notes import GameTrends, PropNotes
+    trends = GameTrends()
+    opener = sched["day"].min()
+    for c in cards:
+        m = models.get(c["id"]) or {}
+        ctx = {"home_rest": (m.get("rest") or {}).get("home", 7), "away_rest": (m.get("rest") or {}).get("away", 7),
+               "early": (today - opener).days < 21}
+        for pk in c["picks"].values():
+            pk["notes"] = trends.notes(pk, ctx)
+    pnotes = PropNotes(hist, today + timedelta(days=1), SEASON)
+
     # --- page data: today's tracked players
     pres = {r["id"]: r for r in p_results}
     p_by = {(p["game_id"], p["athlete_id"]): {**{k: v for k, v in p.items() if k != "mix"},
@@ -684,6 +696,10 @@ def main() -> None:
                            "lean": ({"side": priced["side"], "line": priced["line"], "book": BOOK_NAMES[priced["book"]],
                                      "american": american(priced["dec"]), "p": round(priced["p_win"], 3), "ev": round(priced["ev"], 4)} if priced else None),
                            "actual": stats.get((r["game_id"], r["athlete_id"]), {}).get(m)})
+            pk = p_by.get((r["game_id"], r["athlete_id"]))
+            if pk:
+                pk["notes"] = [n for n in (pnotes.matchup(r["opp"], r["pos"], pk["market"]),
+                                           pnotes.form(r["athlete_id"], pk["market"], pk["line"], pk["side"])) if n]
             players.append({"id": r["athlete_id"], "name": r["name"], "team": r["team"], "opp": r["opp"], "game_id": r["game_id"],
                             "role": r["role"], "status": r["status"], "min": round(r["exp_min"], 1), "games_now": r["games_now"],
                             "markets": mk, "pick": p_by.get((r["game_id"], r["athlete_id"]))})

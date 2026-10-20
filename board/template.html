@@ -238,7 +238,15 @@ th.sort[aria-sort] { color: var(--ink); }
 .sports { display: inline-flex; gap: 2px; padding: 2px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); }
 .sports a { padding: 2px 10px; border-radius: 4px; text-decoration: none; color: var(--ink-2); font-family: var(--f-display); font-weight: 700; font-size: 15px; letter-spacing: 0.06em; }
 .sports a[aria-current="true"] { background: var(--accent); color: var(--accent-ink); }
-.cards.n, .pcards.n { align-items: start; }
+.cards, .pcards.n { align-items: start; }
+.card { align-content: start; }
+/* context notes on a pick (board/notes.py, nba/notes.py): facts with their numbers, history not the model */
+.ctx { margin: 0; padding-left: 16px; display: grid; gap: 2px; font-size: 12.5px; color: var(--ink-2); }
+.ctx li.chance { color: var(--muted); }
+.ctxb { display: grid; gap: 2px; }
+.ctxb .ctx-h { font: 600 12px var(--f-mono); color: var(--ink); }
+.pick-row .ctx { grid-column: 2 / 4; }
+.prow .ctx { flex-basis: 100%; }
 .ninj { display: grid; gap: 10px; }
 .card.n { align-content: start; }
 .st { white-space: nowrap; }
@@ -717,6 +725,26 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     resizeTimer = setTimeout(() => { lastW = window.innerWidth; const y = window.scrollY; route("resize"); window.scrollTo(0, y); }, 200);
   });
 
+  // ---------- context notes on a pick: each a fact with its numbers; records within chance are greyed
+  function ctxList(p, max) {
+    const ns = (p && p.notes) || [];
+    if (!ns.length) return "";
+    return `<ul class="ctx">${ns.slice(0, max || 4).map((n) => `<li${/within chance/.test(n) ? ' class="chance"' : ""}>${esc(n.replace(/-(?=\d)/g, MINUS))}</li>`).join("")}</ul>`;
+  }
+  function ctxBlock(picks) {
+    const xs = picks.filter((p) => p && p.notes && p.notes.length);
+    return xs.map((p) => `<div class="ctxb"><span class="ctx-h">${label(p.label)}</span>${ctxList(p)}</div>`).join("");
+  }
+  // NFL card dropdown: the books, what moves the model's number, and the injury report
+  function nflMore(g) {
+    const books = g.books && g.books.length ? nBooks(g) : '<p class="note">No lines yet.</p>';
+    const parts = (g.contrib || []).map((c) => `${esc(c.label)} ${signed(c.pts, 1)}`).join(", ");
+    const model = g.model ? `<p class="note">Model: ${fav(g.home, g.away, g.model.spread, 1)}, total ${num(g.model.total, 1)}${parts ? `. What moves it (points for ${esc(g.home)}): ${parts}` : ""}.</p>` : "";
+    const inj = (t, xs) => (xs && xs.length ? `<div><b>${badge(t, 1)}</b><ul class="inj">${xs.map((x) => `<li>${stChip(x.status)}<span>${esc(x.name)} <span class="note">${esc(x.pos || "")}${x.injury ? " · " + esc(x.injury) : ""}</span></span></li>`).join("")}</ul></div>` : "");
+    const ij = inj(g.away, (g.injuries || {}).away) + inj(g.home, (g.injuries || {}).home);
+    return `<details class="nmore"><summary>Books, model and injury report</summary><div class="nmore-in">${books}${model}${ij ? `<div class="ninj">${ij}</div>` : '<p class="note">Nobody on either injury report.</p>'}</div></details>`;
+  }
+
   // ---------- record strip
   function tile(k, r, extra, gold) {
     const empty = !r || r.n === 0;
@@ -818,13 +846,15 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
         <div><dt>Model</dt><dd>${g.model ? fav(g.home, g.away, g.model.spread, 1) + " · " + num(g.model.total, 1) : "–"}</dd></div>
       </dl>
       <div class="chips">${picks || '<span class="note">No lines yet.</span>'}${!P.ml ? mlPass(g) : ""}</div>
+      ${ctxBlock([P.spread, P.total])}
+      ${nflMore(g)}
       <a class="more" href="#g-${esc(g.id)}">Game breakdown →</a>
     </article>`;
   }
   function potwPanel() {
     const potw = D.games.flatMap((g) => Object.values(g.picks || {}).filter((p) => p.potw).map((p) => ({ p, g }))).sort((a, b) => b.p.ev - a.p.ev);
     const rows = potw.map(({ p, g }, i) => `<div class="pick-row"><span class="n">${i + 1}</span><span class="lbl">${label(p.label)}</span>${resChip(p.result) || `<span class="mono">${am(p.american)}</span>`}
-      <div class="sub"><span>${badge(g.away, 1)} at ${badge(g.home, 1)} · ${esc(g.kickoff.short)}</span><span>${esc(p.book_name)} ${am(p.american)}</span><span>Win ${pct(p.p_win)}</span><span>EV ${signed(100 * p.ev, 1)}%</span><span>1u · ${term("kelly", "quarter Kelly")} ${stakeU(p.kelly_u)}</span>${p.checks ? `<span>${vdTag(p.checks.verdict, failedOf(p.checks))}</span>` : ""}</div></div>`).join("");
+      <div class="sub"><span>${badge(g.away, 1)} at ${badge(g.home, 1)} · ${esc(g.kickoff.short)}</span><span>${esc(p.book_name)} ${am(p.american)}</span><span>Win ${pct(p.p_win)}</span><span>EV ${signed(100 * p.ev, 1)}%</span><span>1u · ${term("kelly", "quarter Kelly")} ${stakeU(p.kelly_u)}</span>${p.checks ? `<span>${vdTag(p.checks.verdict, failedOf(p.checks))}</span>` : ""}</div>${ctxList(p, 2)}</div>`).join("");
     const ticket = (P, empty) => {
       if (!P) return `<p class="note">${empty}</p>`;
       return `<div class="odds-big">${am(P.american)} ${resChip(P.result)}</div>
@@ -1375,7 +1405,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
   const byRole = (a, b) => ROLE_ORDER[PLAYERS[a].role] - ROLE_ORDER[PLAYERS[b].role];
   const sideWord = (s) => (s === "over" ? "Over" : "Under");
   function prow(p) {
-    return `<div class="prow"><a class="pn" href="#p-${esc(p.id)}">${esc(p.name)}</a> ${roleTag(p)}<span class="pc">${p.pick ? propPickChip(p.pick) : leanChip(bestLean(p), false, p)}</span></div>`;
+    return `<div class="prow"><a class="pn" href="#p-${esc(p.id)}">${esc(p.name)}</a> ${roleTag(p)}<span class="pc">${p.pick ? propPickChip(p.pick) : leanChip(bestLean(p), false, p)}</span>${p.pick ? ctxList(p.pick) : ""}</div>`;
   }
   function gameCalls(gid) {
     return (PR.games[gid] || []).map((id) => PLAYERS[id]).filter(hasCall).map((p) => {
@@ -2015,7 +2045,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
   // ---------- today's best: Picks of the Day, Golden Parlay, +EV Lottery
   function nBest(picks, parlays, what) {
     const rows = picks.map((p, i) => `<div class="pick-row"><span class="n">${i + 1}</span><span class="lbl">${label(p.label)}</span>${resN(p.result) || `<span class="mono">${am(p.american)}</span>`}
-      <div class="sub"><span>${nGame(p)}</span><span>${esc(p.book_name)} ${am(p.american)}</span><span>Win ${pct(p.p_win)}</span><span>EV ${evPct(p.ev)}</span><span>1u · ${term("kelly", "quarter Kelly")} ${stakeU(p.kelly_u)}</span></div></div>`).join("");
+      <div class="sub"><span>${nGame(p)}</span><span>${esc(p.book_name)} ${am(p.american)}</span><span>Win ${pct(p.p_win)}</span><span>EV ${evPct(p.ev)}</span><span>1u · ${term("kelly", "quarter Kelly")} ${stakeU(p.kelly_u)}</span></div>${ctxList(p, 2)}</div>`).join("");
     const ticket = (P, empty) => {
       if (!P) return `<p class="note">${empty}</p>`;
       return `<div class="odds-big">${am(P.american)} ${resN(P.result)}</div>
@@ -2095,6 +2125,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
         <div><dt>Model</dt><dd>${g.model ? fav(g.home, g.away, g.model.margin, 1) + " · " + num(g.model.total, 1) : "–"}</dd></div>
       </dl>
       <div class="chips">${chips || wait || '<span class="note">No DraftKings or FanDuel lines yet.</span>'}</div>
+      ${ctxBlock([P.spread, P.total])}
       <details class="nmore"><summary>Books, model and injury report</summary><div class="nmore-in">${nBooks(g)}${nModel(g)}${nInj(g)}</div></details>
     </article>`;
   }
@@ -2185,6 +2216,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     return `<article class="pcard"><header class="phead"><div><b class="pname">${esc(p.name)}</b> <span class="role">${p.role === "Starter" ? "Starter" : "6th man"}</span>${st}</div>
         <span class="note">${num(p.min, 1)} min projected${p.games_now ? "" : " · from last season"}</span></header>
       <div class="chips">${p.pick ? npChip(p.pick) : '<span class="note">No prop with 1%+ value.</span>'}</div>
+      ${p.pick ? ctxList(p.pick) : ""}
       <details class="nmore"><summary>All markets</summary><div class="nmore-in">${npMarkets(p)}</div></details></article>`;
   }
   function lsSection() {

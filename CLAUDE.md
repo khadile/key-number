@@ -622,6 +622,12 @@ budget with the NFL) comes after the pregame side is stable.
   10%+ value at both widths, 0.25u each in ledger/nba_longshots.jsonl, their own record. Every rung is also
   graded against its price (ledger/nba_longshot_cal.jsonl, counts only): the model-free test of whether books
   misprice long shots.
+- Context notes (user, 2026-10-20; both sports, `nba/notes.py`, `board/notes.py`): each pick carries facts
+  computed at build time, never written by hand: situation records against the close (NBA since 2020-21,
+  NFL since 2018, n >= 60 / 50, "within chance" when inside two standard errors), the opponent's defense
+  against the player's role or position (rank of 30/32), and his recent games against the pick's line.
+  History, not the model: none of it is used in pricing. NFL game cards got the NBA-style "Books, model
+  and injury report" dropdown.
 - Checkups every other Monday from 2026-11-02 (Claude scheduled task
   `nba-checkup`): the record and EV at the close, overs vs unders, the model's
   lean, morning vs evening locks replayed on the same games, and the edges still
