@@ -605,7 +605,8 @@ budget with the NFL) comes after the pregame side is stable.
   game's Eastern date). Results carry `ev_close` (the locked price against
   Pinnacle's closing no-vig chance): the first evidence the edge is real.
 - Angles the user asked about (2026-10-20), `nba/angles.py` (ESPN's odds API keeps the book of record's
-  open and close for every game: DraftKings, ESPN BET or Caesars; reports/nba_angles.json): at the close,
+  open and close for every game; with prices from 2023-24: Betfair, then ESPN BET, then DraftKings in
+  2025-26; reports/nba_angles.json): at the close,
   2023-24 to 2025-26, underdog moneylines lost 10% (+500 and longer 36%), favorites 3.8%, favorites'
   moneyline parlays 7-17%, spreads and totals about the margin. Taking the opening price on sides the line
   later moved toward paid +13%: the edge is the price, not the bet type. The model predicts those moves
