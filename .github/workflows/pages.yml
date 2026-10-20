@@ -1,12 +1,13 @@
 name: publish
 
-# Publish the committed board as it is (no rebuild): for a board built on the laptop and
-# pushed, or to republish by hand. The scheduled build (board.yml) publishes on its own.
+# Publish the committed board (no rebuild): render the page from the two committed payloads,
+# for a board built on the laptop and pushed, or to republish by hand. The scheduled builds
+# (board.yml, nba.yml) publish on their own.
 
 on:
   push:
     branches: [main]
-    paths: [board/nfl_board.html]
+    paths: [board/nfl_data.json, board/nba_data.json, board/template.html]
   workflow_dispatch:
 
 permissions:
@@ -29,7 +30,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: python -m board.site
+      - run: |
+          python -m board.render
+          python -m board.site
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

@@ -35,3 +35,18 @@ reports/*.parquet
 !reports/live_windows_flags.parquet
 reports/*.log
 .claude/
+
+# NBA (nba/): hoopR downloads and ESPN box scores are fetched again whenever missing; odds data stays off the
+# public repo. All three live in the NBA workflow's Actions cache. The OddsPapi fixture, market and player lists
+# are reference data, kept like the NFL's.
+data/nba/raw/
+data/nba/odds/
+data/nba/box/
+!data/oddspapi/fixtures_t132.json
+!data/oddspapi/markets_s11.json
+!data/oddspapi/players_s11.json
+!data/oddspapi/tournaments_s11.json
+
+# The page is rendered from board/nfl_data.json and board/nba_data.json (board/render.py) wherever it is
+# published, so the two sports' builds never collide on it
+board/nfl_board.html

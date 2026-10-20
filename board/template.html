@@ -234,6 +234,14 @@ th.sort[aria-sort] { color: var(--ink); }
 .sections { display: inline-flex; gap: 4px; padding: 3px; margin: 2px 0 6px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
 .sections a { padding: 6px 14px; border-radius: 999px; text-decoration: none; color: var(--ink-2); font-weight: 600; font-size: 14px; white-space: nowrap; }
 .sections a[aria-current="true"] { background: var(--ink); color: var(--bg); }
+/* sport switch: NFL / NBA */
+.sports { display: inline-flex; gap: 2px; padding: 2px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); }
+.sports a { padding: 2px 10px; border-radius: 4px; text-decoration: none; color: var(--ink-2); font-family: var(--f-display); font-weight: 700; font-size: 15px; letter-spacing: 0.06em; }
+.sports a[aria-current="true"] { background: var(--accent); color: var(--accent-ink); }
+details.nmore { border-top: 1px solid var(--line); padding-top: 6px; }
+details.nmore summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); }
+.nmore-in { display: grid; gap: 10px; padding-top: 8px; min-width: 0; }
+table.pmk td, table.pmk th { padding: 6px 8px; }
 /* props */
 .role { font: 700 11px var(--f-body); letter-spacing: .05em; padding: 1px 5px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); }
 .tag.shop { background: var(--accent-soft); color: var(--accent); border-color: transparent; margin-left: 4px; }
@@ -444,18 +452,15 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
 
 <header class="top">
   <div class="top-in">
-    <div class="brand"><b>KEY<i>/</i>NUMBER</b><span id="brand-sub"></span></div>
-    <nav class="sections" aria-label="Board">
-      <a href="#week" data-sec="lines">Game lines</a>
-      <a href="#props" data-sec="props">Player props</a>
-      <a href="#live" data-sec="live">Live</a>
-    </nav>
+    <div class="brand"><b>KEY<i>/</i>NUMBER</b><nav class="sports" aria-label="Sport"><a href="#week" data-sport="nfl">NFL</a><a href="#nba" data-sport="nba">NBA</a></nav><span id="brand-sub"></span></div>
+    <nav class="sections" aria-label="Board"></nav>
     <nav class="tabs" id="subtabs" aria-label="Pages"></nav>
   </div>
 </header>
 <main id="app"></main>
 
 <script id="kn-data" type="application/json">__BOARD_DATA__</script>
+<script id="kn-nba" type="application/json">__NBA_DATA__</script>
 <script>
 (function () {
   "use strict";
@@ -535,6 +540,8 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     kelly: "Quarter Kelly: a stake sized to the edge for the price, a quarter of what the Kelly formula says, rounded to ¼, ½, 1 or 2 units (1u = 1% of the bankroll). A solid favorite with an edge gets more, a long shot less. Kept as its own record beside the flat one, because sizing by the model's confidence amplifies its mistakes as much as its edge.",
     roi: "Return on investment: units won divided by units risked.",
     potw: "Picks of the week: the strongest picks by edge relative to the payout, one per game.",
+    potd: "Picks of the day: the day's strongest positive-EV picks by edge relative to the payout, one per game.",
+    evclose: "EV at the close: what each pick's locked price was worth against Pinnacle's no-vig line just before tip. A market-anchored edge is only real if the price beats where the market settled, and this shows it long before wins and losses do.",
     golden: "Golden Parlay: two or three positive-value picks from different games, priced +150 to +300. It should cash now and then.",
     lottery: "+EV Lottery: three to five positive-value picks priced over +500. It misses most weeks and is here for the occasional big payout.",
     k: "The share of the gap between the model and the market that lines have actually closed by kickoff this season. A small number means the market already knows most of what the model knows.",
@@ -666,14 +673,22 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     lines: [["week", "This week"], ["mine", "My picks"], ["defense", "Defenses"], ["record", "Record"], ["model", "How it works"]],
     props: [["props", "This week"], ["props-players", "Players"], ["props-mine", "My picks"], ["props-defense", "Defenses"], ["props-record", "Record"], ["props-model", "How it works"]],
     live: [["live", "Live"], ["live-model", "How it works"]],
+    "nba-lines": [["nba", "Today"], ["nba-record", "Record"], ["nba-model", "How it works"]],
+    "nba-props": [["nba-props", "Today"], ["nba-props-record", "Record"], ["nba-props-model", "How it works"]],
   };
+  const SPORT_SECTIONS = { nfl: [["lines", "#week", "Game lines"], ["props", "#props", "Player props"], ["live", "#live", "Live"]],
+                           nba: [["nba-lines", "#nba", "Game lines"], ["nba-props", "#nba-props", "Player props"]] };
   // The public website (board/site.py sets KN_PUBLIC) has no My Picks: it needs claude.ai's storage.
   const PUBLIC = !!window.KN_PUBLIC;
   if (PUBLIC) for (const k of Object.keys(SECTIONS)) SECTIONS[k] = SECTIONS[k].filter(([v]) => v !== "mine" && v !== "props-mine");
-  const sectionOf = (h) => (h.startsWith("props") || h.startsWith("pg-") || h.startsWith("p-") ? "props" : h.startsWith("live") ? "live" : "lines");
+  const sectionOf = (h) => (h.startsWith("nba-props") ? "nba-props" : h.startsWith("nba") ? "nba-lines"
+    : h.startsWith("props") || h.startsWith("pg-") || h.startsWith("p-") ? "props" : h.startsWith("live") ? "live" : "lines");
+  let shownSport = null;
   function setTab(name) {
-    const sec = sectionOf(name);
-    document.querySelectorAll(".sections a").forEach((a) => a.setAttribute("aria-current", a.dataset.sec === sec ? "true" : "false"));
+    const sec = sectionOf(name), sport = sec.startsWith("nba") ? "nba" : "nfl";
+    document.querySelectorAll(".sports a").forEach((a) => a.setAttribute("aria-current", a.dataset.sport === sport ? "true" : "false"));
+    document.querySelector(".sections").innerHTML = SPORT_SECTIONS[sport].map(([k, h, l]) => `<a href="${h}" data-sec="${k}" aria-current="${k === sec}">${l}</a>`).join("");
+    if (sport !== shownSport) { shownSport = sport; document.getElementById("brand-sub").innerHTML = sport === "nba" ? nbaSub() : nflSub(); }
     document.getElementById("subtabs").innerHTML = SECTIONS[sec].map(([k, l]) => `<a href="#${k}" data-tab="${k}"${k === name ? ' aria-current="page"' : ""}>${l}</a>`).join("");
   }
   let current = "week";
@@ -1943,9 +1958,291 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
       </div>`;
   }
 
+  // ======================================================================= NBA (nba/build.py, every day)
+  const N = JSON.parse(document.getElementById("kn-nba").textContent || "null");
+  const NT = (N && N.teams) || {};
+  const NG = Object.fromEntries(((N && N.games) || []).map((g) => [String(g.id), g]));
+  const nbadge = (t, sm) => { const m = NT[t] || { color: "#777", ink: "#fff" }; return `<span class="tb${sm ? " sm" : ""}" style="--tc:${m.color};--ti:${m.ink}">${esc(t)}</span>`; };
+  const nnick = (t) => esc((NT[t] && NT[t].nick) || t);
+  const NMK = { pts: "Points", reb: "Rebounds", ast: "Assists", fg3: "3-pointers", pra: "Pts+Reb+Ast", pr: "Pts+Reb", pa: "Pts+Ast", ra: "Reb+Ast" };
+  const resN = (r) => (r === "V" ? '<span class="res P">VOID</span>' : resChip(r));
+  const etTime = (iso) => new Date(iso).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }) + " ET";
+  const dayShort = (d) => new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  const evPct = (x) => (x == null ? "–" : signed(100 * x, 1) + "%");
+  function noNba() {
+    app.innerHTML = `<section class="hello"><h1>NBA</h1><p class="lede">The NBA board fills in with its first daily build.</p></section>`;
+  }
+  const nGame = (p) => (p.kind === "prop" ? `${nbadge(p.team, 1)} vs ${nbadge(p.opp, 1)}` : `${nbadge(p.away, 1)} at ${nbadge(p.home, 1)}`);
+
+  // ---------- record strips
+  function nTile(k, r, note) {
+    const empty = !r || r.n === 0;
+    return `<div class="tile"><span class="k">${k}</span><span class="v ${empty ? "" : cls(r.units)}">${empty ? "–" : units(r.units)}</span>
+      <span class="s">${empty ? note || "No graded picks" : `${rec(r)} · ROI ${pct(r.roi, 1)}`}</span></div>`;
+  }
+  function evTile(a) {
+    const ec = a && a.ev_close;
+    return `<div class="tile"><span class="k">${term("evclose", "EV at the close")}</span><span class="v ${cls(ec)}">${ec == null ? "–" : evPct(ec)}</span>
+      <span class="s">${ec == null ? "Our price against Pinnacle's closing line" : `average of ${a.ev_close_n} picks at the close`}</span></div>`;
+  }
+  function unitsTile(a) {
+    return `<div class="tile"><span class="k">${term("units", "Units")}</span><span class="v ${cls(a.units)}">${a.n ? units(a.units) : "–"}</span>
+      <span class="s">${a.n ? term("roi", "ROI") + " " + pct(a.roi, 1) + " on " + a.n + " picks" : "1u every pick, 0.5u per parlay"}</span></div>`;
+  }
+  function nStrip(R) {
+    return `<div class="strip">${tile(term("ats", "ATS"), R.ats)}${tile("Over/under", R.ou)}${tile("Moneyline", R.ml)}
+      ${tile(term("potd", "Picks of the day"), R.potd, "", true)}${tile(term("golden", "Golden parlay"), R.parlay, "", true)}${tile(term("lottery", "+EV lottery"), R.lottery)}
+      ${unitsTile(R.all)}${evTile(R.all)}</div>`;
+  }
+  function npStrip(R) {
+    const combos = ["pra", "pr", "pa", "ra"].map((m) => R[m]).filter((r) => r && r.n);
+    const c = combos.length ? combos.reduce((a, r) => ({ w: a.w + r.w, l: a.l + r.l, p: a.p + r.p, n: a.n + r.n, units: a.units + r.units }), { w: 0, l: 0, p: 0, n: 0, units: 0 }) : null;
+    if (c) c.roi = c.n ? c.units / c.n : null;
+    return `<div class="strip">${tile("Points", R.pts)}${tile("Rebounds", R.reb)}${tile("Assists", R.ast)}${tile("3-pointers", R.fg3)}
+      ${tile("Combos", c)}${tile(term("potd", "Picks of the day"), R.potd, "", true)}${unitsTile(R.all)}${evTile(R.straight)}</div>`;
+  }
+  function nKelly(K, what) {
+    return `<p class="note">${term("kelly", "Quarter Kelly")}, its own record: ${K && K.n ? `<span class="${cls(K.units)}">${units(K.units)}</span> on ${num(K.staked, 2)}u staked; the same ${K.n} ${what} at 1u: <span class="${cls(K.flat.units)}">${units(K.flat.units)}</span>` : "nothing graded yet"}.</p>`;
+  }
+
+  // ---------- today's best: Picks of the Day, Golden Parlay, +EV Lottery
+  function nBest(picks, parlays, what) {
+    const rows = picks.map((p, i) => `<div class="pick-row"><span class="n">${i + 1}</span><span class="lbl">${label(p.label)}</span>${resN(p.result) || `<span class="mono">${am(p.american)}</span>`}
+      <div class="sub"><span>${nGame(p)}</span><span>${esc(p.book_name)} ${am(p.american)}</span><span>Win ${pct(p.p_win)}</span><span>EV ${evPct(p.ev)}</span><span>1u · ${term("kelly", "quarter Kelly")} ${stakeU(p.kelly_u)}</span></div></div>`).join("");
+    const ticket = (P, empty) => {
+      if (!P) return `<p class="note">${empty}</p>`;
+      return `<div class="odds-big">${am(P.american)} ${resN(P.result)}</div>
+        <ul class="legs">${P.leg_picks.map((l) => `<li><span><b>${label(l.label)}</b> <span class="note">${l.kind === "prop" ? esc(l.team) + " vs " + esc(l.opp) : esc(l.away) + " at " + esc(l.home)}</span></span><span class="mono">${am(l.american)}</span></li>`).join("")}</ul>
+        <div class="kv"><div><span>Hits</span><b>${pct(P.p)}</b></div><div><span>0.5u pays</span><b>+${(0.5 * (P.dec - 1)).toFixed(2)}u</b></div>
+        <div><span>EV</span><b class="${cls(P.ev)}">${evPct(P.ev)}</b></div></div>`;
+    };
+    const G = (parlays || {}).golden, Lt = (parlays || {}).lottery;
+    return `<div class="featured">
+      <section class="panel gold"><h3>Picks of the day <span class="tag">Top ${picks.length}</span></h3>
+        ${rows || `<p class="note">No ${what} cleared the bar today, or today's ${what} have not locked yet. Zero is a valid day.</p>`}
+        <p class="note">Positive expected value only, at the better of ${esc(N.meta.books.join(" and "))}, one per game, ranked by edge relative to the payout.</p></section>
+      <div class="stack">
+        <section class="panel gold"><h3>Golden parlay <span class="tag">+150 to +300</span></h3>
+          ${ticket(G, `No combination of today's positive-EV ${what} lands between +150 and +500.`)}
+          <p class="note">Two or three positive-EV legs from different games, priced +150 to +300 (up to +500 only when nothing fits).</p></section>
+        <section class="panel lotto"><h3>+EV lottery <span class="tag">Over +500</span></h3>
+          ${ticket(Lt, "No long-shot combination with positive expected value today.")}
+          <p class="note">The best expected value among 3 to 5 legs priced over +500. It misses most days.</p></section>
+      </div>
+    </div>`;
+  }
+
+  // ---------- game lines: today
+  function nWhy(p) {
+    const win = p.p_win / Math.max(1 - (p.p_push || 0), 1e-9), need = 1 / p.dec;
+    const fair = p.market === "spread" ? `Pinnacle's no-vig line makes it ${fav(p.home, p.away, p.fair_margin, 1)}. `
+      : p.market === "total" ? `Pinnacle's no-vig total is ${num(p.fair_total, 1)}. ` : `Pinnacle's no-vig price makes ${p.side === "home" ? p.home : p.away} ${pct(p.side === "home" ? p.fair_p_home : 1 - p.fair_p_home, 1)} to win. `;
+    const model = p.with_model == null ? "" : p.with_model ? " The model leans the same way." : " The model leans the other way; the value is in the price.";
+    const stake = p.risk === 0 ? " A lean: no side has value at today's prices, so this is the model's side with no stake; the record counts it at 1u." : ` Stake 1u. Quarter Kelly, its own record: ${stakeU(p.kelly_u)}.`;
+    return `${fair}${p.book_name} has ${p.label} at ${am(p.american)}: wins ${pct(win, 1)} by Pinnacle's numbers and needs ${pct(need, 1)}. EV ${evPct(p.ev)}.${model}${stake}`;
+  }
+  function nChip(p) {
+    if (!p) return "";
+    const lean = p.risk === 0;
+    return `<span class="chip${p.potd ? " potw" : ""}${lean ? " lean" : ""}" data-tip="${esc(nWhy(p))}"><span class="m">${p.potd ? "Pick of the day" : lean ? "Lean" : { spread: "Spread", total: "Total", ml: "Moneyline" }[p.market]}</span>
+      <b>${label(p.label)}</b><span class="pr">${am(p.american)} ${esc(p.book_name)}</span>${stakePill(p)}${resN(p.result)}</span>`;
+  }
+  function nBooks(g) {
+    if (!g.books.length) return '<p class="note">No lines yet.</p>';
+    return `<div class="scroll"><table class="t"><thead><tr><th>Book</th><th>Spread (${esc(g.home)})</th><th class="num">${esc(g.home)}</th><th class="num">${esc(g.away)}</th><th>Total</th><th class="num">Over</th><th class="num">Under</th><th class="num">ML ${esc(g.home)}</th><th class="num">ML ${esc(g.away)}</th></tr></thead><tbody>
+      ${g.books.map((b) => `<tr${b.sharp ? ' class="hl"' : ""}><td>${esc(b.book)}${b.sharp ? ' <span class="note">market</span>' : ""}</td><td class="mono">${b.spread == null ? "–" : label(b.spread > 0 ? "-" + half(b.spread) : b.spread < 0 ? "+" + half(b.spread) : "PK")}</td>
+        <td class="num">${am(b.spread_home)}</td><td class="num">${am(b.spread_away)}</td><td class="mono">${b.total == null ? "–" : half(b.total)}</td><td class="num">${am(b.over)}</td><td class="num">${am(b.under)}</td><td class="num">${am(b.ml_home)}</td><td class="num">${am(b.ml_away)}</td></tr>`).join("")}
+    </tbody></table></div>`;
+  }
+  function nModel(g) {
+    const m = g.model;
+    if (!m) return "";
+    const parts = [`team ratings ${fav(g.home, g.away, m.team, 1)}`];
+    if (m.b2b) parts.push(`back-to-back ${signed(m.b2b, 1)} for ${esc(g.home)}`);
+    if (Math.abs(m.lineup || 0) >= 0.1) parts.push(`who plays ${signed(m.lineup, 1)} for ${esc(g.home)}`);
+    return `<p class="note">Model: ${parts.join(", ")}, so ${fav(g.home, g.away, m.margin, 1)}; total ${num(m.total, 1)} at ${num(m.pace, 1)} possessions. Rest: ${esc(g.away)} ${m.rest.away >= 7 ? "7+" : m.rest.away} days, ${esc(g.home)} ${m.rest.home >= 7 ? "7+" : m.rest.home}. The model does not set prices (it has not beaten closing lines); it picks the side of a lean.</p>`;
+  }
+  function nInj(g) {
+    const list = (t, xs) => xs.length ? `<div><b>${nbadge(t, 1)}</b><ul class="inj">${xs.map((x) => `<li><span class="st ${esc(x.status)}">${esc(x.status)}</span><span>${esc(x.name)}${x.detail ? ` <span class="note">${esc(x.detail.slice(0, 120))}</span>` : ""}</span></li>`).join("")}</ul></div>` : "";
+    const h = list(g.away, g.injuries.away) + list(g.home, g.injuries.home);
+    return h ? `<div class="two">${h}</div>` : '<p class="note">Nobody on either injury report.</p>';
+  }
+  function nCard(g) {
+    const fin = g.status === "final", live = g.status === "live";
+    const s = (side) => (g.score ? `<span class="score">${g.score[side]}</span>` : "");
+    const P = g.picks || {};
+    const chips = [nChip(P.spread), nChip(P.total), nChip(P.ml)].join("");
+    const wait = !chips && !fin && !live ? `<span class="note">Picks lock ${etTime(g.locks.lines)}.</span>` : "";
+    return `<article class="card">
+      <div class="card-top"><span class="${live ? "live" : ""}">${live ? esc(g.detail || "In progress") : fin ? "Final" : esc(g.tip.time)}</span>${g.fair.src && g.fair.src !== "pinnacle" ? '<span>No Pinnacle line: DraftKings and FanDuel set the market</span>' : ""}</div>
+      <div class="trow">${nbadge(g.away)}<span class="tname">${nnick(g.away)}<small>${esc((NT[g.away] || {}).record || "")}</small></span>${s("away")}</div>
+      <div class="trow">${nbadge(g.home)}<span class="tname">${nnick(g.home)}<small>${esc((NT[g.home] || {}).record || "")}</small></span>${s("home")}</div>
+      <dl class="lines">
+        <div><dt>${term("novig", "Market, no-vig")}</dt><dd>${g.fair.margin == null ? "–" : fav(g.home, g.away, g.fair.margin, 1)} · ${num(g.fair.total, 1)}</dd></div>
+        <div><dt>Model</dt><dd>${g.model ? fav(g.home, g.away, g.model.margin, 1) + " · " + num(g.model.total, 1) : "–"}</dd></div>
+      </dl>
+      <div class="chips">${chips || wait || '<span class="note">No DraftKings or FanDuel lines yet.</span>'}</div>
+      <details class="nmore"><summary>Books, model and injury report</summary><div class="nmore-in">${nBooks(g)}${nModel(g)}${nInj(g)}</div></details>
+    </article>`;
+  }
+  function nbaSub() {
+    if (!N) return "NBA model";
+    return `NBA model · ${esc(N.meta.label)} · <span data-tip="The NBA board updates twice a day. 10:30am ET: last night graded, then the day's game lines lock (with props for games before 6:30pm). 5:30pm ET, after the league's 5pm injury report: the rest of the day's props lock." tabindex="0">updated ${esc(new Date(N.meta.generated).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" }))} ET</span>`;
+  }
+  function renderNba() {
+    if (!N) return noNba();
+    const R = N.record.live;
+    const potd = N.games.flatMap((g) => Object.values(g.picks || {}).filter((p) => p.potd)).sort((a, b) => b.ev - a.ev);
+    app.innerHTML = `
+      <section class="hello"><h1>NBA · ${esc(N.meta.day_label)}</h1>
+        <p class="lede">Every game's spread and total at the better of DraftKings and FanDuel, priced against Pinnacle's no-vig line. A pick is the side with the most value; when nothing has value it is the model's side, as a lean with no stake.</p></section>
+      <section class="sec"><header><h2>Record <em>${esc(N.meta.label)} season</em></h2><a class="more" href="#nba-record">Full record →</a></header>
+        ${nStrip(R)}${leansNote(R)}${nKelly(R.kelly, "picks")}</section>
+      <section class="sec"><header><h2>Today's best</h2></header>${nBest(potd, N.parlays, "picks")}</section>
+      <section class="sec"><h3 class="day">${N.games.length ? esc(N.meta.day_label) : "No games today"}</h3><div class="cards">${N.games.map(nCard).join("")}</div></section>
+      <p class="fine">Model output, not betting advice. Lines from ${esc(N.meta.books.join(", "))}, with Pinnacle as the market. Updated ${esc(new Date(N.meta.generated).toLocaleString())}.</p>`;
+  }
+
+  // ---------- records
+  function nDays(R, what) {
+    const D_ = (R.days || []).slice().reverse();
+    if (!D_.length) return '<p class="note">Nothing graded yet.</p>';
+    return `<div class="scroll"><table class="t"><thead><tr><th>Day</th><th class="num">${what}</th><th class="num">Record</th><th class="num">Units</th><th class="num">ROI</th><th class="num">EV at close</th></tr></thead><tbody>
+      ${D_.map((d) => `<tr><td>${esc(dayShort(d.day))}</td><td class="num">${d.all.n}</td><td class="num">${rec(d.all)}</td><td class="num ${cls(d.all.units)}">${units(d.all.units)}</td><td class="num">${pct(d.all.roi, 1)}</td><td class="num">${evPct(d.all.ev_close)}</td></tr>`).join("")}
+    </tbody></table></div>`;
+  }
+  let nRecDay = null, npRecDay = null;
+  function nPickTable(rows, which) {
+    const days = [...new Set(rows.map((r) => r.day))].sort().reverse();
+    if (!days.length) return '<p class="note">Picks show up here as they lock.</p>';
+    let cur = which === "lines" ? nRecDay : npRecDay;
+    if (!days.includes(cur)) cur = days[0];
+    const rs = rows.filter((r) => r.day === cur);
+    const body = rs.map((r) => `<tr${r.risk === 0 ? ' class="lean"' : ""}><td>${r.potd ? '<span class="tag">POTD</span> ' : ""}${label(r.label)}${r.legs && r.legs.length ? `<div class="note">${r.legs.map(esc).join(" · ")}</div>` : ""}</td><td>${r.game}</td>
+      <td class="num">${am(r.american)}</td><td>${esc(r.book || "")}</td><td class="num">${r.risk === 0 ? "lean" : stakeU(r.risk)}</td><td class="num">${evPct(r.ev)}</td>
+      <td class="num">${r.actual == null ? "" : num(r.actual, 0)}</td><td>${resN(r.result) || '<span class="note">pending</span>'}</td><td class="num ${cls(r.units)}">${r.units == null ? "–" : units(r.units)}</td><td class="num">${evPct(r.ev_close)}</td></tr>`).join("");
+    return `<div class="pills" role="tablist" aria-label="Day">${days.slice(0, 21).map((d) => `<button class="pill" data-nday="${which}:${d}" aria-pressed="${d === cur}">${esc(dayShort(d))}</button>`).join("")}</div>
+      <div class="scroll"><table class="t"><thead><tr><th>Pick</th><th>Game</th><th class="num">Price</th><th>Book</th><th class="num">Stake</th><th class="num">EV</th><th class="num">Final</th><th>Result</th><th class="num">Units</th><th class="num">EV at close</th></tr></thead><tbody>${body}</tbody></table></div>`;
+  }
+  app.addEventListener("click", (e) => {
+    const b = e.target.closest && e.target.closest("[data-nday]");
+    if (!b) return;
+    const [which, d] = b.dataset.nday.split(":");
+    if (which === "lines") { nRecDay = d; renderNbaRecord(); } else { npRecDay = d; renderNbaPropsRecord(); }
+  });
+  function nCal(R) {
+    return R.calibration && R.calibration.length ? calTable(R) : '<p class="note">Builds up as picks are graded.</p>';
+  }
+  function renderNbaRecord() {
+    if (!N) return noNba();
+    const R = N.record.live, W = R.with_model || {};
+    const t = (r) => (r && r.n ? `${rec(r)}, <span class="${cls(r.units)}">${units(r.units)}</span>` : "none graded");
+    app.innerHTML = `
+      <section class="hello"><h1>NBA game lines record</h1><p class="lede">Every pick at 1u, leans included, graded at the price it locked at.</p></section>
+      <section class="sec"><header><h2>Season to date</h2></header>${nStrip(R)}${leansNote(R)}
+        <p class="note">Picks on the model's side went ${t(W.with)}; picks against it (the price alone) went ${t(W.against)}. The first checkup reads this to see whether the model's early-season lean is worth anything.</p>
+        ${nKelly(R.kelly, "picks")}</section>
+      <section class="sec"><header><h2>Picks by day</h2></header>${nPickTable(N.record.rows, "lines")}</section>
+      <section class="sec"><header><h2>Day by day</h2></header>${nDays(R, "Picks")}</section>
+      <section class="sec"><header><h2>Calibration</h2></header><p class="note">When a pick is given a 55% chance, it should win about 55% of the time.</p>${nCal(R)}</section>`;
+  }
+
+  // ---------- props: today
+  function npWhy(p) {
+    const win = p.p_win / Math.max(1 - (p.p_push || 0), 1e-9);
+    return `Market middle ${num(p.market_median, 1)} (${p.anchor === "pinnacle" ? "Pinnacle no-vig" : p.anchor === "dk/fd" ? "DraftKings and FanDuel, no Pinnacle line" : "DraftKings and FanDuel: Pinnacle's line is behind both"}); model middle ${num(p.model_median, 1)} on ${num(p.exp_min, 1)} minutes. ${p.book_name} ${am(p.american)} wins ${pct(win, 1)} and needs ${pct(1 / p.dec, 1)}. EV ${evPct(p.ev)}. Stake 1u; quarter Kelly ${stakeU(p.kelly_u)}.`;
+  }
+  function npChip(p) {
+    if (!p) return "";
+    return `<span class="chip${p.potd ? " potw" : ""}" data-tip="${esc(npWhy(p))}"><span class="m">${p.potd ? "Pick of the day" : NMK[p.market]}</span><b>${p.side === "over" ? "Over" : "Under"} ${num(p.line, 1).replace(/\.0$/, "")}</b>
+      <span class="pr">${am(p.american)} ${esc(p.book_name)}</span>${resN(p.result)}${p.actual != null ? ` <span class="note">final ${num(p.actual, 0)}</span>` : ""}</span>`;
+  }
+  function npMarkets(p) {
+    const rows = p.markets.filter((m) => Object.keys(m.books).length);
+    if (!rows.length) return '<p class="note">No lines posted yet.</p>';
+    const bl = (m, b) => { const x = m.books[b]; return x ? `${num(x.line, 1).replace(/\.0$/, "")} <span class="note">${am(x.over)}/${am(x.under)}</span>` : "–"; };
+    return `<div class="scroll"><table class="t pmk"><thead><tr><th>Market</th><th class="num">${term("median", "Model")}</th><th class="num">${term("range80", "10–90%")}</th><th class="num">${term("fair", "Fair")}</th><th>DraftKings</th><th>FanDuel</th><th>Pinnacle</th><th>Best side</th></tr></thead><tbody>
+      ${rows.map((m) => `<tr${p.pick && p.pick.market === m.market ? ' class="hl"' : ""}><td>${NMK[m.market]}</td><td class="num">${num(m.median, 0)}</td><td class="num">${num(m.q[0], 0)}–${num(m.q[4], 0)}</td><td class="num">${m.fair == null ? "–" : num(m.fair, 0)}</td>
+        <td class="mono">${bl(m, "DraftKings")}</td><td class="mono">${bl(m, "FanDuel")}</td><td class="mono">${bl(m, "Pinnacle")}</td>
+        <td>${m.lean ? `${m.lean.side === "over" ? "Over" : "Under"} ${num(m.lean.line, 1).replace(/\.0$/, "")} ${am(m.lean.american)} <span class="note">${esc(m.lean.book)}</span> <span class="${cls(m.lean.ev)}">${evPct(m.lean.ev)}</span>` : "–"}</td></tr>`).join("")}
+    </tbody></table></div>`;
+  }
+  function npCard(p) {
+    const st = p.status ? ` <span class="st ${esc(p.status)}">${esc(p.status)}</span>` : "";
+    return `<article class="pcard"><header class="phead"><div><b class="pname">${esc(p.name)}</b> <span class="role">${p.role === "Starter" ? "Starter" : "6th man"}</span>${st}</div>
+        <span class="note">${num(p.min, 1)} min projected${p.games_now ? "" : " · from last season"}</span></header>
+      <div class="chips">${p.pick ? npChip(p.pick) : '<span class="note">No prop with 1%+ value.</span>'}</div>
+      <details class="nmore"><summary>All markets</summary><div class="nmore-in">${npMarkets(p)}</div></details></article>`;
+  }
+  function renderNbaProps() {
+    if (!N) return noNba();
+    const PR = N.props, R = PR.record.live;
+    const byGame = {};
+    for (const p of PR.players) (byGame[p.game_id] = byGame[p.game_id] || []).push(p);
+    const potd = PR.players.filter((p) => p.pick && p.pick.potd).map((p) => p.pick).sort((a, b) => b.ev - a.ev);
+    const locked = new Set((PR.locked || []).map(String));
+    const games = N.games.map((g) => {
+      const ps = byGame[g.id] || [];
+      const side = (t) => ps.filter((p) => p.team === t);
+      const lock = locked.has(String(g.id)) ? "Props locked" : `Props lock ${etTime(g.locks.props)}`;
+      return `<section class="sec"><header><h2>${nbadge(g.away)} at ${nbadge(g.home)} <em>${esc(g.tip.time)} · ${lock}</em></h2></header>
+        ${[g.away, g.home].map((t) => side(t).length ? `<div class="pcards">${side(t).map(npCard).join("")}</div>` : "").join("") || '<p class="note">No tracked players yet.</p>'}</section>`;
+    }).join("");
+    app.innerHTML = `
+      <section class="hello"><h1>NBA props · ${esc(N.meta.day_label)}</h1>
+        <p class="lede">Each team's five starters and sixth man: points, rebounds, assists, threes and the combos. The market sets the level (Pinnacle's no-vig line); the model sets the shape of each player's range; a pick is the one market per player where DraftKings or FanDuel pays 1% or more over that.</p></section>
+      <section class="sec"><header><h2>Record <em>${esc(N.meta.label)} season</em></h2><a class="more" href="#nba-props-record">Full record →</a></header>
+        ${npStrip(R)}${nKelly(R.kelly, "props")}</section>
+      <section class="sec"><header><h2>Today's best</h2></header>${nBest(potd, PR.parlays, "props")}</section>
+      ${games || '<section class="sec"><p class="note">No games today.</p></section>'}
+      <p class="fine">Model output, not betting advice. A void (the player sits) risks nothing and stays out of the record.</p>`;
+  }
+  function renderNbaPropsRecord() {
+    if (!N) return noNba();
+    const R = N.props.record.live;
+    const mk = Object.keys(NMK).map((m) => [NMK[m], R[m]]);
+    app.innerHTML = `
+      <section class="hello"><h1>NBA props record</h1><p class="lede">Every prop pick at 1u, graded at the line and price it locked at. Voids (the player sat) are left out${R.voids ? `: ${R.voids} so far` : ""}.</p></section>
+      <section class="sec"><header><h2>Season to date</h2></header>${npStrip(R)}${nKelly(R.kelly, "props")}</section>
+      <section class="sec"><header><h2>By market</h2></header><div class="scroll"><table class="t"><thead><tr><th>Market</th><th class="num">Record</th><th class="num">Units</th><th class="num">ROI</th><th class="num">EV at lock</th><th class="num">EV at close</th></tr></thead><tbody>
+        ${[...mk, ["Overs", R.over], ["Unders", R.under]].map(([k, r]) => `<tr><td>${k}</td><td class="num">${rec(r)}</td><td class="num ${cls(r && r.units)}">${r && r.n ? units(r.units) : "–"}</td><td class="num">${r && r.n ? pct(r.roi, 1) : "–"}</td><td class="num">${r && r.n ? evPct(r.ev) : "–"}</td><td class="num">${r && r.n ? evPct(r.ev_close) : "–"}</td></tr>`).join("")}
+      </tbody></table></div><p class="note">Overs and unders are kept apart from day one: books shade popular overs, and the first checkup tests whether unders carry the edge.</p></section>
+      <section class="sec"><header><h2>Picks by day</h2></header>${nPickTable(N.props.record.rows, "props")}</section>
+      <section class="sec"><header><h2>Day by day</h2></header>${nDays(R, "Props")}</section>
+      <section class="sec"><header><h2>Calibration</h2></header>${nCal(R)}</section>`;
+  }
+
+  // ---------- how it works
+  function renderNbaModel() {
+    if (!N) return noNba();
+    const B = (N.model || {}).backtest || {}, d = N.meta.dist || {};
+    app.innerHTML = `<section class="hello"><h1>How the NBA board works</h1><p class="lede">The market sets the price; the board looks for the books that are off it. The model is shown, and decides a lean, but it has not earned the right to move a number.</p></section>
+      <div class="prose">
+        <h3>The price</h3>
+        <p>Each game's fair line is Pinnacle's, with its margin taken out (${term("novig", "no-vig")}). The chance of covering any other number comes from how ${num(d.games, 0)} games since 2020-21 landed around their closing lines (a spread lands within ±${num(d.sigma_margin, 1)} points two times in three, a total within ±${num(d.sigma_total, 1)}). A pick is the side and book, DraftKings or FanDuel, with the most expected value at those chances: that is line shopping. When no side has value, the pick is the model's side as a ${term("lean", "lean")}: no stake, counted at 1u in the record.</p>
+        <h3>Why the model does not set the price</h3>
+        <p>Over six seasons of walk-forward tests (${esc(B.seasons || "2020-21 to 2025-26")}), team ratings plus who plays missed the final margin by ${num(B.mae_margin_model, 2)} points on average against the closing line's ${num(B.mae_margin_close, 2)}, and added nothing the close did not already know (β ${num(B.beta_spread, 2)}). In each season's first three weeks it did a little better (β ${num(B.beta_spread_first3wk, 2)} over ${num(B.games_first3wk, 0)} games), not enough to trust. So the board records whether each pick sat on the model's side, and the first checkup reads that.</p>
+        <h3>Props</h3>
+        <p>Each team's five starters and sixth man, in eight markets. Minutes come from his recent games (last season counts for less as this one fills in), with a teammate ruled out handing over his minutes; each stat per minute is pulled toward his position's average. Given minutes, a stat is a negative binomial whose spread was measured on 2025-26 starters: the ranges held 50% of outcomes in their middle half and 79% in their 10–90% band. The market sets the level: the model's rate is scaled until it gives Pinnacle's no-vig chance at Pinnacle's line (DraftKings and FanDuel's when Pinnacle has no line, or when both sit on the same side of a Pinnacle line that has stopped moving). A pick is the one market per player with 1% or more of value at DraftKings or FanDuel.</p>
+        <h3>When things lock</h3>
+        <ul><li><b>10:30am ET.</b> Last night graded from ESPN's box scores; the day's game lines lock with the game-line Picks of the Day and parlays; props lock for games before 6:30pm.</li>
+          <li><b>5:30pm ET</b>, after the league's 5pm injury report: the rest of the props lock, then the props Picks of the Day and parlays.</li></ul>
+        <h3>Edges being tested</h3>
+        <ul><li>Line shopping against Pinnacle, game lines and props (the record's EV at the close shows first whether it is real).</li>
+          <li>Unders: books shade popular overs; overs and unders are recorded apart.</li>
+          <li>The model's early-season lean, while ratings still carry last season.</li>
+          <li>Back-to-backs and rest, a teammate's props when a starter sits, and referee crews on totals: next, as data comes in.</li></ul>
+        <h3>Checkups</h3>
+        <p>Every other Monday from ${esc(dayShort(N.meta.checkup_first))}: what the record and EV at the close say, morning against evening locks replayed on the same games, and what to change.</p>
+        <p class="fine">Model output, not betting advice. Stakes are 1u per pick, 0.5u per parlay; quarter Kelly is tracked as its own record.</p>
+      </div>`;
+  }
+
   const VIEWS = { week: renderWeek, mine: renderMine, defense: renderDefense, record: renderRecord, model: renderModel,
                   props: renderProps, "props-players": renderPropsPlayers, "props-mine": renderPropsMine, "props-defense": renderDefense,
-                  "props-record": renderPropsRecord, "props-model": renderPropsModel, live: renderLive, "live-model": renderLiveModel };
+                  "props-record": renderPropsRecord, "props-model": renderPropsModel, live: renderLive, "live-model": renderLiveModel,
+                  nba: renderNba, "nba-record": renderNbaRecord, "nba-model": renderNbaModel,
+                  "nba-props": renderNbaProps, "nba-props-record": renderNbaPropsRecord, "nba-props-model": renderNbaModel };
   // The board updates three times a week (the scheduled build, 10:05am Eastern): say which one is next.
   function nextUpdate(now) {
     const f = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "numeric", hourCycle: "h23" })
@@ -1958,7 +2255,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     return "Tuesday";
   }
   const UPDATES = "The board updates three times a week. Tuesday 10am ET: last week graded, then the week's game-line picks lock (Tuesday prices are where the model's spread edge shows up). Thursday 10am ET: the Thursday game's props lock. Saturday 10am ET: Thursday night graded; Saturday-to-Monday props and the props Picks of the Week, Golden Parlay and Lottery lock.";
-  document.getElementById("brand-sub").innerHTML = `NFL model · ${D.meta.season} week ${D.meta.week} · <span data-tip="${UPDATES}" tabindex="0">next update ${nextUpdate(new Date())} 10am ET</span>`;
+  function nflSub() { return `NFL model · ${D.meta.season} week ${D.meta.week} · <span data-tip="${UPDATES}" tabindex="0">next update ${nextUpdate(new Date())} 10am ET</span>`; }
   route();
   initDb();
 })();

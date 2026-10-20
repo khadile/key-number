@@ -3,7 +3,7 @@
     python -m board.build             # refresh data and lines, lock this week's picks, grade, render
     python -m board.build --offline   # no downloads: rebuild from what is on disk
 
-Writes board/nfl_board.html, which is published as the artifact.
+Writes board/nfl_data.json and renders board/nfl_board.html (board/render.py), which holds the NBA side too.
 """
 import argparse
 import json
@@ -547,10 +547,11 @@ def main() -> None:
         "props": props_data_out,
         "live": live_out,
     }
-    payload = json.dumps(_clean(data), default=str, separators=(",", ":"), allow_nan=False)
-    payload = payload.replace("</", "<\\/").replace("<!--", "<\\!--")
-    html = TEMPLATE.read_text(encoding="utf-8").replace("__BOARD_DATA__", payload)
-    OUT.write_text(html, encoding="utf-8")
+    # the page holds both sports: this build writes the NFL payload, then renders it with the NBA one as the
+    # daily NBA build last left it (board/render.py)
+    from board.render import NFL_DATA, render
+    NFL_DATA.write_text(json.dumps(_clean(data), default=str, separators=(",", ":"), allow_nan=False), encoding="utf-8")
+    html = render()
     print(f"wrote {OUT} ({len(html) / 1024:.0f} KB): {len(cards)} games, "
           f"live record {live['all']['w']}-{live['all']['l']}-{live['all']['p']}, "
           f"pre-launch {pre['all']['w']}-{pre['all']['l']}-{pre['all']['p']} ({pre['all']['units']:+.1f}u)")

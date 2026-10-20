@@ -1,8 +1,9 @@
 name: board
 
-# The Key Number board, rebuilt Tuesday, Thursday and Saturday from 10am ET and published to
-# GitHub Pages. Same build as the laptop's (python -m board.build): grades, locks picks that
-# are due, archives OddsPapi lines, writes board/nfl_board.html.
+# The Key Number board's NFL side, rebuilt Tuesday, Thursday and Saturday from 10am ET and published
+# to GitHub Pages with the NBA side (.github/workflows/nba.yml). Same build as the laptop's
+# (python -m board.build): grades, locks picks that are due, archives OddsPapi lines, writes
+# board/nfl_data.json.
 #
 # Dropped firings: GitHub's scheduler is best-effort and sheds load at the top of the hour
 # (the market-brief repo got 1 of 35 firings on its first day). So this fires every half hour
@@ -86,17 +87,23 @@ jobs:
         run: |
           python -m board.build ${{ inputs.lock_now && '--lock-now' || '' }}
           python -m board.slot --mark
-          python -m board.site
 
-      - name: Save the ledger and the board
+      # The page itself is not committed: it is rendered from the two payloads (board/nfl_data.json here,
+      # board/nba_data.json from the NBA workflow), so the two builds never collide on it.
+      - name: Save the ledger and the NFL payload
         if: steps.slot.outputs.due == 'true'
         run: |
           git config user.name "key-number-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ledger board/nfl_board.html board/last_build.json data/lines reports/*.json reports/*.md
+          git add ledger board/nfl_data.json board/last_build.json data/lines reports/*.json reports/*.md
           git commit -m "Board build $(TZ=America/New_York date +%Y-%m-%d)" || echo "nothing to commit"
-          git pull --rebase
-          git push
+          for i in 1 2 3 4 5; do git pull --rebase -q && git push && break; sleep 15; done
+
+      - name: Render the page with both sports
+        if: steps.slot.outputs.due == 'true'
+        run: |
+          python -m board.render
+          python -m board.site
 
       - uses: actions/upload-pages-artifact@v3
         if: steps.slot.outputs.due == 'true'
