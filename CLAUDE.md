@@ -17,11 +17,11 @@ sharp reference, never a bet.
   GitHub drops scheduled firings; `board/slot.py` builds on the first one at or
   after 10am ET (`board/last_build.json`). Run it by hand with
   `gh workflow run board.yml -R khadile/key-number -f force=true`.
-  `publish.yml` republishes the committed board without rebuilding. The NBA
-  side has its own workflow (`nba.yml`, section 9); each sport's build commits
-  only its payload (`board/nfl_data.json`, `board/nba_data.json`) and the page
-  is rendered from both wherever it is published (`board/render.py`), so the
-  two builds never collide on it. `board/nfl_board.html` is no longer committed.
+  The NBA side has its own workflow (`nba.yml`, section 9). Each sport's build
+  commits only its payload (`board/nfl_data.json`, `board/nba_data.json`) and
+  then starts the publish workflow (`pages.yml`), which renders the page from
+  both (`board/render.py`) and deploys, one deploy at a time; it also runs on a
+  push from the laptop and by hand. `board/nfl_board.html` is no longer committed.
 - Needs the `ODDSPAPI_KEY` repo secret. Odds data never goes in the repo:
   data/oddspapi (except the three catalog JSONs), data/propline, data/sgo,
   data/live and price-level report parquets are gitignored; on Actions the

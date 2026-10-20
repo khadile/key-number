@@ -1,8 +1,9 @@
 name: publish
 
-# Publish the committed board (no rebuild): render the page from the two committed payloads,
-# for a board built on the laptop and pushed, or to republish by hand. The scheduled builds
-# (board.yml, nba.yml) publish on their own.
+# Publish the board: render the page from the two committed payloads (board/nfl_data.json,
+# board/nba_data.json) and deploy it. The scheduled builds (board.yml, nba.yml) start this after
+# they push, a push from the laptop starts it, and it can be run by hand. One deploy at a time:
+# a newer run replaces an older one, and every run renders the latest of both payloads.
 
 on:
   push:

@@ -29,8 +29,7 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
+  actions: write
 
 concurrency:
   group: board
@@ -40,9 +39,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 150
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -88,8 +84,6 @@ jobs:
           python -m board.build ${{ inputs.lock_now && '--lock-now' || '' }}
           python -m board.slot --mark
 
-      # The page itself is not committed: it is rendered from the two payloads (board/nfl_data.json here,
-      # board/nba_data.json from the NBA workflow), so the two builds never collide on it.
       - name: Save the ledger and the NFL payload
         if: steps.slot.outputs.due == 'true'
         run: |
@@ -99,17 +93,10 @@ jobs:
           git commit -m "Board build $(TZ=America/New_York date +%Y-%m-%d)" || echo "nothing to commit"
           for i in 1 2 3 4 5; do git pull --rebase -q && git push && break; sleep 15; done
 
-      - name: Render the page with both sports
+      # The page holds both sports and is rendered from the committed payloads by the publish workflow
+      # (pages.yml), which runs one deploy at a time: this build and the other sport's never collide on it.
+      - name: Publish the page
         if: steps.slot.outputs.due == 'true'
-        run: |
-          python -m board.render
-          python -m board.site
-
-      - uses: actions/upload-pages-artifact@v3
-        if: steps.slot.outputs.due == 'true'
-        with:
-          path: site
-
-      - id: deploy
-        if: steps.slot.outputs.due == 'true'
-        uses: actions/deploy-pages@v4
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main
