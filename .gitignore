@@ -36,12 +36,10 @@ reports/*.parquet
 reports/*.log
 .claude/
 
-# NBA (nba/): hoopR downloads and ESPN box scores are fetched again whenever missing; odds data stays off the
-# public repo. All three live in the NBA workflow's Actions cache. The OddsPapi fixture, market and player lists
+# NBA (nba/): everything under data/nba (hoopR downloads, ESPN box scores and odds history, the OddsPapi archive,
+# long-shot rung snapshots) stays off the public repo and lives in the NBA workflow's Actions cache. The OddsPapi fixture, market and player lists
 # are reference data, kept like the NFL's.
-data/nba/raw/
-data/nba/odds/
-data/nba/box/
+data/nba/
 !data/oddspapi/fixtures_t132.json
 !data/oddspapi/markets_s11.json
 !data/oddspapi/players_s11.json

@@ -32,8 +32,10 @@ from model.staking import flat_risk, kelly_units
 from nba import espn, ledger
 from nba import props as NP
 from nba.data import CURRENT, load
+from nba import longshots as LS
+from nba.ladders import best_ladder, ladder_legs
 from nba.lines import GamePricer, fit as fit_lines
-from nba.odds import NbaLines, fixture_index, load_props, main_lines, player_map
+from nba.odds import NbaLines, fixture_index, load_milestones, load_props, main_lines, player_map, rungs_at
 
 ET = ZoneInfo("America/New_York")
 SEASON = CURRENT
@@ -261,6 +263,28 @@ def parlays(picks: list[dict], day: date, prefix: str, now: datetime, want=("gol
     return out
 
 
+def ladder_rows(legs: list[dict], games_by: dict, fair_now: dict, day: date, now: datetime) -> list[dict]:
+    """The Ladder's legs (kind "alt": a main or alternate line, graded like a pick but kept out of the picks'
+    record) and the ticket itself."""
+    import math
+    rows = []
+    for l in legs:
+        g = games_by[l["game_id"]]
+        lid = f"{l['game_id']}:alt:{l['market']}:{l['side']}:{l['line']}:{l['book']}"
+        rows.append({**l, "kind": "alt", "id": lid, "day": day.isoformat(), "home": g["home"], "away": g["away"],
+                     "book_name": BOOK_NAMES.get(l["book"], l["book"]), "american": american(l["dec"]),
+                     "p_win": round(l["p_win"], 4), "p_push": round(l["p_push"], 4), "ev": round(l["ev"], 4), "dec": round(l["dec"], 4),
+                     "fair_margin": _f(fair_now[l["game_id"]].get("margin")), "fair_total": _f(fair_now[l["game_id"]].get("total")),
+                     "fair_p_home": _f(fair_now[l["game_id"]].get("p_home"), 4), "locked_at": now.isoformat()})
+    dec = math.prod(r["dec"] for r in rows)
+    ev = math.prod(r["p_win"] * r["dec"] + r["p_push"] for r in rows) - 1
+    hit = math.prod(r["p_win"] + r["p_push"] for r in rows) - math.prod(r["p_push"] for r in rows)
+    rows.append({"kind": "parlay", "type": "ladder", "id": f"{day.isoformat()}:ladder", "day": day.isoformat(), "legs": [r["id"] for r in rows],
+                 "dec": round(dec, 3), "american": american(dec), "p": round(hit, 4), "ev": round(ev, 4), "risk": PARLAY_RISK,
+                 "locked_at": now.isoformat()})
+    return rows
+
+
 def with_potd(rows: list[dict]) -> list[dict]:
     ids = {i for r in rows if r.get("kind") == "potd" for i in r["picks"]}
     return [{**r, "potd": r["id"] in ids} if r.get("kind") in ("pick", "prop") else r for r in rows if r.get("kind") != "potd"]
@@ -349,12 +373,14 @@ def _rows(picks: list[dict], results: list[dict]) -> list[dict]:
     by_id = {p["id"]: p for p in picks}
     out = []
     for p in picks:
+        if p.get("kind") == "alt":
+            continue
         r = res.get(p["id"], {})
         base = {"day": p["day"], "result": r.get("result"), "ev": p.get("ev"), "ev_close": r.get("ev_close"), "clv": r.get("clv"),
                 "american": p.get("american"), "potd": bool(p.get("potd"))}
         if p.get("kind") == "parlay":
             legs = [by_id[l]["label"] for l in p["legs"] if l in by_id]
-            out.append({**base, "market": p["type"], "label": "Golden Parlay" if p["type"] == "golden" else "+EV Lottery",
+            out.append({**base, "market": p["type"], "label": {"golden": "Golden Parlay", "ladder": "Ladder"}.get(p["type"], "+EV Lottery"),
                         "game": f"{len(legs)} legs", "legs": legs, "book": None, "p_win": p.get("p"), "risk": p.get("risk", PARLAY_RISK),
                         "units": round(r["units"], 2) if "units" in r else None})
         else:
@@ -364,6 +390,30 @@ def _rows(picks: list[dict], results: list[dict]) -> list[dict]:
                         "with_model": p.get("with_model"), "actual": r.get("actual"),
                         "units": None if r.get("result") is None else round(ledger.units_for(r["result"], p["dec"], 1.0), 2)})
     return out
+
+
+def _rows_longshots(picks: list[dict], results: list[dict]) -> list[dict]:
+    res = {r["id"]: r for r in results}
+    return [{"day": p["day"], "label": p["label"], "game": f"{p['team']}", "book": p["book_name"], "american": p["american"],
+             "p_lo": p["p_narrow"], "p_hi": p["p_wide"], "ev_lo": p["ev_narrow"], "ev_hi": p["ev_wide"],
+             "result": res.get(p["id"], {}).get("result"), "actual": res.get(p["id"], {}).get("actual"),
+             "units": res.get(p["id"], {}).get("units")} for p in picks if p.get("kind") == "longshot"]
+
+
+def _angles_card() -> dict:
+    """The betting-angle study (nba/angles.py, reports/nba_angles.json): the headline numbers for How it works."""
+    p = REPORTS / "nba_angles.json"
+    if not p.exists():
+        return {}
+    r = json.loads(p.read_text())
+    band = {b["band"]: b for b in r["ml_close"] if b.get("n")}
+    par = r["ml_parlays"]
+    return {"games": r["games_with_ml"] if "games_with_ml" in r else None, "seasons": "2023-24 to 2025-26",
+            "dogs": r["ml_close_dogs"], "favs": r["ml_close_favs"], "big_dogs": band.get("+500 or longer"),
+            "heavy_favs": band.get("-500 or shorter"), "spread_dogs": r["spread"]["dogs"], "spread_favs": r["spread"]["favs"],
+            "overs": r["totals"]["overs"], "unders": r["totals"]["unders"],
+            "parlay2": par.get("favorites -400 to -200, 2 legs"), "parlay3": par.get("favorites -400 to -200, 3 legs"),
+            "open_close": r["open_beats_close"]["bets"], "model_moves": r.get("model_moves")}
 
 
 def _backtest_card() -> dict:
@@ -414,9 +464,9 @@ def main() -> None:
 
     day_games = [g for g in sched.filter(pl.col("day") == today).iter_rows(named=True)]
     models = game_models(day_games, today, roster, out_ids, prof, sched) if day_games else {}
-    lines_now, fair_now = {}, {}
+    lines_now, fair_now, lines_obj = {}, {}, {}
     for g in day_games:
-        L = NbaLines(fmap.get(g["game_id"]), g["tip"])
+        L = lines_obj[g["game_id"]] = NbaLines(fmap.get(g["game_id"]), g["tip"])
         lines_now[g["game_id"]] = L.all_at(now, BOOKS)
         fair_now[g["game_id"]] = pricer.fair(lines_now[g["game_id"]])
 
@@ -443,6 +493,16 @@ def main() -> None:
         want = tuple(t for t in ("golden", "lottery") if f"{today}:{t}" not in have)
         if want:
             writes += parlays(pool, today, "", now, want)
+        # the Ladder (user, 2026-10-20): 2-3 likely legs with value, main or alternate lines, priced +100 to +150
+        if f"{today}:ladder" not in have:
+            games_by = {g["game_id"]: g for g in day_games}
+            legs_by = {gid: [{**l, "game_id": gid} for l in ladder_legs(lines_obj[gid].h, now, fair_now[gid], pricer, games_by[gid])]
+                       for gid in day_ids if tips[gid] > now and lines_obj[gid].h.height}
+            lad = best_ladder(legs_by)
+            if lad:
+                writes += ladder_rows(lad, games_by, fair_now, today, now)
+            else:
+                print(f"ladder: no 2-3 leg ticket from {sum(map(len, legs_by.values()))} likely +EV legs")
     if writes:
         if a.dry_run:
             print(f"dry run: would lock {sum(w['kind'] == 'pick' for w in writes)} game-line picks and {sum(w['kind'] != 'pick' for w in writes)} daily items")
@@ -496,20 +556,45 @@ def main() -> None:
     if not a.dry_run:
         prop_rows = read(ledger.PROPS_PICKS)
 
+    # --- long shots (user, 2026-10-20): every "N+" rung +200 or longer priced at each props lock; the ones with
+    # value at both widths of the model's tail go on a watchlist at 0.25u, their own record (nba/longshots.py)
+    ls_existing = read(LS.PICKS)
+    ls_writes: list[dict] = []
+    newly = [gid for gid in due if gid in {p["game_id"] for p in p_writes if p.get("kind") == "props_locked"}] if due else []
+    if newly and x.height:
+        M = load_milestones(newly, pmap)
+        if M.height:
+            R = LS.price_rungs(x.filter(pl.col("game_id").is_in(newly)), now_b, rungs_at(M, pl.lit(now)))
+            if not a.dry_run:
+                LS.snapshot(R, today, now)
+            ls_writes = LS.flags(R, today, now)
+            print(f"long shots: {R.height} rungs priced, {len(ls_writes)} on the watchlist")
+    if ls_writes and not a.dry_run:
+        append(LS.PICKS, ls_writes)
+    ls_rows = ls_existing + ls_writes
+
     # --- grade
     game_rows, prop_rows = with_potd(game_rows), with_potd([r for r in prop_rows if r.get("kind") != "props_locked"])
     g_done = {r["id"] for r in read(ledger.RESULTS)}
     p_done = {r["id"] for r in read(ledger.PROPS_RESULTS)}
     g_res = ledger.grade_games(game_rows, finals, game_closes(game_rows, tips, fmap, pricer, finals, g_done))
     p_res = ledger.grade_props(prop_rows, stats, set(finals), prop_closes(prop_rows, tips, pmap, set(finals), p_done))
+    ls_done = {r["id"] for r in read(LS.RESULTS)}
+    ls_res = LS.grade(ls_rows, stats, set(finals))
+    cal_done = {r["game_id"] for r in read(LS.CAL)}
+    cal_new = LS.calibration_rows(set(finals), stats, cal_done)
     if a.dry_run:
         g_results = read(ledger.RESULTS) + [r for r in g_res if r["id"] not in g_done]
         p_results = read(ledger.PROPS_RESULTS) + [r for r in p_res if r["id"] not in p_done]
+        ls_results = read(LS.RESULTS) + [r for r in ls_res if r["id"] not in ls_done]
+        cal_rows = read(LS.CAL) + cal_new
     else:
         n1, n2 = ledger.append_new(ledger.RESULTS, g_res), ledger.append_new(ledger.PROPS_RESULTS, p_res)
-        if n1 or n2:
-            print(f"graded {len(n1)} game-line picks, {len(n2)} props")
-        g_results, p_results = read(ledger.RESULTS), read(ledger.PROPS_RESULTS)
+        n3 = ledger.append_new(LS.RESULTS, ls_res)
+        append(LS.CAL, cal_new)
+        if n1 or n2 or n3:
+            print(f"graded {len(n1)} game-line picks, {len(n2)} props, {len(n3)} long shots")
+        g_results, p_results, ls_results, cal_rows = read(ledger.RESULTS), read(ledger.PROPS_RESULTS), read(LS.RESULTS), read(LS.CAL)
 
     # --- page data: today's games
     g_by = {}
@@ -588,14 +673,15 @@ def main() -> None:
         res = {r["id"]: r for r in results}
         by_id = {p["id"]: p for p in rows}
         out = {}
-        for t in ("golden", "lottery"):
+        for t in ("golden", "lottery", "ladder"):
             p = by_id.get(f"{today}:{prefix}{t}")
             if p:
                 out[t] = {**p, "leg_picks": [{k: v for k, v in by_id[l].items() if k != "mix"} for l in p["legs"] if l in by_id],
                           **({"result": res[p["id"]]["result"]} if p["id"] in res else {})}
         return out
 
-    live_g = [p for p in game_rows if p.get("kind") in ("pick", "parlay")]
+    live_g = [p for p in game_rows if p.get("kind") in ("pick", "parlay", "alt")]
+    ls_by = {r["id"]: r for r in ls_results}
     live_p = [p for p in prop_rows if p.get("kind") in ("prop", "parlay")]
     data = {
         "meta": {"season": SEASON, "label": f"{SEASON - 1}-{str(SEASON)[2:]}", "day": today.isoformat(),
@@ -607,10 +693,14 @@ def main() -> None:
         "games": cards,
         "parlays": daily(game_rows, g_results, ""),
         "record": {"live": ledger.record_games(live_g, g_results), "rows": _rows(live_g, g_results)},
+        "longshots": {"today": [{**p, **({"result": ls_by[p["id"]]["result"], "actual": ls_by[p["id"]].get("actual")} if p["id"] in ls_by else {})}
+                                for p in ls_rows if p["day"] == today.isoformat()],
+                      "record": ledger.record_longshots(ls_rows, ls_results), "rows": _rows_longshots(ls_rows, ls_results),
+                      "calibration": LS.calibration_table(cal_rows), "flag_ev": LS.FLAG_EV, "stake": LS.STAKE},
         "props": {"players": players, "parlays": daily(prop_rows, p_results, "props:"),
                   "record": {"live": ledger.record_props(live_p, p_results), "rows": _rows(live_p, p_results)},
                   "locked": sorted(p_locked_now)},
-        "model": {"backtest": _backtest_card()},
+        "model": {"backtest": _backtest_card(), "angles": _angles_card()},
     }
     # the page is written on a dry run too (it shows what would lock), only the ledgers are left alone
     OUT.write_text(json.dumps(_clean(data), default=str, separators=(",", ":"), allow_nan=False), encoding="utf-8")

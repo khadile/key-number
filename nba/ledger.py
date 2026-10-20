@@ -50,7 +50,7 @@ def grade_games(picks: list[dict], finals: dict[int, tuple[int, int]], closes: d
     """Game-line results. `finals[game_id]` = (home, away) score; `closes[pick id]` = {clv, ev_close}."""
     out, by_id = [], {p["id"]: p for p in picks}
     for p in picks:
-        if p.get("kind") != "pick" or p["game_id"] not in finals:
+        if p.get("kind") not in ("pick", "alt") or p["game_id"] not in finals:   # alt: a Ladder leg
             continue
         res = grade_straight(p, *finals[p["game_id"]])
         out.append({"id": p["id"], "result": res, "units": units_for(res, p["dec"], STRAIGHT_RISK), **closes.get(p["id"], {})})
@@ -129,7 +129,7 @@ def _kelly(rows: list[dict]) -> dict:
 
 
 def record_games(picks: list[dict], results: list[dict]) -> dict:
-    rows = _graded(picks, results)
+    rows = [r for r in _graded(picks, results) if r.get("kind") != "alt"]   # a Ladder leg counts only in its Ladder
     st = [r for r in rows if r.get("kind") == "pick"]
     days = sorted({r["day"] for r in rows})
     return {
@@ -137,6 +137,7 @@ def record_games(picks: list[dict], results: list[dict]) -> dict:
         "ml": _tally([r for r in st if r["market"] == "ml"]), "potd": _tally([r for r in st if r.get("potd")]),
         "parlay": _tally([r for r in rows if r.get("kind") == "parlay" and r.get("type") == "golden"]),
         "lottery": _tally([r for r in rows if r.get("kind") == "parlay" and r.get("type") == "lottery"]),
+        "ladder": _tally([r for r in rows if r.get("kind") == "parlay" and r.get("type") == "ladder"]),
         "all": _tally(rows), "split": {"pos": _tally([r for r in st if r["ev"] > 0]), "neg": _tally([r for r in st if r["ev"] <= 0])},
         "with_model": {"with": _tally([r for r in st if r.get("with_model") is True]),
                        "against": _tally([r for r in st if r.get("with_model") is False])},
@@ -145,6 +146,22 @@ def record_games(picks: list[dict], results: list[dict]) -> dict:
                   "pos": _tally([r for r in st if r["day"] == d and r["ev"] > 0])} for d in days],
         "calibration": _cal(st),
     }
+
+
+def record_longshots(picks: list[dict], results: list[dict]) -> dict:
+    """The long-shot watchlist at its own stake (0.25u each): record, units, and how often the model said they
+    would hit against how often they did."""
+    res = {r["id"]: r for r in results}
+    rows = [dict(p, **res[p["id"]]) for p in picks if p.get("kind") == "longshot" and p["id"] in res and res[p["id"]]["result"] in ("W", "L")]
+    n = len(rows)
+    staked = sum(r["risk"] for r in rows)
+    units = sum(r["units"] for r in rows)
+    return {"n": n, "w": sum(r["result"] == "W" for r in rows), "l": sum(r["result"] == "L" for r in rows), "p": 0,
+            "units": round(units, 2), "staked": round(staked, 2), "roi": round(units / staked, 4) if staked else None,
+            "said_lo": round(float(np.mean([r["p_narrow"] for r in rows])), 4) if n else None,
+            "said_hi": round(float(np.mean([r["p_wide"] for r in rows])), 4) if n else None,
+            "implied": round(float(np.mean([1 / r["dec"] for r in rows])), 4) if n else None,
+            "voids": sum(1 for p in picks if p.get("kind") == "longshot" and res.get(p["id"], {}).get("result") == "V")}
 
 
 def record_props(picks: list[dict], results: list[dict]) -> dict:

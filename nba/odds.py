@@ -9,6 +9,8 @@ what is kept, in data/nba/odds/ (off the public repo):
 
 - history/{fixtureId}.parquet: full-game moneyline, spreads, totals, every price change, Pinnacle/DK/FD
 - props/{fixtureId}.parquet: full-game player over/unders in the eight tracked markets
+- milestones/{fixtureId}.parquet: the same eight stats' "N+" ladders (DraftKings and FanDuel post one-sided
+  rungs, e.g. 6+ threes at +1400; Pinnacle does not): the long shots the user asked to watch (2026-10-20)
 
     python -m nba.odds                    # archive what is due
     python -m nba.odds --refetch-fixtures # one billable call: new fixture ids (the schedule rarely changes)
@@ -29,8 +31,8 @@ from pipeline.oddspapi import CACHE, _get
 
 TOURNAMENT, SPORT = 132, 11
 ODDS = DATA / "nba" / "odds"
-HIST, PROPS = ODDS / "history", ODDS / "props"
-for _p in (HIST, PROPS):
+HIST, PROPS, MILESTONES = ODDS / "history", ODDS / "props", ODDS / "milestones"
+for _p in (HIST, PROPS, MILESTONES):
     _p.mkdir(parents=True, exist_ok=True)
 FIXTURES, MARKETS, PLAYERS = CACHE / f"fixtures_t{TOURNAMENT}.json", CACHE / f"markets_s{SPORT}.json", CACHE / f"players_s{SPORT}.json"
 CORE = "pinnacle,draftkings,fanduel"
@@ -39,15 +41,18 @@ SHOP_BOOKS = ["draftkings", "fanduel"]
 PROP_MARKETS = {"playertotals-points": "pts", "playertotals-rebounds": "reb", "playertotals-assists": "ast",
                 "playertotals-3pointers": "fg3", "playertotals-ptsassreb": "pra", "playertotals-ptsreb": "pr",
                 "playertotals-ptsass": "pa", "playertotals-assreb": "ra"}
+MILESTONE_MARKETS = {"players-points": "pts", "players-rebounds": "reb", "players-assists": "ast", "players-3pointers": "fg3",
+                     "players-ptsassreb": "pra", "players-ptsreb": "pr", "players-ptsass": "pa", "players-assreb": "ra"}
 SEASON_START = "2026-10-01"
 
 
-def _markets(props: bool) -> dict[int, tuple[str, float, str]]:
+def _markets(props: bool, milestones: bool = False) -> dict[int, tuple[str, float, str]]:
     out = {}
     for m in json.loads(MARKETS.read_text(encoding="utf-8")):
         if m["period"] != "result":
             continue
-        if props and m["marketType"] in PROP_MARKETS or not props and not m["playerProp"] and m["marketType"] in ("moneyline", "spreads", "totals"):
+        if (milestones and m["marketType"] in MILESTONE_MARKETS or not milestones and props and m["marketType"] in PROP_MARKETS
+                or not milestones and not props and not m["playerProp"] and m["marketType"] in ("moneyline", "spreads", "totals")):
             for o in m["outcomes"]:
                 out[o["outcomeId"]] = (m["marketType"], float(m["handicap"]), o["outcomeName"])
     return out
@@ -78,13 +83,13 @@ def archive(only: list[int] | None = None, past_hours: int = 40, ahead_hours: in
         idx = idx.filter(pl.col("game_id").is_in(only))
     else:
         idx = idx.filter((pl.col("start") <= now + timedelta(hours=ahead_hours)) & (pl.col("start") >= now - timedelta(hours=past_hours)))
-    mmap, pmap = _markets(False), _markets(True)
+    mmap, pmap, lmap = _markets(False), _markets(True), _markets(True, milestones=True)
     n = {"saved": 0, "skipped": 0, "missing": 0}
     for r in idx.iter_rows(named=True):
         fid, ended = r["fixture_id"], r["start"] + timedelta(hours=4)
-        hp, pp = HIST / f"{fid}.parquet", PROPS / f"{fid}.parquet"
+        hp, pp, lp = HIST / f"{fid}.parquet", PROPS / f"{fid}.parquet", MILESTONES / f"{fid}.parquet"
         done = lambda p: p.exists() and datetime.fromtimestamp(p.stat().st_mtime, timezone.utc) > ended
-        if done(hp) and done(pp) and not only:
+        if done(hp) and done(pp) and done(lp) and not only:
             n["skipped"] += 1
             continue
         h = _fetch(fid, CORE)
@@ -95,6 +100,8 @@ def archive(only: list[int] | None = None, past_hours: int = 40, ahead_hours: in
             _write(hp, pl.DataFrame(rows).with_columns(pl.col("ts").str.to_datetime(time_zone="UTC")))
         if prow := _prop_rows(fid, h, pmap):
             _write(pp, pl.DataFrame(prow, schema=PROP_SCHEMA, orient="row").with_columns(pl.col("ts").str.to_datetime(time_zone="UTC")))
+        if lrow := _prop_rows(fid, h, lmap):
+            _write(lp, pl.DataFrame(lrow, schema=PROP_SCHEMA, orient="row").with_columns(pl.col("ts").str.to_datetime(time_zone="UTC")))
         n["saved"] += 1
     print(f"nba odds: saved {n['saved']}, already complete {n['skipped']}, unavailable {n['missing']}")
 
@@ -215,6 +222,30 @@ def load_props(game_ids: list[int], pmap: pl.DataFrame, pregame_only: bool = Tru
     if pregame_only:
         P = P.filter(pl.col("ts") < pl.col("kickoff"))
     return P.drop("fixture_id", "player")
+
+
+def load_milestones(game_ids: list[int], pmap: pl.DataFrame) -> pl.DataFrame:
+    """The "N+" rungs before tip: game_id, kickoff, book, market (pts, ...), gsis_id (the athlete id), at_least (N),
+    ts, price, active."""
+    idx = fixture_index().filter(pl.col("game_id").is_in(game_ids))
+    files = [MILESTONES / f"{fid}.parquet" for fid in idx["fixture_id"] if (MILESTONES / f"{fid}.parquet").exists()]
+    if not files:
+        return pl.DataFrame()
+    P = (pl.scan_parquet(files).filter(pl.col("market").is_in(list(MILESTONE_MARKETS)) & pl.col("outcome").str.ends_with("+"))
+         .with_columns(market=pl.col("market").replace_strict(MILESTONE_MARKETS),
+                       at_least=pl.col("outcome").str.strip_chars_end("+").cast(pl.Int32, strict=False)).collect()
+         .join(idx.select("fixture_id", "game_id", pl.col("tip").alias("kickoff")), on="fixture_id")
+         .join(pmap.rename({"op_id": "player"}), on="player", how="inner")
+         .rename({"athlete_id": "gsis_id"}))
+    return P.filter((pl.col("ts") < pl.col("kickoff")) & pl.col("at_least").is_not_null()).drop("fixture_id", "player", "outcome", "handicap")
+
+
+def rungs_at(M: pl.DataFrame, cut) -> pl.DataFrame:
+    """Each rung's last price at or before `cut` (pulled rungs dropped)."""
+    keys = ["game_id", "book", "market", "gsis_id", "at_least"]
+    return (M.filter(pl.col("ts") <= cut).sort(["ts", "active", "price"], descending=[False, True, False], maintain_order=True)
+            .group_by(keys).agg(pl.col("price").last(), pl.col("active").last(), pl.col("ts").last().alias("seen"))
+            .filter(pl.col("active")).drop("active"))
 
 
 def main() -> None:

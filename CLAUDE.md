@@ -604,6 +604,23 @@ budget with the NFL) comes after the pregame side is stable.
   nba_props_results.jsonl; append-only like the NFL's, keyed by `day` (the
   game's Eastern date). Results carry `ev_close` (the locked price against
   Pinnacle's closing no-vig chance): the first evidence the edge is real.
+- Angles the user asked about (2026-10-20), `nba/angles.py` (ESPN's odds API keeps the book of record's
+  open and close for every game: DraftKings, ESPN BET or Caesars; reports/nba_angles.json): at the close,
+  2023-24 to 2025-26, underdog moneylines lost 10% (+500 and longer 36%), favorites 3.8%, favorites'
+  moneyline parlays 7-17%, spreads and totals about the margin. Taking the opening price on sides the line
+  later moved toward paid +13%: the edge is the price, not the bet type. The model predicts those moves
+  no better than a coin (46% toward it).
+- The Ladder (`nba/ladders.py`): 2-3 legs from different games, each 60%+ likely and worth 1%+ at its price,
+  main or alternate spreads, totals or moneylines at DraftKings/FanDuel, priced +100 to +150; locked with the
+  morning game lines, none on most days. The likely side of an alternate line carries the least margin (the
+  vig sits on the long-shot side), so a ladder trailing Pinnacle can have value there. Legs are kind "alt"
+  in nba_picks.jsonl, graded but kept out of the picks' record.
+- Long shots (`nba/longshots.py`): the "N+" rungs (archived in data/nba/odds/milestones) +200 and longer, priced
+  at each props lock against the model's tail at two widths (the tail test on 2025-26: too wide for stars,
+  too narrow for role players, and pricing at the market's level is narrower still). Up to 8 a night with
+  10%+ value at both widths, 0.25u each in ledger/nba_longshots.jsonl, their own record. Every rung is also
+  graded against its price (ledger/nba_longshot_cal.jsonl, counts only): the model-free test of whether books
+  misprice long shots.
 - Checkups every other Monday from 2026-11-02 (Claude scheduled task
   `nba-checkup`): the record and EV at the close, overs vs unders, the model's
   lean, morning vs evening locks replayed on the same games, and the edges still
