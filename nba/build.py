@@ -700,7 +700,9 @@ def main() -> None:
             if pk:
                 pk["notes"] = [n for n in (pnotes.matchup(r["opp"], r["pos"], pk["market"]),
                                            pnotes.form(r["athlete_id"], pk["market"], pk["line"], pk["side"])) if n]
-            players.append({"id": r["athlete_id"], "name": r["name"], "team": r["team"], "opp": r["opp"], "game_id": r["game_id"],
+            pm = pk["market"] if pk else "pts"
+            players.append({"matchup": pnotes.matchup(r["opp"], r["pos"], pm), "recent": pnotes.recent(r["athlete_id"]),
+                            "id": r["athlete_id"], "name": r["name"], "team": r["team"], "opp": r["opp"], "game_id": r["game_id"],
                             "role": r["role"], "status": r["status"], "min": round(r["exp_min"], 1), "games_now": r["games_now"],
                             "markets": mk, "pick": p_by.get((r["game_id"], r["athlete_id"]))})
 

@@ -244,6 +244,17 @@ th.sort[aria-sort] { color: var(--ink); }
 .ctx { margin: 0; padding-left: 16px; display: grid; gap: 2px; font-size: 12.5px; color: var(--ink-2); }
 .ctx li.chance { color: var(--muted); }
 .ctxb { display: grid; gap: 2px; }
+/* a player's last games against a line: green cleared it, red did not */
+.l5 { display: inline-flex; gap: 3px; flex-wrap: wrap; }
+.l5 b { font: 500 12px var(--f-mono); padding: 1px 5px; border-radius: 4px; }
+.l5 b.hit { background: var(--good-soft); color: var(--good); }
+.l5 b.miss { background: var(--bad-soft); color: var(--bad); }
+.l5row { display: flex; gap: 4px 8px; align-items: center; flex-wrap: wrap; }
+/* every market for a player, compact enough for a half-width card */
+table.mk td, table.mk th { padding: 6px 8px; white-space: normal; vertical-align: top; }
+table.mk td > small { display: block; color: var(--muted); font-size: 11.5px; }
+table.mk td div small { color: var(--muted); font-size: 11.5px; }
+.pcard .ctx { margin-top: -4px; }
 .ctxb .ctx-h { font: 600 12px var(--f-mono); color: var(--ink); }
 .pick-row .ctx { grid-column: 2 / 4; }
 .prow .ctx { flex-basis: 100%; }
@@ -735,6 +746,32 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     const xs = picks.filter((p) => p && p.notes && p.notes.length);
     return xs.map((p) => `<div class="ctxb"><span class="ctx-h">${label(p.label)}</span>${ctxList(p)}</div>`).join("");
   }
+  // A player's recent games against a line, oldest first; the tooltip says which game
+  function formStrip(vals, line, side, tips) {
+    if (!vals || !vals.length || line == null) return "";
+    return `<span class="l5">${vals.map((v, i) => { const hit = side === "under" ? v < line : v > line;
+      return `<b class="${hit ? "hit" : "miss"}"${tips && tips[i] ? ` data-tip="${esc(tips[i])}"` : ""}>${num(v, 0)}</b>`; }).join("")}</span>`;
+  }
+  const BSHORT = { DraftKings: "DK", FanDuel: "FD", Pinnacle: "Pin", draftkings: "DK", fanduel: "FD", pinnacle: "Pin" };
+  const BORDER = ["draftkings", "DraftKings", "fanduel", "FanDuel", "pinnacle", "Pinnacle"];
+  function mainLine(books) { for (const b of BORDER) if (books && books[b]) return books[b].line; return null; }
+  // Every market for a player (both sports): the model's middle and 10-90% range, each book's line, the best price
+  // with its value, and his last games against that market's line
+  function mktTable(rows) {
+    if (!rows.length) return '<p class="note">No lines posted yet.</p>';
+    const ln = (x) => num(x, 1).replace(/\.0$/, "");
+    return `<div class="scroll"><table class="t mk"><thead><tr><th>Market · last games</th><th>${term("median", "Model")}</th><th>Lines</th><th>Best price</th></tr></thead><tbody>
+      ${rows.map((r) => {
+        const books = BORDER.filter((b) => r.books[b]).map((b) => `<div>${BSHORT[b]} ${ln(r.books[b].line)} <small>${am(r.books[b].over)}/${am(r.books[b].under)}</small></div>`).join("");
+        const L = r.lean;
+        const best = L ? `${L.side === "over" ? "O" : "U"} ${ln(L.line)} ${am(L.american)}<small>${esc(BSHORT[L.book] || L.book)} · <span class="${cls(L.ev)}">EV ${signed(100 * L.ev, 1)}%</span></small>` : "–";
+        return `<tr${r.hl ? ' class="hl"' : ""}><td><b>${esc(r.name)}</b><div>${formStrip(r.vals, mainLine(r.books), "over", r.tips)}</div></td>
+          <td class="mono">${num(r.median, 0)}<small>${num(r.q[0], 0)}–${num(r.q[4], 0)}</small>${r.fair != null ? `<small>fair ${num(r.fair, 1)}</small>` : ""}</td>
+          <td class="mono">${books || "–"}</td><td class="mono">${best}</td></tr>`;
+      }).join("")}
+    </tbody></table></div><p class="note">Model: the middle outcome, and the range 8 in 10 games fall in. Last games against each market's current line: blue over it, red under. Tap a number for the game.</p>`;
+  }
+
   // NFL card dropdown: the books, what moves the model's number, and the injury report
   function nflMore(g) {
     const books = g.books && g.books.length ? nBooks(g) : '<p class="note">No lines yet.</p>';
@@ -1404,6 +1441,35 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
   const keepP = (p) => pFilter === "all" || (pFilter === "calls" && hasCall(p)) || (pFilter === "promoted" && p.promoted);
   const byRole = (a, b) => ROLE_ORDER[PLAYERS[a].role] - ROLE_ORDER[PLAYERS[b].role];
   const sideWord = (s) => (s === "over" ? "Over" : "Under");
+  // NFL player card in a game dropdown (user, 2026-10-20: as quick to read as the NBA cards): the call, its
+  // context, his last five games against the line, and every market one tap away
+  const STATK = { pass_yds: "pass_yds", rush_yds: "rush_yds", rec_yds: "rec_yds", receptions: "rec" };
+  function nflForm(p, market) {
+    const games = ((PR.logs || {})[p.id] || []).slice(-5);
+    return { vals: games.map((g) => g[STATK[market]] || 0),
+             tips: games.map((g) => `${g.season} week ${g.week} vs ${g.opp}: ${g[STATK[market]] || 0} ${PMK[market].toLowerCase()}${(g.lines || {})[market] != null ? `, closing line ${g.lines[market]}` : ""}`) };
+  }
+  function nflFocus(p) {   // the market the card's strip follows: the pick's, else the best lean's, else the first with a line
+    if (p.pick) return { m: p.pick.market, line: p.pick.line, side: p.pick.side };
+    const L = bestLean(p);
+    if (L) return { m: L.market, line: L.lean.line, side: L.lean.side };
+    const mk = p.markets.find((m) => Object.keys(m.books || {}).length);
+    return mk ? { m: mk.market, line: mainLine(mk.books), side: "over" } : null;
+  }
+  function nflPcard(p) {
+    const u = p.usage || {};
+    const usage = p.pos === "QB" ? `${num(u.att, 1)} pass attempts projected`
+      : [u.tgt >= 0.5 ? `${num(u.tgt, 1)} targets` : "", u.car >= 0.5 ? `${num(u.car, 1)} carries` : ""].filter(Boolean).join(" · ") + " projected";
+    const f = nflFocus(p), fm = f ? nflForm(p, f.m) : { vals: [] };
+    const rows = p.markets.filter((m) => Object.keys(m.books || {}).length).map((m) => ({ name: PMK[m.market], median: m.median, q: m.q, fair: m.fair,
+      books: m.books, lean: m.lean, hl: !!(p.pick && p.pick.market === m.market), ...nflForm(p, m.market) }));
+    return `<article class="pcard"><header class="phead"><div><a class="pname" href="#p-${esc(p.id)}">${esc(p.name)}</a> ${roleTag(p)}</div><span class="note">${usage}</span></header>
+      <div class="chips">${p.pick ? propPickChip(p.pick) : leanChip(bestLean(p), false, p)}</div>
+      ${p.pick ? ctxList(p.pick) : p.matchup ? `<ul class="ctx"><li>${esc(p.matchup)}</li></ul>` : ""}
+      ${fm.vals.length ? `<div class="l5row" data-tip="His last ${fm.vals.length} games: blue would have won this ${p.pick ? "pick" : "side"}, red would have lost. Tap a number for the game."><span class="note">Last ${fm.vals.length} · ${f.side === "under" ? "under" : "over"} ${num(f.line, 1).replace(/\.0$/, "")} ${PMK[f.m].toLowerCase()}</span>${formStrip(fm.vals, f.line, f.side, fm.tips)}</div>` : ""}
+      ${rows.length ? `<details class="nmore"><summary>All markets</summary><div class="nmore-in">${mktTable(rows)}</div></details>` : closed(p.game_id) ? "" : '<p class="note">No lines yet.</p>'}
+    </article>`;
+  }
   function prow(p) {
     return `<div class="prow"><a class="pn" href="#p-${esc(p.id)}">${esc(p.name)}</a> ${roleTag(p)}<span class="pc">${p.pick ? propPickChip(p.pick) : leanChip(bestLean(p), false, p)}</span>${p.pick ? ctxList(p.pick) : ""}</div>`;
   }
@@ -1418,8 +1484,8 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     const g = GAMES[gid];
     const ids = (PR.games[gid] || []).filter((id) => keepP(PLAYERS[id]));
     const calls = gameCalls(gid), best = calls[0];
-    const team = (t) => { const rows = ids.filter((id) => PLAYERS[id].team === t).sort(byRole).map((id) => prow(PLAYERS[id])).join("");
-      return rows ? `<div class="tg"><div class="tg-h">${badge(t, 1)} ${nick(t)}</div>${rows}</div>` : ""; };
+    const team = (t) => { const cards = ids.filter((id) => PLAYERS[id].team === t).sort(byRole).map((id) => nflPcard(PLAYERS[id])).join("");
+      return cards ? `<div class="tg"><div class="tg-h">${badge(t, 1)} ${nick(t)}</div><div class="pcards n">${cards}</div></div>` : ""; };
     const when = g.status === "final" ? "Final" : g.status === "live" ? "In progress" : esc(g.kickoff.short);
     return `<details class="acc gacc" data-g="${esc(gid)}"${pOpen.has(gid) ? " open" : ""}>
       <summary><span class="mu">${badge(g.away)}<span class="at">at</span>${badge(g.home)}</span>
@@ -2211,13 +2277,23 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
         <td>${m.lean ? `${m.lean.side === "over" ? "Over" : "Under"} ${num(m.lean.line, 1).replace(/\.0$/, "")} ${am(m.lean.american)} <span class="note">${esc(m.lean.book)}</span> <span class="${cls(m.lean.ev)}">${evPct(m.lean.ev)}</span>` : "–"}</td></tr>`).join("")}
     </tbody></table></div>`;
   }
+  function nbaForm(p, market) {
+    const R = p.recent || {}, G = R.games || [];
+    return { vals: R[market] || [], tips: G.map((g, i) => `${dayShort(g.d)} vs ${g.opp}: ${num((R[market] || [])[i], 0)} ${NMK[market].toLowerCase()}`) };
+  }
   function npCard(p) {
     const st = p.status ? " " + stChip(p.status) : "";
+    let f = p.pick ? { m: p.pick.market, line: p.pick.line, side: p.pick.side } : null;
+    if (!f) { const L = p.markets.filter((m) => m.lean).sort((a, b) => b.lean.ev - a.lean.ev)[0]; if (L) f = { m: L.market, line: L.lean.line, side: L.lean.side }; }
+    const fm = f ? nbaForm(p, f.m) : { vals: [] };
+    const rows = p.markets.filter((m) => Object.keys(m.books || {}).length).map((m) => ({ name: NMK[m.market], median: m.median, q: m.q, fair: m.fair,
+      books: m.books, lean: m.lean, hl: !!(p.pick && p.pick.market === m.market), ...nbaForm(p, m.market) }));
     return `<article class="pcard"><header class="phead"><div><b class="pname">${esc(p.name)}</b> <span class="role">${p.role === "Starter" ? "Starter" : "6th man"}</span>${st}</div>
         <span class="note">${num(p.min, 1)} min projected${p.games_now ? "" : " · from last season"}</span></header>
       <div class="chips">${p.pick ? npChip(p.pick) : '<span class="note">No prop with 1%+ value.</span>'}</div>
-      ${p.pick ? ctxList(p.pick) : ""}
-      <details class="nmore"><summary>All markets</summary><div class="nmore-in">${npMarkets(p)}</div></details></article>`;
+      ${p.pick ? ctxList(p.pick) : p.matchup ? `<ul class="ctx"><li>${esc(p.matchup)}</li></ul>` : ""}
+      ${fm.vals.length ? `<div class="l5row" data-tip="His last ${fm.vals.length} games: blue would have won this ${p.pick ? "pick" : "side"}, red would have lost. Tap a number for the game."><span class="note">Last ${fm.vals.length} · ${f.side === "under" ? "under" : "over"} ${num(f.line, 1).replace(/\.0$/, "")} ${NMK[f.m].toLowerCase()}</span>${formStrip(fm.vals, f.line, f.side, fm.tips)}</div>` : ""}
+      ${rows.length ? `<details class="nmore"><summary>All markets</summary><div class="nmore-in">${mktTable(rows)}</div></details>` : '<p class="note">No lines posted yet.</p>'}</article>`;
   }
   function lsSection() {
     const LS = N.longshots || {}, T_ = LS.today || [], R = LS.record || {};

@@ -41,6 +41,7 @@ class PropNotes:
         teams = h.select("game_id", "team").unique()
         opp = teams.join(teams, on="game_id", suffix="_o").filter(pl.col("team") != pl.col("team_o")).select("game_id", "team", pl.col("team_o").alias("opp"))
         g = h.join(opp, on=["game_id", "team"])
+        self.games = g
         per = g.group_by("season", "game_id", "opp", "pg").agg(pl.col("min").sum(), *[pl.col(m).sum() for m in NP.MARKETS])
         self.allowed = {}
         for s in (season, season - 1):
@@ -71,6 +72,12 @@ class PropNotes:
             where = f"the {_ord(rank)}-most" if rank <= 15 else f"the {_ord(len(x) - rank + 1)}-fewest"
             return f"{opp} allowed {GROUP_NAME[grp]} {v:.1f} {lab} per 36 minutes, {where} of {len(x)} ({label}, {row['g'][0]} games)"
         return None
+
+    def recent(self, athlete_id: int, n: int = 5) -> dict:
+        """His last `n` games, oldest first: date, opponent and every market's value (for the card's strip)."""
+        x = self.games.filter(pl.col("athlete_id") == athlete_id).sort("date").tail(n)
+        return {"games": [{"d": d.isoformat(), "opp": o} for d, o in zip(x["date"].to_list(), x["opp"].to_list())],
+                **{m: [float(v) for v in x[m].to_list()] for m in NP.MARKETS}}
 
     def form(self, athlete_id: int, market: str, line: float, side: str, n: int = 10) -> str | None:
         x = self.h.filter(pl.col("athlete_id") == athlete_id).sort("date").tail(n)

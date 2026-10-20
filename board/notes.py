@@ -92,25 +92,34 @@ class GameTrends:
         return sorted(out, key=lambda s: "within chance" in s)[:k]
 
 
-def prop_notes(pick: dict, roles: dict, def_rows: list[dict], logs: list[dict], season: int) -> list[str]:
-    """`roles[team]`: what each defense allowed by receiver role; `def_rows`: season defense table; `logs`: his games."""
-    out = []
-    opp, m = pick["opp"], pick["market"]
-    if m in ("rec_yds", "receptions"):
-        r = next((x for x in roles.get(opp, []) if x["role"] == pick.get("role")), None)
+MAIN_MARKET = {"QB": "pass_yds", "RB": "rush_yds", "WR": "rec_yds", "TE": "rec_yds"}
+
+
+def matchup_note(opp: str, role: str | None, market: str, roles: dict, def_rows: list[dict]) -> str | None:
+    """What the opponent's defense allows in this market: to the player's receiver role (rank of 32), or on the
+    ground or through the air."""
+    if market in ("rec_yds", "receptions"):
+        r = next((x for x in roles.get(opp, []) if x["role"] == role), None)
         if r and r.get("g"):
             most = r["n"] - r["rk"] + 1
             where = f"the {_ord(most)}-most" if most <= r["n"] / 2 else f"the {_ord(r['rk'])}-fewest"
-            out.append(f"{opp} allows {r['ypg']:.0f} receiving yards a game to {pick['role']}s, {where} of {r['n']} ({r['g']} games)")
-    elif m in ("rush_yds", "pass_yds"):
-        key = "rush_yds_pg" if m == "rush_yds" else "pass_yds_pg"
+            return f"{opp} allows {r['ypg']:.0f} receiving yards a game to {role}s, {where} of {r['n']} ({r['g']} games)"
+    elif market in ("rush_yds", "pass_yds"):
+        key = "rush_yds_pg" if market == "rush_yds" else "pass_yds_pg"
         rows = sorted((x for x in def_rows if x.get(key) is not None), key=lambda x: -x[key])
         teams = [x["team"] for x in rows]
         if opp in teams:
             most = teams.index(opp) + 1
             x = rows[most - 1]
             where = f"the {_ord(most)}-most" if most <= len(rows) / 2 else f"the {_ord(len(rows) - most + 1)}-fewest"
-            out.append(f"{opp} allows {x[key]:.0f} {'rushing' if m == 'rush_yds' else 'passing'} yards a game, {where} of {len(rows)} ({x['g']} games)")
+            return f"{opp} allows {x[key]:.0f} {'rushing' if market == 'rush_yds' else 'passing'} yards a game, {where} of {len(rows)} ({x['g']} games)"
+    return None
+
+
+def prop_notes(pick: dict, roles: dict, def_rows: list[dict], logs: list[dict], season: int) -> list[str]:
+    """`roles[team]`: what each defense allowed by receiver role; `def_rows`: season defense table; `logs`: his games."""
+    m = pick["market"]
+    out = [n for n in (matchup_note(pick["opp"], pick.get("role"), m, roles, def_rows),) if n]
     games = [g for g in logs if g["season"] == season]
     stat = STAT_OF[m]
     if len(games) >= 3:

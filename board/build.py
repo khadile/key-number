@@ -477,7 +477,7 @@ def main() -> None:
     def_rows, def_league = defense.season_table(season)
 
     # --- context notes on each pick (user, 2026-10-20): situation records, matchups and form, computed from data
-    from board.notes import GameTrends, prop_notes
+    from board.notes import MAIN_MARKET, GameTrends, matchup_note, prop_notes
     trends = GameTrends(games.filter((pl.col("season") < season) | (pl.col("week") < week)))
     game_row = {g["game_id"]: g for g in week_games.iter_rows(named=True)}
     for c in cards:
@@ -486,6 +486,9 @@ def main() -> None:
     for pp in props_data_out["players"]:
         if pp.get("pick"):
             pp["pick"]["notes"] = prop_notes(pp["pick"], roles, def_rows, props_data_out["logs"].get(pp["id"], []), season)
+        # every player's matchup in his main market (the pick's when he has one), shown on his card
+        pm = (pp.get("pick") or {}).get("market") or MAIN_MARKET.get(pp["pos"], "rec_yds")
+        pp["matchup"] = matchup_note(pp["opp"], pp["role"], pm, roles, def_rows)
 
     # --- how it works: backtest headline numbers, computed from saved reports
     model_card = {"clv": clv_study, "sigma_margin": round(sm, 1), "sigma_total": round(st, 1)}
