@@ -79,7 +79,8 @@ jobs:
         run: |
           git config user.name "key-number-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ledger/nba_*.jsonl board/nba_data.json board/nba_last.json
+          git add ledger board/nba_data.json   # the NBA ledgers appear with the first locks
+          if [ -f board/nba_last.json ]; then git add board/nba_last.json; fi
           git commit -m "NBA ${{ steps.slot.outputs.slot }} build $(TZ=America/New_York date +%Y-%m-%d)" || echo "nothing to commit"
           for i in 1 2 3 4 5; do git pull --rebase -q && git push && break; sleep 15; done
 

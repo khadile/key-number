@@ -389,7 +389,7 @@ def main() -> None:
     if not a.offline:
         from nba import data, odds
         data.refresh()
-        odds.archive()
+        odds.archive(ahead_hours=16)   # today's games; a game's file is fetched whole again at every build anyway
     sched = schedule()
     print(f"NBA {today}: {sched.filter(pl.col('day') == today).height} games today")
     if not a.offline:

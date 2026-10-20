@@ -1,7 +1,8 @@
 # CLAUDE.md
 
-NFL betting models with one board, three sections: game lines (spreads, totals,
-moneylines), player props (pregame), and live (in-game, paper trading).
+NFL and NBA betting models on one board. NFL: game lines (spreads, totals,
+moneylines), player props (pregame), and live (in-game, paper trading). NBA
+(since 2026-10-20, section 9): game lines and player props, built daily.
 Data comes from nflverse via `nflreadpy`; odds from OddsPapi (this season's
 history), PropLine (live) and a one-time SportsGameOdds pull (2025 closing
 prop lines, 2026 opens and closes; 2e). The user bets at DraftKings and FanDuel only; Pinnacle is the
@@ -16,7 +17,11 @@ sharp reference, never a bet.
   GitHub drops scheduled firings; `board/slot.py` builds on the first one at or
   after 10am ET (`board/last_build.json`). Run it by hand with
   `gh workflow run board.yml -R khadile/key-number -f force=true`.
-  `publish.yml` republishes the committed board without rebuilding.
+  `publish.yml` republishes the committed board without rebuilding. The NBA
+  side has its own workflow (`nba.yml`, section 9); each sport's build commits
+  only its payload (`board/nfl_data.json`, `board/nba_data.json`) and the page
+  is rendered from both wherever it is published (`board/render.py`), so the
+  two builds never collide on it. `board/nfl_board.html` is no longer committed.
 - Needs the `ODDSPAPI_KEY` repo secret. Odds data never goes in the repo:
   data/oddspapi (except the three catalog JSONs), data/propline, data/sgo,
   data/live and price-level report parquets are gitignored; on Actions the
@@ -557,6 +562,52 @@ writes `board/nfl_board.html`. Republish that file to the same URL; omit
   built file in a browser, and confirm no console errors on every tab. A stray
   apostrophe inside a single-quoted JS string once blanked the whole page.
 
+## 9. NBA (nba/, user 2026-10-20)
+
+Game lines and player props for every game, every day, on the board's NBA tab
+(sport switch NFL / NBA). Halftime live (2-4 games a night, sharing PropLine's
+budget with the NFL) comes after the pregame side is stable.
+
+- Data: hoopR (sportsdataverse/hoopR-nba-data: schedules, box scores, consensus
+  closing lines 2020-21 on; seasons named by end year, 2027 = 2026-27), ESPN's
+  public API (rosters, injury report, box scores the night of, scoreboard), and
+  OddsPapi tournament 132 (`nba/odds.py`; catalogs in data/oddspapi/*_t132,
+  *_s11; the free history endpoint keeps only the current season, so games are
+  archived while they can be). Odds stay off the repo (data/nba/ is gitignored
+  and cached on Actions).
+- Game lines (`nba/lines.py`): k = 0. Over six seasons of walk-forward tests the
+  model never beat the close (margin MAE 11.44 vs 10.51, beta -0.03; first three
+  weeks beta +0.07, not significant). The fair line is Pinnacle's no-vig (else
+  DraftKings and FanDuel's); a spread pick and a total pick per game, the side
+  and book with the best EV; when nothing is +EV the pick is the model's side as
+  a lean (0u, counted at 1u). Moneyline only at +EV. Each pick records
+  `with_model` so the checkup can read the early-season lean.
+- Props (`nba/props.py`): each team's five starters and sixth man; points,
+  rebounds, assists, threes, PRA, P+R, P+A, R+A; one pick per player at 1%+ EV
+  (`PROP_EV_MIN`). The market sets the level by scaling the player's rate (a
+  count is not shifted: shifting made 1.5-threes lines look like +6% edges), the
+  model's negative binomial over minutes sets the shape (calibrated on 2025-26
+  starters). When DraftKings and FanDuel both sit on the same side of
+  Pinnacle's line, Pinnacle is taken as behind the news (its props update
+  ~100x less often) and the two of them set the level.
+- Schedule (`nba/slot.py`, `.github/workflows/nba.yml`, every 15 minutes in
+  each window): 10:30am ET grades last night and locks the day's game lines,
+  their Picks of the Day and parlays, and props for games before 6:30pm; 5:30pm
+  ET, after the 5pm injury report, locks the rest of the props and the props
+  Picks of the Day and parlays. Run by hand with
+  `gh workflow run nba.yml -R khadile/key-number -f force=true`; a forced
+  build before 10:30am locks nothing and does not use up the morning slot.
+- Ledgers: ledger/nba_picks.jsonl, nba_results.jsonl, nba_props_picks.jsonl,
+  nba_props_results.jsonl; append-only like the NFL's, keyed by `day` (the
+  game's Eastern date). Results carry `ev_close` (the locked price against
+  Pinnacle's closing no-vig chance): the first evidence the edge is real.
+- Checkups every other Monday from 2026-11-02 (Claude scheduled task
+  `nba-checkup`): the record and EV at the close, overs vs unders, the model's
+  lean, morning vs evening locks replayed on the same games, and the edges still
+  to test (back-to-backs and rest, a teammate's props when a starter sits,
+  referee crews on totals). The decision to pay for more odds data is revisited
+  at the first one.
+
 ## Layout
 
 ```
@@ -570,7 +621,9 @@ live/       espn.py, feeds.py, model.py, decide.py, engine.py (+ page.html),
             ledger.py, notify.py (ntfy), replay.py, replay_games.py, board.py
 model/      ratings.py, qb.py, features.py, project.py, probs.py, blend.py
 board/      build.py, market.py (pricing), ledger.py, defense.py, detail.py,
-            weather.py, template.html -> nfl_board.html
+            weather.py, render.py (both payloads + template.html -> nfl_board.html)
+nba/        data.py (hoopR), espn.py, odds.py (OddsPapi), model.py + players.py
+            (ratings, APM), backtest.py, lines.py, props.py, ledger.py, build.py, slot.py
 backtest/   run.py, clv.py, parlays.py, trends.py, speeds.py -> reports/
 ledger/     picks.jsonl (append-only)
 board/      JSON -> HTML
