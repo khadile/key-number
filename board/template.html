@@ -238,6 +238,12 @@ th.sort[aria-sort] { color: var(--ink); }
 .sports { display: inline-flex; gap: 2px; padding: 2px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); }
 .sports a { padding: 2px 10px; border-radius: 4px; text-decoration: none; color: var(--ink-2); font-family: var(--f-display); font-weight: 700; font-size: 15px; letter-spacing: 0.06em; }
 .sports a[aria-current="true"] { background: var(--accent); color: var(--accent-ink); }
+.cards.n, .pcards.n { align-items: start; }
+.ninj { display: grid; gap: 10px; }
+.card.n { align-content: start; }
+.st { white-space: nowrap; }
+table.nbk td, table.nbk th { padding: 6px 8px; white-space: normal; }
+table.nbk td small { display: block; color: var(--muted); font-family: var(--f-mono); font-size: 12px; }
 details.nmore { border-top: 1px solid var(--line); padding-top: 6px; }
 details.nmore summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); }
 .nmore-in { display: grid; gap: 10px; padding-top: 8px; min-width: 0; }
@@ -2049,11 +2055,17 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
   }
   function nBooks(g) {
     if (!g.books.length) return '<p class="note">No lines yet.</p>';
-    return `<div class="scroll"><table class="t"><thead><tr><th>Book</th><th>Spread (${esc(g.home)})</th><th class="num">${esc(g.home)}</th><th class="num">${esc(g.away)}</th><th>Total</th><th class="num">Over</th><th class="num">Under</th><th class="num">ML ${esc(g.home)}</th><th class="num">ML ${esc(g.away)}</th></tr></thead><tbody>
-      ${g.books.map((b) => `<tr${b.sharp ? ' class="hl"' : ""}><td>${esc(b.book)}${b.sharp ? ' <span class="note">market</span>' : ""}</td><td class="mono">${b.spread == null ? "–" : label(b.spread > 0 ? "-" + half(b.spread) : b.spread < 0 ? "+" + half(b.spread) : "PK")}</td>
-        <td class="num">${am(b.spread_home)}</td><td class="num">${am(b.spread_away)}</td><td class="mono">${b.total == null ? "–" : half(b.total)}</td><td class="num">${am(b.over)}</td><td class="num">${am(b.under)}</td><td class="num">${am(b.ml_home)}</td><td class="num">${am(b.ml_away)}</td></tr>`).join("")}
+    const ln = (s) => (s == null ? "" : s === 0 ? "PK" : (s > 0 ? MINUS : "+") + half(s));   // the home line from "home favored by s"
+    const two = (a, b) => `<td class="mono">${a}<small>${b}</small></td>`;
+    return `<div class="scroll"><table class="t nbk"><thead><tr><th>Book</th><th>Spread</th><th>Total</th><th>Moneyline</th></tr></thead><tbody>
+      ${g.books.map((b) => `<tr${b.sharp ? ' class="hl"' : ""}><td>${esc(b.book)}${b.sharp ? '<small>the market</small>' : ""}</td>
+        ${b.spread == null ? "<td>–</td>" : two(`${esc(g.home)} ${ln(b.spread)} ${am(b.spread_home)}`, `${esc(g.away)} ${ln(-b.spread)} ${am(b.spread_away)}`)}
+        ${b.total == null ? "<td>–</td>" : two(`O ${half(b.total)} ${am(b.over)}`, `U ${half(b.total)} ${am(b.under)}`)}
+        ${b.ml_home == null ? "<td>–</td>" : two(`${esc(g.home)} ${am(b.ml_home)}`, `${esc(g.away)} ${am(b.ml_away)}`)}</tr>`).join("")}
     </tbody></table></div>`;
   }
+  const ST_SHORT = { "Day-To-Day": "DTD", Questionable: "Q", Doubtful: "Doubtful", Probable: "Prob", Out: "Out", "Game Time Decision": "GTD" };
+  const stChip = (s) => `<span class="st ${esc(s)}" data-tip="${esc(s)}">${esc(ST_SHORT[s] || s)}</span>`;
   function nModel(g) {
     const m = g.model;
     if (!m) return "";
@@ -2063,9 +2075,9 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     return `<p class="note">Model: ${parts.join(", ")}, so ${fav(g.home, g.away, m.margin, 1)}; total ${num(m.total, 1)} at ${num(m.pace, 1)} possessions. Rest: ${esc(g.away)} ${m.rest.away >= 7 ? "7+" : m.rest.away} days, ${esc(g.home)} ${m.rest.home >= 7 ? "7+" : m.rest.home}. The model does not set prices (it has not beaten closing lines); it picks the side of a lean.</p>`;
   }
   function nInj(g) {
-    const list = (t, xs) => xs.length ? `<div><b>${nbadge(t, 1)}</b><ul class="inj">${xs.map((x) => `<li><span class="st ${esc(x.status)}">${esc(x.status)}</span><span>${esc(x.name)}${x.detail ? ` <span class="note">${esc(x.detail.slice(0, 120))}</span>` : ""}</span></li>`).join("")}</ul></div>` : "";
+    const list = (t, xs) => xs.length ? `<div><b>${nbadge(t, 1)}</b><ul class="inj">${xs.map((x) => `<li>${stChip(x.status)}<span>${esc(x.name)}${x.detail ? ` <span class="note">${esc(x.detail.slice(0, 120))}</span>` : ""}</span></li>`).join("")}</ul></div>` : "";
     const h = list(g.away, g.injuries.away) + list(g.home, g.injuries.home);
-    return h ? `<div class="two">${h}</div>` : '<p class="note">Nobody on either injury report.</p>';
+    return h ? `<div class="ninj">${h}</div>` : '<p class="note">Nobody on either injury report.</p>';
   }
   function nCard(g) {
     const fin = g.status === "final", live = g.status === "live";
@@ -2073,7 +2085,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     const P = g.picks || {};
     const chips = [nChip(P.spread), nChip(P.total), nChip(P.ml)].join("");
     const wait = !chips && !fin && !live ? `<span class="note">Picks lock ${etTime(g.locks.lines)}.</span>` : "";
-    return `<article class="card">
+    return `<article class="card n">
       <div class="card-top"><span class="${live ? "live" : ""}">${live ? esc(g.detail || "In progress") : fin ? "Final" : esc(g.tip.time)}</span>${g.fair.src && g.fair.src !== "pinnacle" ? '<span>No Pinnacle line: DraftKings and FanDuel set the market</span>' : ""}</div>
       <div class="trow">${nbadge(g.away)}<span class="tname">${nnick(g.away)}<small>${esc((NT[g.away] || {}).record || "")}</small></span>${s("away")}</div>
       <div class="trow">${nbadge(g.home)}<span class="tname">${nnick(g.home)}<small>${esc((NT[g.home] || {}).record || "")}</small></span>${s("home")}</div>
@@ -2099,7 +2111,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
       <section class="sec"><header><h2>Record <em>${esc(N.meta.label)} season</em></h2><a class="more" href="#nba-record">Full record →</a></header>
         ${nStrip(R)}${leansNote(R)}${nKelly(R.kelly, "picks")}</section>
       <section class="sec"><header><h2>Today's best</h2></header>${nBest(potd, N.parlays, "picks")}</section>
-      <section class="sec"><h3 class="day">${N.games.length ? esc(N.meta.day_label) : "No games today"}</h3><div class="cards">${N.games.map(nCard).join("")}</div></section>
+      <section class="sec"><h3 class="day">${N.games.length ? esc(N.meta.day_label) : "No games today"}</h3><div class="cards n">${N.games.map(nCard).join("")}</div></section>
       <p class="fine">Model output, not betting advice. Lines from ${esc(N.meta.books.join(", "))}, with Pinnacle as the market. Updated ${esc(new Date(N.meta.generated).toLocaleString())}.</p>`;
   }
 
@@ -2168,7 +2180,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     </tbody></table></div>`;
   }
   function npCard(p) {
-    const st = p.status ? ` <span class="st ${esc(p.status)}">${esc(p.status)}</span>` : "";
+    const st = p.status ? " " + stChip(p.status) : "";
     return `<article class="pcard"><header class="phead"><div><b class="pname">${esc(p.name)}</b> <span class="role">${p.role === "Starter" ? "Starter" : "6th man"}</span>${st}</div>
         <span class="note">${num(p.min, 1)} min projected${p.games_now ? "" : " · from last season"}</span></header>
       <div class="chips">${p.pick ? npChip(p.pick) : '<span class="note">No prop with 1%+ value.</span>'}</div>
@@ -2186,7 +2198,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
       const side = (t) => ps.filter((p) => p.team === t);
       const lock = locked.has(String(g.id)) ? "Props locked" : `Props lock ${etTime(g.locks.props)}`;
       return `<section class="sec"><header><h2>${nbadge(g.away)} at ${nbadge(g.home)} <em>${esc(g.tip.time)} · ${lock}</em></h2></header>
-        ${[g.away, g.home].map((t) => side(t).length ? `<div class="pcards">${side(t).map(npCard).join("")}</div>` : "").join("") || '<p class="note">No tracked players yet.</p>'}</section>`;
+        ${[g.away, g.home].map((t) => side(t).length ? `<div class="pcards n">${side(t).map(npCard).join("")}</div>` : "").join("") || '<p class="note">No tracked players yet.</p>'}</section>`;
     }).join("");
     app.innerHTML = `
       <section class="hello"><h1>NBA props · ${esc(N.meta.day_label)}</h1>
