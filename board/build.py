@@ -63,7 +63,9 @@ def _team_meta(teams: list[str], games: pl.DataFrame, season: int) -> dict:
         c = r["team_color"] or "#555555"
         lum = sum(int(c.lstrip("#")[i:i + 2], 16) * w for i, w in ((0, .299), (2, .587), (4, .114))) / 255
         w, l, tie = rec[r["team_abbr"]]
-        out[r["team_abbr"]] = {"name": r["team_name"], "nick": r["team_nick"], "color": c,
+        logo = (r.get("team_logo_espn") or "").replace("https://a.espncdn.com", "")
+        out[r["team_abbr"]] = {"name": r["team_name"], "nick": r["team_nick"], "color": c, "color2": r.get("team_color2"),
+                               "logo": f"https://a.espncdn.com/combiner/i?img={logo}&w=80&h=80" if logo else None,
                                "ink": "#111111" if lum > 0.6 else "#ffffff",
                                "record": f"{w}-{l}" + (f"-{tie}" if tie else "")}
     return out

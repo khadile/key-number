@@ -549,7 +549,11 @@ writes `board/nfl_board.html`. Republish that file to the same URL; omit
   reports in reports/live_replay*.json).
 - Interface: dotted terms and chart marks explain themselves (`GLOSSARY`,
   `data-tip`), detail lives in dropdowns (`details.acc`), props games are
-  one dropdown each, and motion is off for reduced-motion viewers.
+  one dropdown each, and motion is off for reduced-motion viewers. The design
+  system (2026-10-20 revamp: Best bets as the landing view, the slip, team
+  logos and headshots, team-colored charts) is in `board/DESIGN.md`; read it
+  before changing the page. Best bets and the slip only re-show what each
+  section computed: no new pricing lives in the page.
 - Stakes on the page:
   - Every pick chip and call card carries a stake pill: 1u, or 0u with a
     dashed "Lean" chip.

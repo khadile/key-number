@@ -381,7 +381,9 @@ def _team_meta(sched: pl.DataFrame, finals: dict) -> dict:
         lum = sum(int(c[1 + i:3 + i], 16) * w for i, w in ((0, .299), (2, .587), (4, .114))) / 255
         w, l = rec.get(t["abbreviation"], [0, 0])
         out[t["abbreviation"]] = {"name": t["displayName"], "nick": t.get("shortDisplayName") or t["name"], "color": c,
-                                  "ink": "#111111" if lum > 0.6 else "#ffffff", "record": f"{w}-{l}"}
+                                  "ink": "#111111" if lum > 0.6 else "#ffffff", "record": f"{w}-{l}",
+                                  "color2": "#" + (t.get("alternateColor") or "888888"),
+                                  "logo": f"https://a.espncdn.com/combiner/i?img=/i/teamlogos/nba/500/{t['abbreviation'].lower()}.png&w=80&h=80"}
     return out
 
 
@@ -701,7 +703,8 @@ def main() -> None:
                 pk["notes"] = [n for n in (pnotes.matchup(r["opp"], r["pos"], pk["market"]),
                                            pnotes.form(r["athlete_id"], pk["market"], pk["line"], pk["side"])) if n]
             pm = pk["market"] if pk else "pts"
-            players.append({"matchup": pnotes.matchup(r["opp"], r["pos"], pm), "recent": pnotes.recent(r["athlete_id"]),
+            players.append({"img": f"https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/{r['athlete_id']}.png&w=96&h=70&scale=crop",
+                            "matchup": pnotes.matchup(r["opp"], r["pos"], pm), "recent": pnotes.recent(r["athlete_id"]),
                             "id": r["athlete_id"], "name": r["name"], "team": r["team"], "opp": r["opp"], "game_id": r["game_id"],
                             "role": r["role"], "status": r["status"], "min": round(r["exp_min"], 1), "games_now": r["games_now"],
                             "markets": mk, "pick": p_by.get((r["game_id"], r["athlete_id"]))})

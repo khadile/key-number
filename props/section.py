@@ -424,6 +424,8 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
         week_rows = pl.concat([week_rows, played_now.select(week_rows.columns)], how="vertical_relaxed") if xw.height else played_now
     s_all = {**s_week, **{k: v for k, v in s_done.items() if k[0] in set(played_now["game_id"].to_list())}}
     players, games_out = [], {}
+    ros = pl.read_parquet(RAW / "rosters_weekly" / f"{season}.parquet").select("gsis_id", "espn_id").drop_nulls().unique("gsis_id")
+    espn_ids = dict(zip(ros["gsis_id"].to_list(), ros["espn_id"].to_list()))
     for r in week_rows.sort("game_id", "team", pl.col("role").replace_strict(ROLE_ORDER)).iter_rows(named=True):
         mk = []
         for m in ROLE_MARKETS[r["role"]]:
@@ -443,7 +445,9 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
                                 if priced else None),
                        "actual": stats.get((r["game_id"], r["gsis_id"]), {}).get(m)})
         pick = picks_by_player.get((r["game_id"], r["gsis_id"]))
-        pl_row = {"id": r["gsis_id"], "name": r["name"], "team": r["team"], "opp": r["opp"], "pos": r["position"],
+        eid = espn_ids.get(r["gsis_id"])
+        pl_row = {"img": f"https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/{eid}.png&w=96&h=70&scale=crop" if eid else None,
+                  "id": r["gsis_id"], "name": r["name"], "team": r["team"], "opp": r["opp"], "pos": r["position"],
                   "role": r["role"], "promoted": bool(r.get("promoted") or False), "game_id": r["game_id"],
                   "usage": {"tgt": round(r["tgt_hat"] or 0, 1), "car": round(r["car_hat"] or 0, 1),
                             "att": round(r["att_hat"] or 0, 1), "tshare": round(r["tshare"] or 0, 3),

@@ -1,470 +1,532 @@
 <title>Key Number</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: a sticky program header with tabs over one centered column; game cards sit two-up on wide
-   screens and stack on phones; a game's breakdown replaces the list.
-   Look: one deliberate light world, a cream betting ticket. Cream paper, ivory cards, navy ink,
-   gold for the parlays, brick red for losses, navy for wins. It stays cream in dark mode too. */
+/* Key Number. The system is in board/DESIGN.md: Operate mode, a neutral frame, color on data and team identity,
+   soft shapes, purposeful motion (Emil Kowalski's curves and durations), light by day and dark by night. */
 :root {
   color-scheme: light;
-  --bg: #f4ecdc;
-  --surface: #fffaf0;
-  --surface-2: #f8f0df;
-  --ink: #1d2433;
-  --ink-2: #464c5b;
-  --muted: #6e6858;
-  --line: #e6dcc8;
-  --line-2: #d6c9ae;
-  --accent: #1f3a6b;
-  --accent-ink: #fffaf0;
-  --accent-soft: #e4e6ee;
-  --band: #c6cce0;
-  --gold: #85590a;
-  --gold-line: #c99a3c;
-  --gold-soft: #f6e6c2;
-  --good: #1f3a6b;
-  --good-soft: #e3e7f1;
-  --bad: #a83a2c;
-  --bad-soft: #f5dfd8;
-  --you: #7d2a4a;
-  --you-soft: #f3e0e7;
-  --s-home: #2a78d6;
-  --s-away: #e0612a;
-  --shadow: 0 1px 2px rgba(60, 45, 20, 0.07);
-  --f-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
-  --f-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
-  /* the live engine's status light and log (the one dark surface, like a scoreboard feed) */
-  --on: #2f8a4e;
-  --off: #8d877a;
-  --term-bg: #1b2130;
-  --term-ink: #ece4d2;
-  --term-dim: #8e94a3;
-  --t-play: #a9bde3;
-  --t-odds: #8cc4ff;
-  --t-flag: #f2c14e;
-  --t-card: #c9a7e8;
-  --t-fill: #8fd3c7;
-  --t-warn: #f0a35e;
-  --t-error: #ff7b6b;
+  /* neutrals, tinted toward 255 */
+  --bg: oklch(0.972 0.004 255);
+  --surface: oklch(0.996 0.002 255);
+  --surface-2: oklch(0.958 0.005 255);
+  --active: oklch(0.93 0.007 255);
+  --line: oklch(0.915 0.006 255);
+  --rule: oklch(0.945 0.005 255);
+  --line-2: oklch(0.86 0.008 255);
+  --ink: oklch(0.21 0.012 262);
+  --ink-2: oklch(0.43 0.012 262);
+  --muted: oklch(0.52 0.012 262);
+  --primary: oklch(0.21 0.012 262);
+  --primary-ink: oklch(0.985 0.002 255);
+  /* data roles */
+  --accent: oklch(0.52 0.15 255);
+  --accent-ink: oklch(0.985 0.002 255);
+  --accent-soft: oklch(0.95 0.025 255);
+  --band: oklch(0.89 0.04 255);
+  --good: oklch(0.5 0.12 152);
+  --good-fill: oklch(0.64 0.15 152);
+  --good-soft: oklch(0.95 0.04 152);
+  --bad: oklch(0.54 0.17 25);
+  --bad-fill: oklch(0.63 0.18 25);
+  --bad-soft: oklch(0.95 0.028 25);
+  --gold: oklch(0.52 0.1 70);
+  --gold-fill: oklch(0.79 0.14 80);
+  --gold-line: oklch(0.79 0.12 80);
+  --gold-soft: oklch(0.965 0.04 88);
+  --you: oklch(0.5 0.14 350);
+  --you-soft: oklch(0.95 0.03 350);
+  --s-home: oklch(0.56 0.15 255);
+  --s-away: oklch(0.66 0.16 48);
+  --float: 0 14px 34px -14px oklch(0.2 0.02 260 / 0.28), 0 2px 6px oklch(0.2 0.02 260 / 0.07);
+  --lift: 0 10px 24px -14px oklch(0.2 0.02 260 / 0.3);
+  /* shape */
+  --r: 20px; --r-in: 14px; --r-sm: 10px;
+  /* type */
+  --f-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-display: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  /* motion (Emil Kowalski) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  /* the live engine's feed keeps its own dark surface, like a scoreboard */
+  --on: oklch(0.62 0.15 152);
+  --off: oklch(0.62 0.01 260);
+  --term-bg: oklch(0.19 0.006 262);
+  --term-ink: oklch(0.93 0.01 85);
+  --term-dim: oklch(0.66 0.01 262);
+  --t-play: oklch(0.8 0.07 260); --t-odds: oklch(0.8 0.1 240); --t-flag: oklch(0.84 0.14 85);
+  --t-card: oklch(0.78 0.1 310); --t-fill: oklch(0.82 0.08 180); --t-warn: oklch(0.78 0.12 60); --t-error: oklch(0.72 0.16 25);
 }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: oklch(0.155 0.003 262); --surface: oklch(0.2 0.004 262); --surface-2: oklch(0.24 0.005 262); --active: oklch(0.29 0.006 262);
+    --line: oklch(0.28 0.006 262); --rule: oklch(0.245 0.005 262); --line-2: oklch(0.38 0.008 262);
+    --ink: oklch(0.965 0.003 262); --ink-2: oklch(0.8 0.006 262); --muted: oklch(0.68 0.008 262);
+    --primary: oklch(0.965 0.003 262); --primary-ink: oklch(0.17 0.004 262);
+    --accent: oklch(0.74 0.12 250); --accent-ink: oklch(0.17 0.004 262); --accent-soft: oklch(0.29 0.04 255); --band: oklch(0.38 0.06 255);
+    --good: oklch(0.78 0.15 152); --good-fill: oklch(0.7 0.16 152); --good-soft: oklch(0.29 0.055 152);
+    --bad: oklch(0.74 0.15 25); --bad-fill: oklch(0.66 0.17 25); --bad-soft: oklch(0.3 0.06 25);
+    --gold: oklch(0.84 0.12 85); --gold-fill: oklch(0.8 0.14 82); --gold-line: oklch(0.62 0.1 80); --gold-soft: oklch(0.3 0.05 85);
+    --you: oklch(0.78 0.12 350); --you-soft: oklch(0.31 0.06 350);
+    --s-home: oklch(0.7 0.13 250); --s-away: oklch(0.74 0.15 50);
+    --float: 0 16px 40px -12px oklch(0 0 0 / 0.6), 0 2px 8px oklch(0 0 0 / 0.35);
+    --lift: 0 12px 28px -14px oklch(0 0 0 / 0.7);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: oklch(0.155 0.003 262); --surface: oklch(0.2 0.004 262); --surface-2: oklch(0.24 0.005 262); --active: oklch(0.29 0.006 262);
+  --line: oklch(0.28 0.006 262); --rule: oklch(0.245 0.005 262); --line-2: oklch(0.38 0.008 262);
+  --ink: oklch(0.965 0.003 262); --ink-2: oklch(0.8 0.006 262); --muted: oklch(0.68 0.008 262);
+  --primary: oklch(0.965 0.003 262); --primary-ink: oklch(0.17 0.004 262);
+  --accent: oklch(0.74 0.12 250); --accent-ink: oklch(0.17 0.004 262); --accent-soft: oklch(0.29 0.04 255); --band: oklch(0.38 0.06 255);
+  --good: oklch(0.78 0.15 152); --good-fill: oklch(0.7 0.16 152); --good-soft: oklch(0.29 0.055 152);
+  --bad: oklch(0.74 0.15 25); --bad-fill: oklch(0.66 0.17 25); --bad-soft: oklch(0.3 0.06 25);
+  --gold: oklch(0.84 0.12 85); --gold-fill: oklch(0.8 0.14 82); --gold-line: oklch(0.62 0.1 80); --gold-soft: oklch(0.3 0.05 85);
+  --you: oklch(0.78 0.12 350); --you-soft: oklch(0.31 0.06 350);
+  --s-home: oklch(0.7 0.13 250); --s-away: oklch(0.74 0.15 50);
+  --float: 0 16px 40px -12px oklch(0 0 0 / 0.6), 0 2px 8px oklch(0 0 0 / 0.35);
+  --lift: 0 12px 28px -14px oklch(0 0 0 / 0.7);
+}
+
 * { box-sizing: border-box; }
-body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
-a { color: var(--accent); }
-a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+html { -webkit-text-size-adjust: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 .num, .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
-h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.15; letter-spacing: -0.01em; }
+button { font-family: inherit; }
+img { max-width: 100%; }
 
-/* header */
-.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); border-bottom: 1px solid var(--line); }
-.top-in { max-width: 1120px; margin: 0 auto; padding-inline: 16px; }
-.brand { display: flex; align-items: baseline; gap: 12px; padding-block: 12px 4px; flex-wrap: wrap; }
-.brand b { font-family: var(--f-display); font-weight: 700; font-size: 24px; letter-spacing: 0.06em; }
-.brand b i { font-style: normal; color: var(--accent); }
-.brand span { color: var(--muted); font-size: 13px; }
-.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
-.tabs a { flex: none; padding: 10px 12px 9px; text-decoration: none; color: var(--ink-2); font-weight: 600; font-size: 14px; border-bottom: 3px solid transparent; }
+/* ---------- the bar: mark and name, the sport, the sections, the pages */
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top-in { max-width: 1480px; margin: 0 auto; padding-inline: 24px; }
+.brand { display: flex; align-items: center; gap: 10px 14px; padding-block: 12px 8px; flex-wrap: wrap; }
+.brand b { display: inline-flex; align-items: center; gap: 9px; font-family: var(--f-display); font-weight: 800; font-size: 19px; letter-spacing: -0.02em; }
+.brand b i { font-style: normal; color: var(--muted); font-weight: 500; }
+.brand .mark { width: 30px; height: 30px; flex: none; }
+#brand-sub { color: var(--muted); font-size: 13px; }
+.brand .grow { flex: 1; }
+.nav2 { display: flex; align-items: center; gap: 8px 18px; flex-wrap: wrap; }
+.seg { position: relative; display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--surface-2); isolation: isolate; }
+.seg a { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 7px; padding: 7px 15px; border-radius: 999px; text-decoration: none; color: var(--ink-2); font-weight: 600; font-size: 14px; white-space: nowrap; }
+.seg a[aria-current="true"] { color: var(--ink); }
+.seg-ind { position: absolute; z-index: 0; top: 3px; bottom: 3px; left: 0; border-radius: 999px; background: var(--surface); box-shadow: 0 1px 2px oklch(0.2 0.02 260 / 0.12), 0 0 0 1px var(--line); }
+.sports a img { width: 18px; height: 18px; object-fit: contain; }
+.sections { margin: 0; }
+.tabs { position: relative; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin-inline: -4px; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs a { flex: none; padding: 11px 10px 12px; text-decoration: none; color: var(--muted); font-weight: 600; font-size: 14px; }
 .tabs a:hover { color: var(--ink); }
-.tabs a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tabs a[aria-current="page"] { color: var(--ink); }
+.tab-ind { position: absolute; bottom: 0; left: 0; height: 2px; border-radius: 2px; background: var(--ink); }
 
-main { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 72px; display: grid; gap: 28px; }
-.sec { display: grid; gap: 12px; min-width: 0; }
-.sec > header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.sec h2 { font-size: 15px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
-.sec h2 em { font-style: normal; color: var(--muted); font-weight: 500; letter-spacing: 0.04em; }
+/* ---------- the canvas: the view, and the slip beside it on wide screens */
+.layout { max-width: 1480px; margin: 0 auto; padding-inline: 24px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+@media (min-width: 1240px) { .layout { grid-template-columns: minmax(0, 1fr) 340px; } }
+main { padding-block: 26px 96px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 30px; min-width: 0; align-content: start; }
+#rail { display: none; }
+@media (min-width: 1240px) { #rail { display: block; padding-block: 26px; } #rail > .rail-in { position: sticky; top: calc(var(--top-h, 120px) + 18px); max-height: calc(100vh - var(--top-h, 120px) - 36px); overflow: auto; } }
+.sec { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
+.sec > header { display: flex; align-items: baseline; justify-content: space-between; gap: 6px 14px; flex-wrap: wrap; }
+.sec h2 { font-size: 18px; font-weight: 700; color: var(--ink); }
+.sec h2 em { font-style: normal; color: var(--muted); font-weight: 500; font-size: 15px; margin-left: 6px; }
 .lede { font-size: 15px; color: var(--ink-2); max-width: 68ch; margin: 0; }
-.note { font-size: 13px; color: var(--muted); max-width: 72ch; margin: 0; }
-.hello h1 { font-size: 34px; font-weight: 700; }
+.note { font-size: 13px; color: var(--muted); max-width: 76ch; margin: 0; }
 .hello { display: grid; gap: 6px; }
+.hello h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.025em; }
+.hello .finding { font-size: 15px; color: var(--ink-2); margin: 0; }
+.hello .finding b { color: var(--ink); }
 
-/* record strip */
-/* Column counts the 8 tiles fill evenly (2, 4, then 8 across); My picks' 3 tiles go 3 across. */
-.strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-@media (min-width: 640px) { .strip { grid-template-columns: repeat(4, minmax(0, 1fr)); } .strip.three { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (min-width: 1100px) { .strip { grid-template-columns: repeat(8, minmax(0, 1fr)); } .strip.three { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0; }
-.tile .k { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-.tile .v { font-family: var(--f-display); font-size: 28px; font-weight: 600; line-height: 1.1; }
+/* ---------- record: one strip divided by hairlines (figures are type, not tiles) */
+.strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+@container (min-width: 560px) { .strip { grid-template-columns: repeat(4, minmax(0, 1fr)); } .strip.three { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@container (min-width: 900px) { .strip { grid-template-columns: repeat(8, minmax(0, 1fr)); } .strip.three { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.tile { background: var(--surface); padding: 14px 16px; display: grid; gap: 2px; align-content: start; min-width: 0; }
+.tile .k { font-size: 12.5px; font-weight: 500; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.tile .v { font-family: var(--f-display); font-size: 24px; font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; }
 .tile .s { font-size: 12px; color: var(--ink-2); }
-.tile.gold { border-color: var(--gold-line); background: var(--gold-soft); }
-.strip.sim .tile { background: transparent; }
-.strip.sim .tile .v { font-size: 22px; }
+.tile.gold .k::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--gold-fill); flex: none; }
+.strip.sim .tile .v { font-size: 20px; }
 .pos { color: var(--good); } .neg { color: var(--bad); }
 
-/* picks of the week + parlay */
-.featured { display: grid; gap: 12px; grid-template-columns: 1fr; align-items: start; }
-@media (min-width: 900px) { .featured { grid-template-columns: 1.5fr 1fr; } }
-.stack { display: grid; gap: 12px; min-width: 0; }
-.panel.lotto { border-style: dashed; }
-.odds-big { font-family: var(--f-display); font-size: 30px; font-weight: 700; line-height: 1; }
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; align-content: start; min-width: 0; box-shadow: var(--shadow); }
+/* ---------- today's best: picks of the day/week, the parlays */
+.featured { display: grid; gap: 14px; grid-template-columns: 1fr; align-items: start; }
+@container (min-width: 860px) { .featured { grid-template-columns: 1.4fr 1fr; } }
+.stack { display: grid; gap: 14px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
 .panel.gold { border-color: var(--gold-line); }
-.panel h3 { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-.tag { font-family: var(--f-body); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold-line); }
-.pick-row { display: grid; grid-template-columns: 22px 1fr auto; gap: 4px 10px; align-items: center; padding-block: 8px; border-top: 1px solid var(--line); }
+.panel.lotto { border-style: dashed; }
+.panel h3 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.odds-big { font-family: var(--f-mono); font-size: 28px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; }
+.tag { font-family: var(--f-body); font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--gold-soft); color: var(--gold); white-space: nowrap; }
+.pick-row { display: grid; grid-template-columns: 26px 1fr auto; gap: 3px 10px; align-items: center; padding-block: 10px; border-top: 1px solid var(--rule); }
 .pick-row:first-of-type { border-top: 0; }
-.pick-row .n { font-family: var(--f-display); font-weight: 700; color: var(--gold); font-size: 18px; }
-.pick-row .lbl { font-family: var(--f-display); font-size: 22px; font-weight: 600; line-height: 1.1; }
-.pick-row .sub { grid-column: 2 / 4; font-size: 13px; color: var(--ink-2); display: flex; gap: 6px 12px; flex-wrap: wrap; }
-.legs { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.legs li { display: flex; justify-content: space-between; gap: 8px; font-size: 15px; }
-.legs li b { font-family: var(--f-display); font-size: 19px; font-weight: 600; }
-.kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+.pick-row .n { font-family: var(--f-display); font-weight: 800; color: var(--gold); font-size: 16px; }
+.pick-row .lbl { font-family: var(--f-display); font-size: 17px; font-weight: 700; line-height: 1.2; }
+.pick-row .sub { grid-column: 2 / 4; font-size: 13px; color: var(--ink-2); display: flex; gap: 4px 12px; flex-wrap: wrap; align-items: center; }
+.legs { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.legs li { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; align-items: baseline; }
+.legs li b { font-family: var(--f-display); font-size: 16px; font-weight: 700; }
+.kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
 .kv div { display: grid; }
-.kv span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
-.kv b { font-family: var(--f-mono); font-size: 16px; font-weight: 500; }
+.kv span { font-size: 12px; color: var(--muted); }
+.kv b { font-family: var(--f-mono); font-size: 15px; font-weight: 600; }
 
-/* result + pick chips */
-.res { font-family: var(--f-body); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; padding: 2px 7px; border-radius: 4px; }
+/* ---------- results, chips and pills */
+.res { font-family: var(--f-body); font-size: 11.5px; font-weight: 700; letter-spacing: 0.02em; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
 .res.W { background: var(--good-soft); color: var(--good); }
 .res.L { background: var(--bad-soft); color: var(--bad); }
-.res.P { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
-
-/* game cards */
-.day { font-family: var(--f-display); font-size: 20px; font-weight: 600; margin-top: 6px; }
-.cards { display: grid; gap: 12px; grid-template-columns: 1fr; }
-@media (min-width: 900px) { .cards { grid-template-columns: 1fr 1fr; } }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; min-width: 0; box-shadow: var(--shadow); }
-.card-top { display: flex; gap: 6px 12px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
-.card-top .live { color: var(--bad); font-weight: 600; }
-.trow { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
-.tname { font-weight: 600; font-size: 16px; }
-.tname small { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 6px; }
-.score { font-family: var(--f-mono); font-size: 20px; font-weight: 500; }
-.score.proj { color: var(--ink-2); }
-.tb { display: inline-grid; place-items: center; min-width: 40px; height: 24px; padding-inline: 6px; border-radius: 5px; background: var(--tc); color: var(--ti); font-family: var(--f-display); font-weight: 700; font-size: 14px; letter-spacing: 0.03em; box-shadow: inset 0 0 0 1px rgba(127, 127, 127, 0.25); }
-.tb.sm { min-width: 34px; height: 20px; font-size: 12px; }
-.lines { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; padding: 8px 0 0; border-top: 1px solid var(--line); }
-.lines div { display: grid; }
-.lines dt { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-.lines dd { margin: 0; font-family: var(--f-mono); font-size: 14px; }
+.res.P { background: var(--surface-2); color: var(--muted); }
+.day { font-family: var(--f-display); font-size: 16px; font-weight: 700; color: var(--ink-2); margin-top: 4px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; max-width: 100%; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--surface-2); font-size: 13px; }
-.chip .m { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-.chip b { font-family: var(--f-mono); font-weight: 500; font-size: 13px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; flex-wrap: wrap; max-width: 100%; padding: 5px 11px; border-radius: 999px; background: var(--surface-2); font-size: 13px; border: 1px solid transparent; }
+.chip .m { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.chip b { font-family: var(--f-mono); font-weight: 600; font-size: 13px; }
 .chip .pr { color: var(--ink-2); font-family: var(--f-mono); font-size: 12px; }
-.chip.potw { border-color: var(--gold-line); background: var(--gold-soft); }
+.chip.potw { background: var(--gold-soft); }
 .chip.potw .m { color: var(--gold); }
 .chip.you { border-color: var(--you); background: var(--you-soft); }
 .chip.you .m { color: var(--you); }
-.chip.pass { color: var(--muted); }
-.more { justify-self: start; font-weight: 600; font-size: 14px; text-decoration: none; }
+.chip.pass { color: var(--muted); background: transparent; border: 1px dashed var(--line-2); }
+.chip.lean { background: transparent; border: 1px dashed var(--line-2); }
+.chip.lean .m { color: var(--accent); }
+.chip.promo { border-color: var(--you); }
+.more { justify-self: start; font-weight: 600; font-size: 14px; text-decoration: none; color: var(--accent); }
 .more:hover { text-decoration: underline; }
 
-/* breakdown */
-.back { font-weight: 600; text-decoration: none; font-size: 14px; }
+/* ---------- team marks: logo and name; the fallback is the colored abbreviation */
+.tb { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px 0 4px; border-radius: 999px; background: var(--surface-2); color: var(--ink); font-family: var(--f-display); font-weight: 700; font-size: 13px; letter-spacing: 0.01em; white-space: nowrap; vertical-align: middle; }
+.tb img { width: 20px; height: 20px; object-fit: contain; }
+.tb.sm { height: 22px; font-size: 12px; padding: 0 7px 0 3px; gap: 4px; }
+.tb.sm img { width: 16px; height: 16px; }
+.tb.noimg { background: var(--tc); color: var(--ti); padding-inline: 8px; }
+.tl { width: 40px; height: 40px; object-fit: contain; flex: none; }
+.tl.lg { width: 64px; height: 64px; }
+.tl.xl { width: 88px; height: 88px; }
+.tlx { display: inline-grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--tc); color: var(--ti); font: 800 13px var(--f-display); }
+.hs { position: relative; flex: none; width: 46px; height: 46px; border-radius: 50%; background: var(--surface-2); overflow: hidden; display: grid; place-items: center; }
+.hs img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+.hs b { font: 800 14px var(--f-display); color: var(--ink-2); }
+.hs-wrap { position: relative; flex: none; }
+.hs-wrap .badge { position: absolute; right: -4px; bottom: -4px; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); padding: 2px; box-shadow: 0 0 0 1px var(--line); }
+.hs-wrap .badge img { width: 16px; height: 16px; object-fit: contain; display: block; }
+
+/* ---------- game cards */
+.cards { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; }
+@container (min-width: 700px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (min-width: 1120px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+.card-top { display: flex; gap: 6px 10px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); }
+.card-top .live { color: var(--bad); font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+.card-top .live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--bad-fill); }
+.card-top .when { font-weight: 600; color: var(--ink-2); }
+.mu2 { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
+.mu2 .t { display: grid; justify-items: center; gap: 4px; text-align: center; min-width: 0; }
+.mu2 .t b { font-family: var(--f-display); font-size: 16px; font-weight: 700; line-height: 1.15; }
+.mu2 .t small { font-size: 12px; color: var(--muted); }
+.mu2 .mid { display: grid; justify-items: center; gap: 2px; font-family: var(--f-mono); }
+.mu2 .mid .sc { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+.mu2 .mid .at { font-family: var(--f-body); font-size: 12px; color: var(--muted); }
+.wp { display: grid; gap: 5px; }
+.wp .bar { position: relative; display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: var(--surface-2); gap: 2px; }
+.wp .bar i { display: block; height: 100%; }
+.wp .bar i:first-child { border-radius: 999px 0 0 999px; }
+.wp .bar i:last-child { border-radius: 0 999px 999px 0; }
+.wp .lb { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.wp .lb b { color: var(--ink); font-weight: 700; }
+.trow { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
+.tname { font-weight: 700; font-size: 16px; }
+.tname small { font-weight: 500; color: var(--muted); font-size: 13px; margin-left: 6px; }
+.score { font-family: var(--f-mono); font-size: 20px; font-weight: 600; }
+.score.proj { color: var(--ink-2); }
+.lines { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; padding: 12px 14px; border-radius: var(--r-in); background: var(--surface-2); }
+.lines div { display: grid; gap: 1px; }
+.lines dt { font-size: 12px; font-weight: 500; color: var(--muted); }
+.lines dd { margin: 0; font-family: var(--f-mono); font-size: 14px; font-weight: 500; }
+
+/* ---------- a game's page */
+.back { font-weight: 600; text-decoration: none; font-size: 14px; display: inline-flex; gap: 6px; align-items: center; }
 .gh { display: grid; gap: 4px; }
-.gh h1 { font-size: 32px; font-weight: 700; }
+.gh h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.025em; }
 .gh p { margin: 0; color: var(--muted); font-size: 14px; }
-.board2 { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+.board2 { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 18px; }
 .board2 .side { display: grid; justify-items: center; gap: 6px; text-align: center; }
-.board2 .big { font-family: var(--f-mono); font-size: 40px; font-weight: 500; line-height: 1; }
-.board2 .at { color: var(--muted); font-family: var(--f-display); font-size: 18px; }
-.two { display: grid; gap: 12px; grid-template-columns: 1fr; }
-@media (min-width: 900px) { .two { grid-template-columns: 1fr 1fr; } }
+.board2 .side b { font-size: 16px; }
+.board2 .big { font-family: var(--f-mono); font-size: 40px; font-weight: 600; line-height: 1; letter-spacing: -0.03em; }
+.board2 .at { color: var(--muted); font-family: var(--f-display); font-size: 15px; font-weight: 600; }
+.board2 .wp { grid-column: 1 / -1; }
+.two { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; }
+@container (min-width: 800px) { .two { grid-template-columns: 1fr 1fr; } }
 .scroll { overflow-x: auto; min-width: 0; }
 table.t { width: 100%; border-collapse: collapse; font-size: 14px; }
-table.t th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line-2); white-space: nowrap; }
-table.t td { padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.t th { text-align: left; font-size: 12px; font-weight: 500; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.t td { padding: 9px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.t tr:last-child td { border-bottom: 0; }
 table.t td.num, table.t th.num { text-align: right; }
 table.t tr.hl td { background: var(--accent-soft); }
-table.t tbody tr:hover td { background: var(--surface-2); }
-.box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 8px; min-width: 0; }
-.box h3 { font-size: 18px; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+table.t tr.ph td { background: var(--surface-2); }
+@media (hover: hover) and (pointer: fine) { table.t tbody tr:hover td { background: var(--surface-2); } }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 10px; min-width: 0; align-content: start; }
+.box h3 { font-size: 17px; font-weight: 700; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
-svg.chart text { fill: var(--ink-2); font-family: var(--f-body); font-size: 12px; }
-svg.chart text.v { fill: var(--ink); font-family: var(--f-mono); }
-svg.chart .grid { stroke: var(--line); stroke-width: 1; }
+svg.chart text { fill: var(--muted); font-family: var(--f-body); font-size: 12px; }
+svg.chart text.v { fill: var(--ink); font-family: var(--f-mono); font-weight: 500; }
+svg.chart .grid { stroke: var(--rule); stroke-width: 1; }
 svg.chart .axis { stroke: var(--line-2); stroke-width: 1; }
-.legend { display: flex; gap: 14px; font-size: 13px; color: var(--ink-2); flex-wrap: wrap; }
-.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.legend { display: flex; gap: 14px; font-size: 13px; color: var(--ink-2); flex-wrap: wrap; align-items: center; }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
 .mx { display: grid; gap: 2px; }
-.mx-row { display: grid; grid-template-columns: minmax(96px, 1.1fr) 1.4fr 56px 74px; gap: 8px; align-items: center; font-size: 13px; padding-block: 3px; }
-.mx-row .bar { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; border: 1px solid var(--line); }
-.mx-row .bar span { display: block; height: 100%; background: var(--s-home); border-radius: 0 4px 4px 0; }
+.mx-row { display: grid; grid-template-columns: minmax(96px, 1.1fr) 1.4fr 56px 74px; gap: 8px; align-items: center; font-size: 13px; padding-block: 4px; }
+.mx-row .bar { height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.mx-row .bar span { display: block; height: 100%; background: var(--s-home); border-radius: 999px; }
 .mx-row .val { font-family: var(--f-mono); text-align: right; }
 .mx-row .rk { color: var(--muted); font-size: 12px; text-align: right; white-space: nowrap; }
 .mx-row .l3 { grid-column: 3 / 5; color: var(--muted); font-size: 11px; text-align: right; margin-top: -4px; }
-.inj { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 14px; }
+.inj { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
 .inj li { display: flex; gap: 8px; align-items: baseline; }
-.st { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); min-width: 22px; text-align: center; }
-.st.Out { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
-.st.Doubtful { background: var(--gold-soft); color: var(--gold); border-color: transparent; }
+.st { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); min-width: 22px; text-align: center; white-space: nowrap; }
+.st.Out { background: var(--bad-soft); color: var(--bad); }
+.st.Doubtful { background: var(--gold-soft); color: var(--gold); }
 
-/* my picks */
-.banner { padding: 10px 12px; border-radius: 8px; background: var(--accent-soft); color: var(--ink); font-size: 14px; }
-.mp { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; }
-.mp-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-weight: 600; }
-.mp-head small { color: var(--muted); font-weight: 400; }
-.mp-groups { display: grid; gap: 8px; grid-template-columns: 1fr; }
-@media (min-width: 720px) { .mp-groups { grid-template-columns: repeat(3, 1fr); } }
+/* ---------- my picks */
+.banner { padding: 11px 14px; border-radius: var(--r-in); background: var(--accent-soft); color: var(--ink); font-size: 14px; }
+.mp { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 10px; }
+.mp-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-weight: 700; }
+.mp-head small { color: var(--muted); font-weight: 500; }
+.mp-groups { display: grid; gap: 10px; grid-template-columns: 1fr; }
+@container (min-width: 680px) { .mp-groups { grid-template-columns: repeat(3, 1fr); } }
 .grp { display: grid; gap: 4px; }
-.grp > span { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.grp > span { font-size: 12px; font-weight: 500; color: var(--muted); }
 .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.pb { position: relative; font: 500 14px var(--f-mono); padding: 9px 6px; border-radius: 7px; border: 1px solid var(--line-2); background: var(--surface-2); color: var(--ink); cursor: pointer; }
-.pb:hover:not(:disabled) { border-color: var(--you); }
-.pb[aria-pressed="true"] { background: var(--you); color: #fff; border-color: var(--you); }
+.pb { position: relative; font: 600 14px var(--f-mono); padding: 9px 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; }
+@media (hover: hover) and (pointer: fine) { .pb:hover:not(:disabled) { border-color: var(--you); } }
+.pb[aria-pressed="true"] { background: var(--you); color: var(--primary-ink); border-color: var(--you); }
 .pb:disabled { cursor: not-allowed; opacity: 0.55; }
-.pb .mt { position: absolute; top: -8px; right: 6px; font: 700 10px var(--f-body); letter-spacing: 0.05em; text-transform: uppercase; background: var(--accent); color: var(--accent-ink); padding: 1px 5px; border-radius: 3px; }
+.pb .mt { position: absolute; top: -8px; right: 8px; font: 700 10px var(--f-body); background: var(--primary); color: var(--primary-ink); padding: 1px 6px; border-radius: 999px; }
+.pb.sm { font-size: 13px; padding: 7px 6px; }
 
-/* defense */
+/* ---------- defenses */
 .pills { display: flex; gap: 6px; flex-wrap: wrap; }
-.pill { font: 600 13px var(--f-body); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink-2); cursor: pointer; }
-.pill[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.pill { font: 600 13px var(--f-body); padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.pill[aria-pressed="true"] { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
 th.sort { cursor: pointer; user-select: none; }
-th.sort:hover { color: var(--ink); }
-th.sort[aria-sort] { color: var(--ink); }
-.rk { display: inline-block; min-width: 26px; padding: 1px 5px; margin-left: 6px; border-radius: 4px; font: 600 11px var(--f-body); text-align: center; background: var(--surface-2); color: var(--muted); }
+th.sort:hover, th.sort[aria-sort] { color: var(--ink); }
+.rk { display: inline-block; min-width: 26px; padding: 1px 6px; margin-left: 6px; border-radius: 999px; font: 600 11px var(--f-body); text-align: center; background: var(--surface-2); color: var(--muted); }
 .rk.top { background: var(--good-soft); color: var(--good); }
 .rk.bot { background: var(--bad-soft); color: var(--bad); }
 .tcell { display: flex; align-items: center; gap: 8px; }
 
-/* prose */
+/* ---------- prose */
 .prose { display: grid; gap: 14px; max-width: 72ch; }
-.prose h3 { font-size: 20px; font-weight: 600; margin-top: 6px; }
+.prose h3 { font-size: 20px; font-weight: 700; margin-top: 6px; }
 .prose p, .prose li { margin: 0; color: var(--ink-2); }
 .prose ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 .prose b { color: var(--ink); }
 .fine { font-size: 12px; color: var(--muted); }
-@media (prefers-reduced-motion: no-preference) { .pb, .pill, .tabs a { transition: background-color .12s, color .12s, border-color .12s; } }
+code { font-family: var(--f-mono); font-size: 13px; background: var(--surface-2); border-radius: 6px; padding: 1px 5px; }
 
-/* sections: game lines / player props / live */
-.sections { display: inline-flex; gap: 4px; padding: 3px; margin: 2px 0 6px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
-.sections a { padding: 6px 14px; border-radius: 999px; text-decoration: none; color: var(--ink-2); font-weight: 600; font-size: 14px; white-space: nowrap; }
-.sections a[aria-current="true"] { background: var(--ink); color: var(--bg); }
-/* sport switch: NFL / NBA */
-.sports { display: inline-flex; gap: 2px; padding: 2px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); }
-.sports a { padding: 2px 10px; border-radius: 4px; text-decoration: none; color: var(--ink-2); font-family: var(--f-display); font-weight: 700; font-size: 15px; letter-spacing: 0.06em; }
-.sports a[aria-current="true"] { background: var(--accent); color: var(--accent-ink); }
-.cards, .pcards.n { align-items: start; }
-.card { align-content: start; }
-/* context notes on a pick (board/notes.py, nba/notes.py): facts with their numbers, history not the model */
-.ctx { margin: 0; padding-left: 16px; display: grid; gap: 2px; font-size: 12.5px; color: var(--ink-2); }
+/* ---------- context notes, form and markets on cards */
+.ctx { margin: 0; padding-left: 16px; display: grid; gap: 3px; font-size: 13px; color: var(--ink-2); }
+.ctx li::marker { color: var(--line-2); }
 .ctx li.chance { color: var(--muted); }
-.ctxb { display: grid; gap: 2px; }
-/* a player's last games against a line: green cleared it, red did not */
+.ctxb { display: grid; gap: 3px; }
+.ctxb .ctx-h { font: 600 12.5px var(--f-mono); color: var(--ink); }
+.pick-row .ctx { grid-column: 2 / 4; }
+.prow .ctx { flex-basis: 100%; }
 .l5 { display: inline-flex; gap: 3px; flex-wrap: wrap; }
-.l5 b { font: 500 12px var(--f-mono); padding: 1px 5px; border-radius: 4px; }
+.l5 b { font: 600 12px var(--f-mono); min-width: 26px; text-align: center; padding: 2px 5px; border-radius: 7px; }
 .l5 b.hit { background: var(--good-soft); color: var(--good); }
 .l5 b.miss { background: var(--bad-soft); color: var(--bad); }
 .l5row { display: flex; gap: 4px 8px; align-items: center; flex-wrap: wrap; }
-/* every market for a player, compact enough for a half-width card */
-table.mk td, table.mk th { padding: 6px 8px; white-space: normal; vertical-align: top; }
+table.mk td, table.mk th { padding: 7px 8px; white-space: normal; vertical-align: top; }
 table.mk td > small { display: block; color: var(--muted); font-size: 11.5px; }
 table.mk td div small { color: var(--muted); font-size: 11.5px; }
-.pcard .ctx { margin-top: -4px; }
-.ctxb .ctx-h { font: 600 12px var(--f-mono); color: var(--ink); }
-.pick-row .ctx { grid-column: 2 / 4; }
-.prow .ctx { flex-basis: 100%; }
-.ninj { display: grid; gap: 10px; }
-.card.n { align-content: start; }
-.st { white-space: nowrap; }
-table.nbk td, table.nbk th { padding: 6px 8px; white-space: normal; }
+table.mk td .l5 { margin-top: 4px; }
+table.nbk td, table.nbk th { padding: 7px 8px; white-space: normal; }
 table.nbk td small { display: block; color: var(--muted); font-family: var(--f-mono); font-size: 12px; }
-details.nmore { border-top: 1px solid var(--line); padding-top: 6px; }
-details.nmore summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); }
-.nmore-in { display: grid; gap: 10px; padding-top: 8px; min-width: 0; }
 table.pmk td, table.pmk th { padding: 6px 8px; }
-/* props */
-.role { font: 700 11px var(--f-body); letter-spacing: .05em; padding: 1px 5px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); }
-.tag.shop { background: var(--accent-soft); color: var(--accent); border-color: transparent; margin-left: 4px; }
-.tag.promo, .chip.promo .m { background: var(--you-soft); color: var(--you); border-color: transparent; }
-.chip.promo { border-color: var(--you); }
-.chip.lean { border-style: dashed; }
-.chip.lean .m { color: var(--accent); }
-/* stakes (model/staking.py): 1u on a positive-EV pick, nothing on a lean; quarter Kelly is its own record */
-.stk { font: 600 11px var(--f-mono); padding: 1px 6px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
-.stk.none { background: transparent; color: var(--muted); border: 1px dashed var(--line-2); }
-.call.lean { border-style: dashed; background: var(--surface-2); box-shadow: none; }
+.ninj { display: grid; gap: 12px; }
+.card.n { align-content: start; }
+details.nmore { border-top: 1px solid var(--rule); padding-top: 8px; }
+details.nmore > summary { cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--accent); list-style: none; display: inline-flex; align-items: center; gap: 6px; }
+details.nmore > summary::-webkit-details-marker { display: none; }
+details.nmore > summary::before { content: ""; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); margin-right: 2px; }
+details.nmore[open] > summary::before { transform: rotate(45deg); }
+.nmore-in { display: grid; gap: 12px; padding-top: 10px; min-width: 0; }
+
+/* ---------- props */
+.role { font: 600 11.5px var(--f-body); padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.tag.shop { background: var(--accent-soft); color: var(--accent); margin-left: 4px; }
+.tag.promo, .chip.promo .m { background: var(--you-soft); color: var(--you); }
 .tag.lean { background: transparent; color: var(--muted); border: 1px dashed var(--line-2); }
+.stk { font: 600 11px var(--f-mono); padding: 2px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.stk.none { background: transparent; color: var(--muted); border: 1px dashed var(--line-2); }
 tr.lean td { color: var(--muted); }
-/* is a +EV pick also a good pick? (model/checks.py) */
-.vd { font: 700 10px var(--f-body); letter-spacing: .06em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
+.vd { font: 700 11px var(--f-body); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
 .vd.good { background: var(--good-soft); color: var(--good); }
-.vd.ev { background: transparent; color: var(--muted); border: 1px solid var(--line-2); }
-.checkbox { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; }
+.vd.ev { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+.checkbox { display: grid; gap: 8px; border-top: 1px solid var(--rule); padding-top: 10px; }
 .checkbox .verdict { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .checks { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .checks li { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 6px; font-size: 13px; color: var(--ink-2); align-items: start; }
-.checks .ck { font-weight: 700; text-align: center; }
-.checks .ck.ok { color: var(--good); }
-.checks .ck.no { color: var(--bad); }
-.checks .ck.na { color: var(--muted); }
+.checks .ck { font-weight: 800; text-align: center; }
+.checks .ck.ok { color: var(--good); } .checks .ck.no { color: var(--bad); } .checks .ck.na { color: var(--muted); }
 .nowline { font-size: 13px; color: var(--ink-2); margin: 0; }
 .plist { display: grid; gap: 2px; }
-.prow { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid var(--line); }
+.prow { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--rule); }
 .prow:first-child { border-top: 0; }
-.prow .pn { font-weight: 600; text-decoration: none; color: var(--ink); display: inline-flex; gap: 6px; align-items: center; }
-.prow .pn small { font-weight: 400; color: var(--muted); }
+.prow .pn { font-weight: 700; text-decoration: none; color: var(--ink); display: inline-flex; gap: 6px; align-items: center; }
+.prow .pn small { font-weight: 500; color: var(--muted); }
 .prow .pc { margin-left: auto; }
 .prow .pair { margin-left: auto; display: inline-grid; grid-template-columns: 1fr 1fr; gap: 6px; min-width: 220px; }
-.pb.sm { font-size: 13px; padding: 7px 6px; }
-table.t tr.ph td { background: var(--surface-2); border-bottom: 1px solid var(--line-2); }
-.search { width: 100%; max-width: 420px; font: 15px var(--f-body); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); }
-/* live */
+.search { width: 100%; max-width: 420px; font: 15px var(--f-body); padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
 .strip.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-@media (min-width: 900px) { .strip.four { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-.gate { display: block; height: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; margin-top: 4px; }
-.gate span { display: block; height: 100%; background: var(--gold-line); }
+@container (min-width: 760px) { .strip.four { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.gate { display: block; height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; margin-top: 4px; }
+.gate span { display: block; height: 100%; background: var(--gold-fill); border-radius: 999px; }
 ul.steps { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: var(--ink-2); }
-code { font-family: var(--f-mono); font-size: 13px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
 
-/* ---------- help: dotted terms and chart marks explain themselves on hover or tap */
-.tip { position: fixed; left: 0; top: 0; z-index: 60; max-width: min(300px, calc(100vw - 16px)); padding: 8px 11px; border-radius: 8px; background: var(--ink); color: var(--surface); font: 13px/1.45 var(--f-body); box-shadow: 0 8px 24px rgba(29, 36, 51, .22); pointer-events: none; opacity: 0; transform: translateY(4px); }
+/* ---------- help: dotted terms and chart marks explain themselves */
+.tip { position: fixed; left: 0; top: 0; z-index: 80; max-width: min(300px, calc(100vw - 16px)); padding: 9px 12px; border-radius: 12px; background: var(--ink); color: var(--surface); font: 13px/1.45 var(--f-body); box-shadow: var(--float); pointer-events: none; opacity: 0; transform: scale(0.97) translateY(4px); }
 .tip.on { opacity: 1; transform: none; }
 .term { border-bottom: 1px dotted var(--muted); cursor: help; }
-.term:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
 svg [data-tip], .gauge-wrap, .mx-row { cursor: help; }
 
-/* ---------- motion: views rise in, bars grow, lines draw; all of it off for reduced motion */
-@keyframes rise { from { opacity: .85; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@keyframes growx { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@keyframes growy { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-@keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
-@keyframes pop { 0% { transform: scale(.4); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
-@media (prefers-reduced-motion: no-preference) {
-  .tip { transition: opacity .12s ease, transform .12s ease; }
-  .enter > * { animation: rise .45s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(min(var(--i, 0), 8) * 50ms); }
-  .gx, .gxr, .gy, .popin { transform-box: fill-box; }
-  .gx { transform-origin: left center; animation: growx .7s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--d, 0) * 50ms + 150ms); }
-  .gxr { transform-origin: right center; animation: growx .7s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--d, 0) * 50ms + 150ms); }
-  .gy { transform-origin: center bottom; animation: growy .7s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--d, 0) * 50ms + 150ms); }
-  .draw { stroke-dasharray: 1; animation: draw 1.2s ease-out both .2s; }
-  .popin { transform-origin: center; animation: pop .45s ease-out both; animation-delay: calc(var(--d, 0) * 60ms + 450ms); }
-  details.acc[open] > .acc-body { animation: rise .3s ease-out both; }
-  details.acc > summary .chev { transition: transform .2s ease; }
-  .card, .call, .pcard { transition: transform .15s ease, box-shadow .15s ease; }
-  .card:hover, .call:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(60, 45, 20, .11); }
-}
-
 /* ---------- dropdown sections */
-details.acc { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); min-width: 0; }
-details.acc > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: 12px; }
+details.acc { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); min-width: 0; }
+details.acc > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; padding: 14px 18px; border-radius: var(--r); }
 details.acc > summary::-webkit-details-marker { display: none; }
-details.acc > summary:hover { background: var(--surface-2); }
-details.acc > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-details.acc > summary h3 { font-size: 20px; font-weight: 700; }
-details.acc > summary .chev { margin-left: auto; font: 700 24px/1 var(--f-display); color: var(--muted); }
+@media (hover: hover) and (pointer: fine) { details.acc > summary:hover { background: var(--surface-2); } }
+details.acc > summary h3 { font-size: 18px; font-weight: 700; }
+details.acc > summary .chev { margin-left: auto; font: 700 22px/1 var(--f-display); color: var(--muted); }
 details.acc[open] > summary .chev { transform: rotate(90deg); }
-details.acc > .acc-body { padding: 4px 14px 16px; display: grid; gap: 12px; min-width: 0; }
-.gaccs { display: grid; gap: 10px; }
+details.acc > .acc-body { padding: 4px 18px 18px; display: grid; gap: 14px; min-width: 0; }
+.gaccs { display: grid; gap: 12px; }
 .gacc > summary .mu { display: inline-flex; align-items: center; gap: 6px; }
 .gacc > summary .at { color: var(--muted); font-size: 13px; }
 .gacc > summary .gm { display: grid; min-width: 0; }
-.gacc > summary .gm b { font-size: 16px; font-weight: 600; }
+.gacc > summary .gm b { font-size: 16px; font-weight: 700; }
 .gacc > summary .gs { display: flex; gap: 6px 10px; flex-wrap: wrap; align-items: center; min-width: 0; }
-.cnt { font: 700 11px var(--f-body); letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); white-space: nowrap; }
-.cnt.none { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.cnt { font: 700 12px var(--f-body); padding: 3px 10px; border-radius: 999px; background: var(--primary); color: var(--primary-ink); white-space: nowrap; }
+.cnt.none { background: var(--surface-2); color: var(--muted); }
 .bestc { font-size: 13px; color: var(--ink-2); }
-.tg { display: grid; gap: 2px; }
+.tg { display: grid; gap: 8px; }
 .tg-h { display: flex; align-items: center; gap: 8px; font-weight: 700; padding-top: 8px; }
 .ctl { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.btn { font: 600 13px var(--f-body); padding: 6px 13px; border-radius: 999px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink-2); cursor: pointer; }
-.btn:hover { color: var(--ink); border-color: var(--ink-2); }
+.btn { font: 600 13px var(--f-body); padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+@media (hover: hover) and (pointer: fine) { .btn:hover { color: var(--ink); border-color: var(--line-2); } }
+.btn.primary { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
 
-/* ---------- the calls on a game breakdown */
-.calls { display: grid; gap: 12px; grid-template-columns: 1fr; }
-@media (min-width: 860px) { .calls { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-.call { background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; min-width: 0; box-shadow: var(--shadow); }
-.call.potw { border-color: var(--gold-line); background: var(--gold-soft); }
-.call.pass { background: var(--surface-2); box-shadow: none; }
-.call .mk { display: flex; justify-content: space-between; gap: 8px; font: 700 11px var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.call .big { font-family: var(--f-display); font-size: 28px; font-weight: 700; line-height: 1.05; }
-.call .px { font-family: var(--f-mono); font-size: 14px; color: var(--ink-2); }
+/* ---------- the calls on a game's page */
+.calls { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@container (min-width: 780px) { .calls { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.call { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 9px; align-content: start; min-width: 0; }
+.call.potw { border-color: var(--gold-line); }
+.call.pass { background: transparent; border-style: dashed; }
+.call.lean { border-style: dashed; }
+.call .mk { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.call .big { font-family: var(--f-display); font-size: 26px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.call .px { font-family: var(--f-mono); font-size: 14px; color: var(--ink-2); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .say { font-size: 14px; color: var(--ink-2); margin: 0; max-width: 64ch; }
 .say b { color: var(--ink); }
-.gauge-wrap { display: grid; gap: 5px; }
-.gauge { position: relative; height: 10px; border-radius: 5px; background: var(--surface-2); border: 1px solid var(--line); }
-.gauge .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; background: var(--accent); }
-.gauge .fill.low { background: var(--bad); }
-.gauge .need { position: absolute; top: -5px; bottom: -5px; width: 2px; margin-left: -1px; background: var(--ink); border-radius: 1px; }
+.gauge-wrap { display: grid; gap: 6px; }
+.gauge { position: relative; height: 8px; border-radius: 999px; background: var(--surface-2); }
+.gauge .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--good-fill); }
+.gauge .fill.low { background: var(--bad-fill); }
+.gauge .need { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--ink); border-radius: 1px; }
 .gauge-lbl { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
-.gauge-lbl b { color: var(--ink); font-family: var(--f-mono); font-weight: 500; }
+.gauge-lbl b { color: var(--ink); font-family: var(--f-mono); font-weight: 600; }
 
-/* ---------- prop cards: each market as a range bar */
-.pcards { display: grid; gap: 12px; grid-template-columns: 1fr; }
-@media (min-width: 900px) { .pcards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.pcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 14px; display: grid; gap: 12px; align-content: start; min-width: 0; box-shadow: var(--shadow); }
-.phead { display: flex; justify-content: space-between; align-items: baseline; gap: 4px 12px; flex-wrap: wrap; }
-.pname { font-family: var(--f-display); font-size: 23px; font-weight: 700; text-decoration: none; color: var(--ink); }
-.pname:hover { color: var(--accent); }
-.mrow { display: grid; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line); min-width: 0; }
+/* ---------- prop cards */
+.pcards { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@container (min-width: 720px) { .pcards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (min-width: 1120px) { .pcards.n { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.cards, .pcards.n { align-items: start; }
+.pcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px 16px; display: grid; gap: 11px; align-content: start; min-width: 0; }
+.phead { display: flex; justify-content: space-between; align-items: center; gap: 6px 12px; flex-wrap: wrap; }
+.phead > div { display: flex; align-items: center; gap: 10px; min-width: 0; flex-wrap: wrap; }
+.pname { font-family: var(--f-display); font-size: 19px; font-weight: 800; text-decoration: none; color: var(--ink); letter-spacing: -0.015em; }
+a.pname:hover { color: var(--accent); }
+.pcard .ctx { margin-top: -3px; }
+.mrow { display: grid; gap: 6px; padding-top: 12px; border-top: 1px solid var(--rule); min-width: 0; }
 .mhead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
-.mhead > b { font-family: var(--f-display); font-size: 18px; font-weight: 600; }
-.callpill { font: 600 13px var(--f-body); padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
-.callpill.locked { background: var(--accent); color: var(--accent-ink); }
+.mhead > b { font-family: var(--f-display); font-size: 17px; font-weight: 700; }
+.callpill { font: 600 13px var(--f-body); padding: 3px 11px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.callpill.locked { background: var(--primary); color: var(--primary-ink); }
 .callpill.none { background: var(--surface-2); color: var(--muted); }
 .callpill .pr { font-family: var(--f-mono); font-weight: 500; opacity: .9; }
 .final { margin-left: auto; font-size: 13px; color: var(--ink-2); }
 .bline { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--ink-2); }
-.bline b { font-family: var(--f-mono); font-weight: 500; color: var(--ink); }
+.bline b { font-family: var(--f-mono); font-weight: 600; color: var(--ink); }
 .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
 .bk-draftkings { fill: var(--s-home); background: var(--s-home); }
 .bk-fanduel { fill: var(--s-away); background: var(--s-away); }
-.bk-pinnacle { fill: var(--accent); background: var(--accent); }
+.bk-pinnacle { fill: var(--ink); background: var(--ink); }
 svg .bk { stroke: var(--surface); stroke-width: 2; }
 svg .band80 { fill: var(--accent-soft); }
 svg .band50 { fill: var(--band); }
 svg .med { stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; }
-svg .fairmk { fill: var(--gold); }
+svg .fairmk { fill: var(--gold-fill); }
 svg .callmark { fill: var(--you); }
 svg text.lbl-model { fill: var(--ink); font-weight: 600; }
 svg text.lbl-mkt { fill: var(--gold); font-weight: 600; }
 .keyl i { display: inline-block; vertical-align: -1px; margin-right: 6px; }
 .keyl .band80-k { width: 18px; height: 10px; border-radius: 5px; background: var(--accent-soft); box-shadow: inset 0 0 0 4px var(--band); }
 .keyl .med-k { width: 3px; height: 12px; background: var(--ink); border-radius: 1px; }
-.keyl .fair-k { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 9px solid var(--gold); }
+.keyl .fair-k { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 9px solid var(--gold-fill); }
 .keyl .call-k { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 9px solid var(--you); }
 .howto { gap: 10px; }
-.tryline { display: grid; gap: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.tryline { display: grid; gap: 6px; background: var(--surface-2); border-radius: var(--r-in); padding: 12px 14px; }
 .tryline label { font-size: 14px; color: var(--ink-2); }
-.tryline label b { font-family: var(--f-mono); font-weight: 500; color: var(--ink); }
-.tryline input[type="range"] { width: 100%; accent-color: var(--accent); }
+.tryline label b { font-family: var(--f-mono); font-weight: 600; color: var(--ink); }
+.tryline input[type="range"] { width: 100%; accent-color: var(--ink); }
 .tryline .out { font-size: 14px; color: var(--ink-2); }
-.tryline .out b { color: var(--ink); font-family: var(--f-mono); font-weight: 500; }
+.tryline .out b { color: var(--ink); font-family: var(--f-mono); font-weight: 600; }
 
-/* ---------- records over time, live findings */
+/* ---------- records over time, live */
 svg .ser-sim { stroke: var(--muted); fill: var(--muted); }
-svg .ser-live { stroke: var(--accent); fill: var(--accent); }
-svg path.ser-sim, svg path.ser-live { fill: none; }
-svg circle.ser-sim, svg circle.ser-live { stroke: var(--surface); stroke-width: 2; }
+svg .ser-live { stroke: var(--ink); fill: var(--ink); }
+svg path.ser-sim, svg path.ser-live, svg path.ser-kelly { fill: none; }
+svg circle.ser-sim, svg circle.ser-live, svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
 .legend i.ser-sim { background: var(--muted); }
-.legend i.ser-live { background: var(--accent); }
-svg .ser-kelly { stroke: var(--gold); fill: var(--gold); }
-svg path.ser-kelly { fill: none; }
-svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
-.legend i.ser-kelly { background: var(--gold); }
-.finds { display: grid; gap: 12px; grid-template-columns: 1fr; }
-@media (min-width: 760px) { .finds { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-.find { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; align-content: start; box-shadow: var(--shadow); }
-.find .k { font: 700 11px var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.find .big { font-family: var(--f-display); font-size: 36px; font-weight: 700; line-height: 1; }
-.kinds { display: grid; gap: 12px; grid-template-columns: 1fr; }
-@media (min-width: 760px) { .kinds { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.kind { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 12px; align-content: start; box-shadow: var(--shadow); min-width: 0; }
-.kind .k { font: 700 12px var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+.legend i.ser-live { background: var(--ink); }
+svg .ser-kelly { stroke: var(--gold-fill); fill: var(--gold-fill); }
+.legend i.ser-kelly { background: var(--gold-fill); }
+.finds { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@container (min-width: 700px) { .finds { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.find { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
+.find .k { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.find .big { font-family: var(--f-display); font-size: 34px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.kinds { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@container (min-width: 700px) { .kinds { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kind { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.kind .k { font-size: 13px; font-weight: 700; color: var(--ink); }
 .kind .kr { display: grid; gap: 3px; min-width: 0; }
-.kind .kr + .kr { border-top: 1px solid var(--line); padding-top: 10px; }
-.kind .kl { font: 600 11px var(--f-body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.kind .big { font-family: var(--f-display); font-size: 36px; font-weight: 700; line-height: 1; }
-.kind .mid { font-family: var(--f-display); font-size: 24px; font-weight: 600; line-height: 1.1; }
+.kind .kr + .kr { border-top: 1px solid var(--rule); padding-top: 10px; }
+.kind .kl { font-size: 12px; font-weight: 500; color: var(--muted); }
+.kind .big { font-family: var(--f-display); font-size: 34px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.kind .mid { font-family: var(--f-display); font-size: 22px; font-weight: 700; line-height: 1.1; }
 .kind .ks { font-size: 13px; color: var(--ink-2); }
 .flagcards { display: grid; gap: 10px; }
-.flagcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; box-shadow: var(--shadow); min-width: 0; }
+.flagcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-in); padding: 12px 14px; display: grid; gap: 6px; min-width: 0; }
 .flagcard .fc-top { display: flex; justify-content: space-between; align-items: center; gap: 6px 12px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
 .flagcard .fc-play { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; }
 .flagcard .fc-play b { font-size: 17px; }
 .flagcard .fc-nums { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--ink-2); }
-.flagcard .fc-why { font-size: 13px; color: var(--ink-2); background: var(--surface-2); border-radius: 8px; padding: 7px 10px; margin: 0; overflow-wrap: anywhere; }
-.engine { display: flex; align-items: flex-start; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; box-shadow: var(--shadow); }
+.flagcard .fc-why { font-size: 13px; color: var(--ink-2); background: var(--surface-2); border-radius: var(--r-sm); padding: 8px 11px; margin: 0; overflow-wrap: anywhere; }
+.engine { display: flex; align-items: flex-start; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-in); padding: 12px 15px; }
 .engine > span:last-child { min-width: 0; }
 .engine .light { width: 10px; height: 10px; border-radius: 50%; background: var(--off); flex: none; margin-top: 6px; }
 .engine .light.on { background: var(--on); }
-.engine .light.bad { background: var(--bad); }
+.engine .light.bad { background: var(--bad-fill); }
 .engine p { margin: 2px 0 0; }
-.mini-term { background: var(--term-bg); color: var(--term-ink); border-radius: 10px; padding: 10px 12px; font: 12px/1.55 var(--f-mono); }
+.mini-term { background: var(--term-bg); color: var(--term-ink); border-radius: var(--r-in); padding: 11px 13px; font: 12px/1.55 var(--f-mono); }
 .mini-term .ln { display: grid; grid-template-columns: 62px 48px minmax(0, 1fr); gap: 0 8px; }
 .mini-term .t, .mini-term .k { color: var(--term-dim); }
 .mini-term .k { font-weight: 700; }
@@ -473,16 +535,292 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
 .mini-term .k.flag, .mini-term .k.grade { color: var(--t-flag); } .mini-term .k.card, .mini-term .k.shadow { color: var(--t-card); }
 .mini-term .k.fill { color: var(--t-fill); } .mini-term .k.warn { color: var(--t-warn); } .mini-term .k.error { color: var(--t-error); }
 @media (max-width: 520px) { .mini-term .ln { grid-template-columns: 56px minmax(0, 1fr); } .mini-term .k { display: none; } }
+
+/* ---------- best bets: every pick in one ranked list (the landing view) */
+.eb-ctl { display: flex; gap: 10px 12px; flex-wrap: wrap; align-items: center; }
+.eb-ctl .search { max-width: 260px; height: 36px; padding-block: 0; }
+.chipsel { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.chipsel button { font: 600 13px var(--f-body); height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.chipsel button[aria-pressed="true"] { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+.tgl { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; user-select: none; }
+.tgl input { appearance: none; width: 32px; height: 19px; border-radius: 999px; background: var(--active); position: relative; cursor: pointer; margin: 0; flex: none; }
+.tgl input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px oklch(0 0 0 / 0.25); }
+.tgl input:checked { background: var(--good-fill); }
+.tgl input:checked::after { transform: translateX(13px); }
+.eb { display: grid; gap: 8px; }
+.eb-row { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.eb-row.gold { border-color: var(--gold-line); }
+.eb-main { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 4px 14px; align-items: center; padding: 12px 14px 12px 12px; cursor: pointer; }
+.eb-who { display: grid; gap: 3px; min-width: 0; }
+.eb-who .l1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.eb-who .lbl { font-family: var(--f-display); font-size: 16px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; }
+.eb-who .l2 { font-size: 13px; color: var(--muted); display: flex; gap: 4px 10px; flex-wrap: wrap; align-items: center; }
+.eb-who .l2 .px { font-family: var(--f-mono); color: var(--ink-2); font-weight: 600; }
+.eb-who .l3 { font-size: 12.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mkt { font-size: 11.5px; font-weight: 600; color: var(--muted); background: var(--surface-2); padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+.flag { font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+.flag.good { background: var(--good-soft); color: var(--good); }
+.flag.gold { background: var(--gold-soft); color: var(--gold); }
+.flag.shop { background: var(--accent-soft); color: var(--accent); }
+.flag.lean { color: var(--muted); border: 1px dashed var(--line-2); }
+.eb-num { display: grid; justify-items: end; gap: 0; }
+.eb-num .ev { font-family: var(--f-display); font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+.eb-num small { font-size: 11.5px; color: var(--muted); }
+.ring { position: relative; width: 50px; height: 50px; flex: none; }
+.ring svg { width: 50px; height: 50px; transform: rotate(-90deg); }
+.ring .trk { stroke: var(--surface-2); }
+.ring .val { stroke: var(--good-fill); stroke-linecap: round; }
+.ring .val.low { stroke: var(--bad-fill); }
+.ring .need { stroke: var(--ink); }
+.ring b { position: absolute; inset: 0; display: grid; place-items: center; font: 700 12.5px var(--f-body); }
+.add { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; display: grid; place-items: center; flex: none; }
+.add svg { width: 18px; height: 18px; }
+.add[aria-pressed="true"] { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+.eb-side { display: flex; align-items: center; gap: 12px; }
+.eb-more { display: grid; grid-template-rows: 0fr; }
+.eb-row.open .eb-more { grid-template-rows: 1fr; }
+.eb-in { min-height: 0; overflow: hidden; }
+.eb-row:not(.open) .eb-in { visibility: hidden; }
+.eb-pad { display: grid; gap: 12px; padding: 2px 16px 16px 72px; min-width: 0; }
+@media (max-width: 640px) {
+  .eb-main { grid-template-columns: auto minmax(0, 1fr) auto; padding: 11px 12px; gap: 4px 10px; }
+  .eb-num { display: none; }
+  .ring, .ring svg { width: 44px; height: 44px; }
+  .eb-pad { padding: 2px 14px 14px; }
+  .media, .media .tl, .media .hs { width: 38px; height: 38px; }
+  .eb-side { gap: 8px; }
+  .add { width: 34px; height: 34px; }
+}
+.media { position: relative; flex: none; width: 46px; height: 46px; display: grid; place-items: center; }
+.media .tl { width: 40px; height: 40px; }
+.duo { position: relative; width: 46px; height: 46px; flex: none; }
+.duo img, .duo .tlx { position: absolute; width: 30px; height: 30px; }
+.duo > :first-child { left: 0; top: 0; }
+.duo > :last-child { right: 0; bottom: 0; }
+.duo .tlx { font-size: 10px; }
+.empty { border: 1px dashed var(--line-2); border-radius: var(--r); padding: 22px; text-align: center; color: var(--muted); font-size: 14px; }
+
+/* the line-shop strip: the fair number and each book's line on one axis (the signature element) */
+.lshop { display: grid; gap: 8px; }
+.lshop .ax { position: relative; height: 62px; margin-inline: 30px; }
+.lshop .ax::before { content: ""; position: absolute; left: -16px; right: -16px; top: 30px; height: 2px; border-radius: 2px; background: var(--line); }
+.lshop .mk { position: absolute; top: 23px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; border: 2px solid var(--surface); }
+.lshop .mk.fair { width: 3px; height: 24px; top: 19px; margin-left: -1.5px; border: 0; border-radius: 2px; background: var(--ink); }
+.lshop .mk.me { box-shadow: 0 0 0 2.5px var(--good-fill); z-index: 1; }
+.lshop .mk.dk { background: var(--s-home); } .lshop .mk.fd { background: var(--s-away); } .lshop .mk.pin { background: var(--muted); }
+.lshop .lab { position: absolute; top: 0; transform: translateX(-50%); font: 600 11.5px var(--f-mono); color: var(--ink); white-space: nowrap; }
+.lshop .lab.b { top: 46px; color: var(--muted); }
+.lshop .key i.fair { width: 3px; height: 11px; border-radius: 2px; background: var(--ink); }
+.lshop .key { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.lshop .key i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+
+/* ---------- the slip: what you picked, priced together */
+.slip { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 12px; }
+.slip h3 { font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+.slip h3 .cnt { font-size: 12px; }
+.slip h3 button { margin-left: auto; }
+.slip ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.slip li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 2px 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--rule); }
+.slip li:first-child { border-top: 0; }
+.slip li b { font-size: 14px; font-weight: 700; line-height: 1.25; }
+.slip li small { grid-column: 1; font-size: 12px; color: var(--muted); }
+.slip li .px { font-family: var(--f-mono); font-weight: 600; font-size: 14px; }
+.slip .x { width: 26px; height: 26px; border-radius: 50%; border: 0; background: var(--surface-2); color: var(--muted); cursor: pointer; display: grid; place-items: center; font-size: 15px; line-height: 1; }
+.slip .tot { display: grid; gap: 8px; padding: 12px 14px; border-radius: var(--r-in); background: var(--surface-2); }
+.slip .tot div { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--ink-2); }
+.slip .tot div b { font-family: var(--f-mono); color: var(--ink); font-weight: 700; }
+.slip .tot .big b { font-size: 20px; }
+.slip .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.fab { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 40; display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 18px 0 16px; border-radius: 999px; border: 0; background: var(--primary); color: var(--primary-ink); font: 700 15px var(--f-body); box-shadow: var(--float); cursor: pointer; }
+.fab b { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--good-fill); color: oklch(0.15 0.02 152); display: inline-grid; place-items: center; font-size: 12px; }
+@media (min-width: 1240px) { .fab { display: none; } }
+dialog.sheet { position: fixed; inset: auto 0 0 0; margin: 0; width: 100%; max-width: 100%; max-height: 86vh; overflow: auto; border: 0; color: var(--ink); background: var(--surface); border-radius: 24px 24px 0 0; box-shadow: var(--float); padding: 10px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
+dialog.sheet::backdrop { background: oklch(0.15 0.01 262 / 0.42); }
+.sheet .grab { width: 40px; height: 5px; border-radius: 999px; background: var(--line-2); margin: 2px auto 10px; border: 0; display: block; cursor: pointer; }
+.sheet .slip { border: 0; padding: 4px 0 0; }
+.toasts { position: fixed; z-index: 90; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: grid; gap: 8px; justify-items: center; pointer-events: none; width: min(420px, calc(100vw - 32px)); }
+@media (min-width: 1240px) { .toasts { left: auto; right: 24px; transform: none; bottom: 24px; justify-items: end; } }
+.toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-radius: 14px; background: var(--ink); color: var(--surface); font-size: 14px; box-shadow: var(--float); max-width: 100%; }
+.toast b { font-weight: 700; }
+.toast .ok { width: 20px; height: 20px; border-radius: 50%; background: var(--good-fill); color: oklch(0.15 0.02 152); display: grid; place-items: center; font-size: 12px; flex: none; }
+
+/* ---------- motion: purposeful, short, off for reduced motion (Emil Kowalski) */
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes pop { from { transform: scale(0.9); } to { transform: scale(1); } }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: no-preference) {
+  .tip { transition: opacity 125ms var(--ease-out), transform 125ms var(--ease-out); }
+  .tip.instant { transition-duration: 0ms; }
+  .seg-ind, .tab-ind { transition: transform 260ms var(--ease-in-out), width 260ms var(--ease-in-out); }
+  .enter > * { animation: rise 260ms var(--ease-out) both; animation-delay: calc(min(var(--i, 0), 6) * 40ms); }
+  /* bars, rings and lines draw once, when they come into view: the data explaining itself */
+  .vz .gx, .vz .gxr, .vz .gy { transform-box: fill-box; transition: transform 640ms var(--ease-out); transition-delay: calc(var(--d, 0) * 45ms); }
+  .vz .gx { transform-origin: left center; } .vz .gxr { transform-origin: right center; } .vz .gy { transform-origin: center bottom; }
+  .vz:not(.in) .gx, .vz:not(.in) .gxr { transform: scaleX(0.02); }
+  .vz:not(.in) .gy { transform: scaleY(0.02); }
+  .vz .draw { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 900ms var(--ease-out) 120ms; }
+  .vz.in .draw { stroke-dashoffset: 0; }
+  .vz .popin { transform-box: fill-box; transform-origin: center; transition: opacity 260ms var(--ease-out), transform 260ms var(--ease-out); transition-delay: calc(var(--d, 0) * 40ms + 380ms); }
+  .vz:not(.in) .popin { opacity: 0; transform: scale(0.9); }
+  .vz .area { transition: opacity 600ms var(--ease-out) 300ms; }
+  .vz:not(.in) .area { opacity: 0; }
+  .ring .val { transition: stroke-dashoffset 700ms var(--ease-out) 80ms; }
+  .wp .bar i { transform-origin: left center; transition: transform 640ms var(--ease-out); }
+  .wp .bar i:last-child { transform-origin: right center; }
+  .vz:not(.in) .wp .bar i, .wp.vz:not(.in) .bar i { transform: scaleX(0.02); }
+  .lshop .mk { transition: left 520ms var(--ease-out), transform 160ms var(--ease-out); }
+  /* press feedback: the interface heard you */
+  .btn, .pill, .chipsel button, .add, .fab, .pb, .x, .seg a, .eb-main, details.acc > summary { transition: transform 140ms var(--ease-out), background-color 160ms ease, color 160ms ease, border-color 160ms ease; }
+  .btn:active, .pill:active, .chipsel button:active, .add:active, .fab:active, .pb:active, .x:active, .seg a:active { transform: scale(0.97); }
+  .eb-main:active { transform: scale(0.995); }
+  .add[aria-pressed="true"] svg { animation: pop 200ms var(--ease-out); }
+  .fab.bump b { animation: bump 260ms var(--ease-out); }
+  .tgl input::after { transition: transform 200ms var(--ease-out); }
+  .tgl input { transition: background-color 160ms ease; }
+  details.acc > summary .chev { transition: transform 220ms var(--ease-out); }
+  details.nmore > summary::before { transition: transform 200ms var(--ease-out); }
+  /* hover: things that can be opened lift slightly, on pointer devices only */
+  .card, .pcard, .call, .eb-row { transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out), border-color 160ms ease; }
+  dialog.sheet { transform: translateY(100%); transition: transform 400ms var(--ease-drawer), overlay 400ms allow-discrete, display 400ms allow-discrete; }
+  dialog.sheet[open] { transform: none; }
+  @starting-style { dialog.sheet[open] { transform: translateY(100%); } }
+  dialog.sheet::backdrop { opacity: 0; transition: opacity 400ms var(--ease-drawer), overlay 400ms allow-discrete, display 400ms allow-discrete; }
+  dialog.sheet[open]::backdrop { opacity: 1; }
+  @starting-style { dialog.sheet[open]::backdrop { opacity: 0; } }
+  .toast { transition: transform 400ms ease, opacity 400ms ease; }
+  .toast.out { transition-duration: 200ms; transform: translateY(100%); opacity: 0; }
+  @starting-style { .toast { transform: translateY(100%); opacity: 0; } }
+  details.acc::details-content, details.nmore::details-content { transition: height 240ms var(--ease-out), content-visibility 240ms allow-discrete; height: 0; overflow: clip; }
+  details.acc[open]::details-content, details.nmore[open]::details-content { height: auto; }
+  :root { interpolate-size: allow-keywords; }
+  ::view-transition-group(main) { animation-duration: 0s; }
+  ::view-transition-old(main) { animation: 140ms var(--ease-out) both fade reverse; }
+  ::view-transition-new(main) { animation: none; }
+  .vz:not(.in) .ring .val { stroke-dashoffset: 131.95px; }
+  .eb.cascade > .eb-row { animation: rise 280ms var(--ease-out) both; animation-delay: calc(min(var(--i, 0), 10) * 35ms + 80ms); }
+  .eb-more { transition: grid-template-rows 280ms var(--ease-out); }
+  .eb-in { transition: visibility 280ms; }
+  .exp { transition: transform 140ms var(--ease-out), background-color 160ms ease, color 160ms ease; }
+  .exp:active { transform: scale(0.94); }
+  .exp svg { transition: transform 220ms var(--ease-out); }
+  svg.chart .xh { transition: opacity 120ms var(--ease-out); }
+  .pz { transition: border-color 160ms ease, box-shadow 200ms var(--ease-out); }
+}
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  .card:hover, .pcard:hover, .call:hover { transform: translateY(-2px); box-shadow: var(--lift); border-color: var(--line-2); }
+  .eb-row:hover { border-color: var(--line-2); box-shadow: var(--lift); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast, .tip { transition: opacity 200ms ease; }
+  .enter > * { animation: fade 200ms ease both; }
+}
+main#app { view-transition-name: main; }
+::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+
+/* ---------- build-out (2026-10-20): containers, marks, best bets, slip, charts */
+[hidden] { display: none !important; }
+main { container-type: inline-size; }
+@media (max-width: 640px) {
+  .layout, .top-in { padding-inline: 16px; }
+  header.top { position: static; }
+  #brand-sub { display: none; }
+  .hello h1, .gh h1 { font-size: 26px; }
+}
+.brand b > span { display: inline-flex; align-items: baseline; }
+.nav2 .sections { margin-block: 0 8px; }
+.seg a .short { display: none; }
+@media (max-width: 560px) { .sections a .full { display: none; } .sections a .short { display: inline; } .seg a { padding: 7px 12px; } }
+.tlx.lg { width: 64px; height: 64px; font-size: 17px; }
+.tlx.xl { width: 88px; height: 88px; font-size: 21px; }
+.hs > * { grid-area: 1 / 1; }
+.hs.lg { width: 76px; height: 76px; }
+.hs.lg b { font-size: 22px; }
+.hs-wrap .badge.lg { width: 30px; height: 30px; right: -3px; bottom: -3px; padding: 3px; }
+.hs-wrap .badge.lg img { width: 24px; height: 24px; }
+.h1s { font-size: 15px; font-weight: 600; color: var(--muted); letter-spacing: 0; margin-left: 10px; white-space: nowrap; }
+.finding { margin: 0; }
+.mu2 .mid .dash { color: var(--muted); margin-inline: 6px; font-weight: 400; }
+.mu2 .mid .sc.proj { color: var(--ink-2); }
+.wp .lb span:nth-child(2) { font-weight: 500; }
+.board2 .side b { display: grid; gap: 2px; justify-items: center; }
+.dv-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12.5px; color: var(--muted); }
+.dv-head span { display: inline-flex; align-items: center; gap: 6px; }
+svg.chart .lab-c { fill: var(--ink-2); font-weight: 600; }
+svg.chart .xh { opacity: 0; pointer-events: none; }
+svg.chart .xh.on { opacity: 1; }
+svg.chart .xh-l { stroke: var(--line-2); stroke-width: 1; stroke-dasharray: 3 3; }
+svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
+.ph { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.pwho { display: grid; gap: 3px; min-width: 0; }
+.pwho .meta { display: flex; gap: 4px 8px; align-items: center; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.phead > div { flex-wrap: nowrap; }
+
+/* best bets */
+.eb { list-style: none; margin: 0; padding: 0; }
+.eb-count { font-size: 13px; color: var(--muted); }
+.eb-who .l1 .bet { font-family: var(--f-mono); font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+.eb-row.gone { opacity: 0.75; }
+.eb-row.open .l3 { display: none; }
+.eb-main { -webkit-tap-highlight-color: transparent; }
+.exp { width: 30px; height: 30px; border-radius: 50%; border: 0; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; flex: none; padding: 0; }
+.exp svg { width: 18px; height: 18px; }
+.eb-row.open .exp svg { transform: rotate(180deg); }
+@media (hover: hover) and (pointer: fine) { .exp:hover { background: var(--surface-2); color: var(--ink); } }
+@media (max-width: 400px) { .exp { display: none; } }
+.ring svg { overflow: visible; }
+.eb-links { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; justify-content: space-between; }
+.eb-links .note { flex: 1 1 320px; }
+.sel { position: relative; display: inline-flex; align-items: center; }
+.sel select { appearance: none; -webkit-appearance: none; font: 600 13px var(--f-body); height: 34px; padding: 0 34px 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.sel::after { content: ""; position: absolute; right: 15px; top: 50%; width: 6px; height: 6px; margin-top: -5px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); pointer-events: none; }
+.eb-ctl { justify-content: space-between; min-width: 0; }
+.eb-f { display: flex; gap: 10px 14px; flex-wrap: wrap; align-items: center; min-width: 0; }
+.chipsel { flex-wrap: nowrap; }
+@media (max-width: 640px) {
+  .eb-ctl .search { max-width: none; flex: 1 1 100%; }
+  .eb-f { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding: 2px 16px; width: calc(100% + 32px); }
+  .eb-f::-webkit-scrollbar { display: none; }
+  .eb-f > * { flex: none; }
+}
+.pzs { display: grid; gap: 12px; grid-template-columns: 1fr; align-items: start; }
+@container (min-width: 700px) { .pzs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.pz { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.pz.gold { border-color: var(--gold-line); }
+.pz.lotto { border-style: dashed; }
+.pz-top { display: flex; align-items: center; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
+.pz .odds-big { font-size: 26px; }
+.pz .legs li { font-size: 13.5px; }
+.pz .legs li b { font-size: 14.5px; }
+.pz .acts { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* the rail: the slip, then the season at a glance */
+.rail-in { display: grid; gap: 14px; align-content: start; scrollbar-width: thin; }
+.glance { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 0; }
+.glance h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.glance h3 a { font-size: 13px; font-weight: 600; text-decoration: none; }
+.glance .gr { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--ink-2); padding-block: 7px; border-top: 1px solid var(--rule); }
+.glance .gr:first-of-type { border-top: 0; }
+.glance .gr b { font-family: var(--f-mono); font-weight: 600; color: var(--ink); white-space: nowrap; }
+.slip .empty-s { display: grid; gap: 6px; justify-items: start; }
+.toast .btn { padding: 4px 12px; }
 </style>
 
-<header class="top">
+<header class="top" id="top">
   <div class="top-in">
-    <div class="brand"><b>KEY<i>/</i>NUMBER</b><nav class="sports" aria-label="Sport"><a href="#week" data-sport="nfl">NFL</a><a href="#nba" data-sport="nba">NBA</a></nav><span id="brand-sub"></span></div>
-    <nav class="sections" aria-label="Board"></nav>
-    <nav class="tabs" id="subtabs" aria-label="Pages"></nav>
+    <div class="brand">
+      <b><svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="9" fill="var(--ink)"/><path d="M6.5 15h17" stroke="var(--bg)" stroke-width="2" stroke-linecap="round"/><circle cx="11.6" cy="15" r="3.3" fill="var(--gold-fill)"/><circle cx="18.4" cy="15" r="3.3" fill="var(--good-fill)"/></svg><span>Key<i>/</i>Number</span></b>
+      <nav class="seg sports" aria-label="Sport"><span class="seg-ind" aria-hidden="true"></span><a href="#best" data-sport="nfl"><img src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/nfl.png&amp;w=40&amp;h=40" alt="" width="18" height="18" data-fb="">NFL</a><a href="#nba-best" data-sport="nba"><img src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/nba.png&amp;w=40&amp;h=40" alt="" width="18" height="18" data-fb="">NBA</a></nav>
+      <span class="grow"></span><span id="brand-sub"></span>
+    </div>
+    <div class="nav2"><nav class="seg sections" aria-label="Board"></nav><nav class="tabs" id="subtabs" aria-label="Pages"></nav></div>
   </div>
 </header>
-<main id="app"></main>
+<div class="layout"><main id="app"></main><aside id="rail" aria-label="Your slip"></aside></div>
+<button class="fab" id="fab" type="button" hidden aria-haspopup="dialog">Slip <b>0</b></button>
+<dialog class="sheet" id="sheet" aria-label="Your slip"><button class="grab" type="button" aria-label="Close the slip"></button><div id="sheet-in"></div></dialog>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 
 <script id="kn-data" type="application/json">__BOARD_DATA__</script>
 <script id="kn-nba" type="application/json">__NBA_DATA__</script>
@@ -512,7 +850,70 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     const v = d == null ? half(s) : Math.abs(s).toFixed(d);
     return (s > 0 ? home : away) + " " + MINUS + v;
   }
-  const badge = (t, sm) => { const m = T[t] || { color: "#777", ink: "#fff" }; return `<span class="tb${sm ? " sm" : ""}" style="--tc:${m.color};--ti:${m.ink}">${esc(t)}</span>`; };
+  // Team marks: each team's own logo beside its abbreviation. Where an image cannot load (offline, or a host that
+  // blocks outside images) the abbreviation on the team's color stands in, by the image-error handler below.
+  const NOTEAM = { color: "#777777", ink: "#ffffff" };
+  function teamMark(m, t, sm) {
+    const st = `--tc:${m.color};--ti:${m.ink}`;
+    return m.logo ? `<span class="tb${sm ? " sm" : ""}" style="${st}"><img src="${esc(m.logo)}" alt="" width="20" height="20" loading="lazy" data-fb="">${esc(t)}</span>`
+      : `<span class="tb noimg${sm ? " sm" : ""}" style="${st}">${esc(t)}</span>`;
+  }
+  function logoOf(m, t, size) {   // a logo on its own (cards, the scoreboard); falls back to the abbreviation in a circle
+    const st = `--tc:${m.color};--ti:${m.ink}`;
+    return m.logo ? `<img class="tl${size ? " " + size : ""}" src="${esc(m.logo)}" alt="${esc(m.name || t)}" width="40" height="40" loading="lazy" data-fb="${esc(t)}" data-fbs="${st}">`
+      : `<span class="tlx${size ? " " + size : ""}" style="${st}">${esc(t)}</span>`;
+  }
+  function headshot(name, img, tm, t, big) {   // a player's photo with his team's logo on its corner; initials behind it
+    const ini = esc(String(name || "").split(/\s+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join(""));
+    return `<span class="hs-wrap"><span class="hs${big ? " lg" : ""}"><b>${ini}</b>${img ? `<img src="${esc(img)}" alt="" loading="lazy" data-fb="">` : ""}</span>${tm && tm.logo ? `<span class="badge${big ? " lg" : ""}"><img src="${esc(tm.logo)}" alt="${esc(t)}" loading="lazy" data-fb=""></span>` : ""}</span>`;
+  }
+  const badge = (t, sm) => teamMark(T[t] || NOTEAM, t, sm);
+  const logo = (t, size) => logoOf(T[t] || NOTEAM, t, size);
+  function imgFailed(im) {
+    const host = im.parentElement;
+    if (host && host.classList.contains("tb")) { host.classList.add("noimg"); im.remove(); return; }
+    if (host && host.classList.contains("badge")) { host.remove(); return; }
+    if (!im.dataset.fb) { im.remove(); return; }
+    const s = document.createElement("span");
+    s.className = ["tlx", ...[...im.classList].filter((c) => c !== "tl")].join(" ");
+    s.setAttribute("style", im.dataset.fbs || "");
+    s.textContent = im.dataset.fb;
+    im.replaceWith(s);
+  }
+  document.addEventListener("error", (e) => { const im = e.target; if (im && im.tagName === "IMG" && im.hasAttribute("data-fb")) imgFailed(im); }, true);
+  document.querySelectorAll("img[data-fb]").forEach((im) => { if (im.complete && !im.naturalWidth) imgFailed(im); });
+  // Team colors on data. A color has to read on this page's surface (a black or navy team on the dark theme takes
+  // its second color, or a lighter mix), and two teams side by side have to read as two: the home side tries its
+  // second color, then both fall back to the board's own pair.
+  function hexRgb(h) { const m = /^#?([0-9a-f]{6})$/i.exec(h || ""); if (!m) return null; const n = parseInt(m[1], 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+  const lum = (c) => { const r = hexRgb(c); return r ? (0.2126 * r[0] + 0.7152 * r[1] + 0.0722 * r[2]) / 255 : 0.5; };
+  const DARKQ = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === "dark" : !!(DARKQ && DARKQ.matches); };
+  const mixHex = (c, w, k) => { const a = hexRgb(c), b = hexRgb(w); return "#" + a.map((x, i) => Math.round(x + (b[i] - x) * k).toString(16).padStart(2, "0")).join(""); };
+  const reads = (c) => (isDark() ? lum(c) >= 0.3 : lum(c) <= 0.82);
+  const chroma = (c) => { const r = hexRgb(c); return r ? Math.max(...r) - Math.min(...r) : 0; };
+  function visible(c, c2) {
+    if (!hexRgb(c)) return null;
+    if (reads(c)) return c;
+    if (hexRgb(c2) && reads(c2) && chroma(c2) > 60) return c2;
+    return isDark() ? mixHex(c, "#ffffff", 0.4) : mixHex(c, "#000000", 0.35);
+  }
+  const far = (x, y) => { const a = hexRgb(x), b = hexRgb(y); return !a || !b || Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) >= 90; };
+  function pairColors(a, b) {
+    const ca = visible(a && a.color, a && a.color2), ch = visible(b && b.color, b && b.color2);
+    if (!ca || !ch) return ["var(--s-away)", "var(--s-home)"];
+    if (far(ca, ch)) return [ca, ch];
+    const alt = b.color2 && visible(b.color2, null);
+    return alt && far(ca, alt) ? [ca, alt] : ["var(--s-away)", "var(--s-home)"];
+  }
+  const teamColor = (m) => visible(m && m.color, m && m.color2) || "var(--s-home)";
+  const noVig = (mlA, mlH) => { if (mlA == null || mlH == null) return null; const a = 1 / decOf(mlA), h = 1 / decOf(mlH); return a / (a + h); };
+  function wpBar(away, home, pAway, mA, mH, src) {
+    if (pAway == null || !Number.isFinite(pAway)) return "";
+    const [ca, ch] = pairColors(mA, mH);
+    return `<div class="wp vz" data-tip="${esc(src)}"><div class="bar"><i style="width:${(100 * pAway).toFixed(1)}%;background:${ca}"></i><i style="width:${(100 * (1 - pAway)).toFixed(1)}%;background:${ch}"></i></div>
+      <div class="lb"><span>${esc(away)} <b>${pct(pAway)}</b></span><span>to win</span><span><b>${pct(1 - pAway)}</b> ${esc(home)}</span></div></div>`;
+  }
   const nick = (t) => esc((T[t] && T[t].nick) || t);
   const rec = (r) => (!r || r.n === 0 ? "–" : `${r.w}-${r.l}${r.p ? "-" + r.p : ""}`);
   const resChip = (r) => (r ? `<span class="res ${r}">${{ W: "WIN", L: "LOSS", P: "PUSH" }[r]}</span>` : "");
@@ -619,8 +1020,13 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
   document.addEventListener("focusout", hideTip);
   window.addEventListener("scroll", hideTip, { passive: true });
 
-  // ---------- motion: views rise in, numbers count up; nothing moves for reduced-motion viewers
+  // ---------- motion: views rise in, numbers count up, charts draw when first seen; nothing travels for
+  // reduced-motion viewers
   const REDUCED = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const IO = !REDUCED && "IntersectionObserver" in window
+    ? new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { e.target.classList.add("in"); IO.unobserve(e.target); } }, { rootMargin: "0px 0px -6% 0px" }) : null;
+  function revealAll(root, now) { root.querySelectorAll(".vz:not(.in)").forEach((el) => { if (now || !IO) el.classList.add("in"); else IO.observe(el); }); }
+  new MutationObserver(() => revealAll(app)).observe(app, { childList: true, subtree: true });
   function animateIn() {
     if (REDUCED) return;
     app.classList.remove("enter");
@@ -648,7 +1054,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
   function gauge(p, need) {
     if (p == null || need == null) return "";
     const lo = 0.3, hi = 0.8, pos = (x) => Math.max(0, Math.min(100, (100 * (x - lo)) / (hi - lo)));
-    return `<div class="gauge-wrap" data-tip="Win chance ${pct(p, 1)} against the ${pct(need, 1)} this price needs to break even. The bar has to pass the line to have value.">
+    return `<div class="gauge-wrap vz" data-tip="Win chance ${pct(p, 1)} against the ${pct(need, 1)} this price needs to break even. The bar has to pass the line to have value.">
       <div class="gauge"><span class="fill gx${p > need ? "" : " low"}" style="width:${pos(p).toFixed(1)}%"></span><span class="need" style="left:${pos(need).toFixed(1)}%"></span></div>
       <div class="gauge-lbl"><span>${term("win", "Win chance")} <b>${pct(p, 1)}</b></span><span>${term("need", "Needs")} <b>${pct(need, 1)}</b></span></div></div>`;
   }
@@ -675,7 +1081,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
         ${s.pts.map((p, i) => `<circle class="popin ${s.cls}" style="--d:${i + si * 3}" cx="${X(p.wk).toFixed(1)}" cy="${Y(p.u).toFixed(1)}" r="5" data-tip="${esc(s.name)}, week ${p.wk}: ${rec(p.r)} for ${units(p.r.units)}; ${units(p.u)} in total"/>`).join("")}
         <text class="v" x="${(X(last.wk) + 9).toFixed(1)}" y="${(Y(last.u) + 4).toFixed(1)}">${units(last.u)}</text>`;
     }).join("");
-    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Units won over time">
+    return `<svg class="chart vz" viewBox="0 0 ${W} ${H}" role="img" aria-label="Units won over time">
       ${ticks.map((v) => `<line class="grid" x1="${x0}" x2="${x1}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text x="${x0 - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${v > 0 ? "+" : v < 0 ? MINUS : ""}${Math.abs(v)}u</text>`).join("")}
       <line class="axis" x1="${x0}" x2="${x1}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}"/>
       ${[...new Set(all.map((p) => p.wk))].map((w) => `<text x="${X(w).toFixed(1)}" y="${H - 8}" text-anchor="middle">W${w}</text>`).join("")}
@@ -696,41 +1102,94 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
 
   // ---------- sections, tabs + routing
   const SECTIONS = {
+    best: [], "nba-best": [],
     lines: [["week", "This week"], ["mine", "My picks"], ["defense", "Defenses"], ["record", "Record"], ["model", "How it works"]],
     props: [["props", "This week"], ["props-players", "Players"], ["props-mine", "My picks"], ["props-defense", "Defenses"], ["props-record", "Record"], ["props-model", "How it works"]],
     live: [["live", "Live"], ["live-model", "How it works"]],
     "nba-lines": [["nba", "Today"], ["nba-record", "Record"], ["nba-model", "How it works"]],
     "nba-props": [["nba-props", "Today"], ["nba-props-record", "Record"], ["nba-props-model", "How it works"]],
   };
-  const SPORT_SECTIONS = { nfl: [["lines", "#week", "Game lines"], ["props", "#props", "Player props"], ["live", "#live", "Live"]],
-                           nba: [["nba-lines", "#nba", "Game lines"], ["nba-props", "#nba-props", "Player props"]] };
+  const SPORT_SECTIONS = { nfl: [["best", "#best", "Best bets", "Best"], ["lines", "#week", "Game lines", "Lines"], ["props", "#props", "Player props", "Props"], ["live", "#live", "Live", "Live"]],
+                           nba: [["nba-best", "#nba-best", "Best bets", "Best"], ["nba-lines", "#nba", "Game lines", "Lines"], ["nba-props", "#nba-props", "Player props", "Props"]] };
   // The public website (board/site.py sets KN_PUBLIC) has no My Picks: it needs claude.ai's storage.
   const PUBLIC = !!window.KN_PUBLIC;
   if (PUBLIC) for (const k of Object.keys(SECTIONS)) SECTIONS[k] = SECTIONS[k].filter(([v]) => v !== "mine" && v !== "props-mine");
-  const sectionOf = (h) => (h.startsWith("nba-props") ? "nba-props" : h.startsWith("nba") ? "nba-lines"
+  const sectionOf = (h) => (h === "best" || h === "nba-best" ? h : h.startsWith("nba-props") ? "nba-props" : h.startsWith("nba") ? "nba-lines"
     : h.startsWith("props") || h.startsWith("pg-") || h.startsWith("p-") ? "props" : h.startsWith("live") ? "live" : "lines");
-  let shownSport = null;
+  let shownSport = null, shownSec = null;
   function setTab(name) {
     const sec = sectionOf(name), sport = sec.startsWith("nba") ? "nba" : "nfl";
     document.querySelectorAll(".sports a").forEach((a) => a.setAttribute("aria-current", a.dataset.sport === sport ? "true" : "false"));
-    document.querySelector(".sections").innerHTML = SPORT_SECTIONS[sport].map(([k, h, l]) => `<a href="${h}" data-sec="${k}" aria-current="${k === sec}">${l}</a>`).join("");
-    if (sport !== shownSport) { shownSport = sport; document.getElementById("brand-sub").innerHTML = sport === "nba" ? nbaSub() : nflSub(); }
-    document.getElementById("subtabs").innerHTML = SECTIONS[sec].map(([k, l]) => `<a href="#${k}" data-tab="${k}"${k === name ? ' aria-current="page"' : ""}>${l}</a>`).join("");
+    const secs = document.querySelector(".sections"), tabs = document.getElementById("subtabs");
+    if (sport !== shownSport) {
+      shownSport = sport;
+      try { localStorage.setItem("kn-sport", sport); } catch (e) { /* remembered for this visit only */ }
+      document.getElementById("brand-sub").innerHTML = sport === "nba" ? nbaSub() : nflSub();
+      secs.innerHTML = '<span class="seg-ind" aria-hidden="true"></span>' + SPORT_SECTIONS[sport].map(([k, h, l, s]) => `<a href="${h}" data-sec="${k}"><span class="full">${l}</span><span class="short">${s}</span></a>`).join("");
+      secs.dataset.fresh = "1";
+    }
+    secs.querySelectorAll("a").forEach((a) => a.setAttribute("aria-current", a.dataset.sec === sec ? "true" : "false"));
+    if (sec !== shownSec) {
+      shownSec = sec;
+      const list = SECTIONS[sec] || [];
+      tabs.hidden = list.length < 2;
+      tabs.innerHTML = '<span class="tab-ind" aria-hidden="true"></span>' + list.map(([k, l]) => `<a href="#${k}" data-tab="${k}">${l}</a>`).join("");
+      tabs.dataset.fresh = "1";
+    }
+    tabs.querySelectorAll("a").forEach((a) => { if (a.dataset.tab === name) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+    placeInds();
   }
-  let current = "week";
+  // The pill behind the chosen sport and section and the line under the chosen page slide to the new choice;
+  // a freshly drawn row places them without moving.
+  function placeInd(nav, sel, cls) {
+    if (!nav) return;
+    const a = nav.querySelector(sel), el = nav.querySelector(cls);
+    if (!el) return;
+    if (!a || !a.offsetWidth) { el.style.opacity = "0"; return; }
+    const still = nav.dataset.fresh === "1" || !el.style.width;
+    if (still) el.style.transition = "none";
+    el.style.opacity = "1";
+    el.style.width = a.offsetWidth + "px";
+    el.style.transform = `translateX(${a.offsetLeft}px)`;
+    if (still) { void el.offsetWidth; el.style.transition = ""; delete nav.dataset.fresh; }
+  }
+  function placeInds() {
+    placeInd(document.querySelector(".sports"), 'a[aria-current="true"]', ".seg-ind");
+    placeInd(document.querySelector(".sections"), 'a[aria-current="true"]', ".seg-ind");
+    placeInd(document.getElementById("subtabs"), 'a[aria-current="page"]', ".tab-ind");
+    document.documentElement.style.setProperty("--top-h", document.getElementById("top").offsetHeight + "px");
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(placeInds);
+  let current = "best", routed = false;
+  function landing() {   // no address: the Best bets of the sport looked at last
+    let s = "nfl";
+    try { s = localStorage.getItem("kn-sport") || "nfl"; } catch (e) { /* NFL */ }
+    return s === "nba" && N ? "nba-best" : "best";
+  }
   function route(e) {
     const resized = e === "resize";
-    const h = (location.hash || "#week").slice(1);
+    const h = location.hash.slice(1) || landing();
     if (PUBLIC && (h === "mine" || h === "props-mine")) { location.replace(h === "mine" ? "#week" : "#props"); return; }
-    if (h.startsWith("g-") && GAMES[h.slice(2)]) { current = "game"; setTab("week"); renderGame(GAMES[h.slice(2)]); }
-    else if (h.startsWith("pg-")) { current = "pgame"; setTab("props"); renderPropsGame(h.slice(3)); }
-    else if (h.startsWith("p-")) { current = "player"; setTab("props-players"); renderPlayer(h.slice(2)); }
-    else { current = VIEWS[h] ? h : "week"; setTab(current); VIEWS[current](); }
-    if (!resized) { window.scrollTo(0, 0); animateIn(); }
+    const draw = () => {
+      if (h.startsWith("g-") && GAMES[h.slice(2)]) { current = "game"; setTab("week"); renderGame(GAMES[h.slice(2)]); }
+      else if (h.startsWith("pg-")) { current = "pgame"; setTab("props"); renderPropsGame(h.slice(3)); }
+      else if (h.startsWith("p-")) { current = "player"; setTab("props-players"); renderPlayer(h.slice(2)); }
+      else { current = VIEWS[h] ? h : "best"; setTab(current); VIEWS[current](); }
+      if (!resized) { window.scrollTo(0, 0); animateIn(); }
+      revealAll(app, resized);
+      renderRail();
+    };
+    // the old view fades as the new one rises in, where the browser can (View Transitions)
+    if (routed && !resized && !REDUCED && document.startViewTransition) document.startViewTransition(draw);
+    else draw();
+    routed = true;
   }
   window.addEventListener("hashchange", route);
+  // team colors are picked for the theme, so a theme change redraws the view in place
+  if (DARKQ && DARKQ.addEventListener) DARKQ.addEventListener("change", () => { const y = window.scrollY; route("resize"); window.scrollTo(0, y); });
   let resizeTimer = null, lastW = window.innerWidth;
   window.addEventListener("resize", () => {   // charts are drawn to width, so redraw after a real resize
+    placeInds();
     if (Math.abs(window.innerWidth - lastW) < 40) return;
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => { lastW = window.innerWidth; const y = window.scrollY; route("resize"); window.scrollTo(0, y); }, 200);
@@ -769,7 +1228,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
           <td class="mono">${num(r.median, 0)}<small>${num(r.q[0], 0)}–${num(r.q[4], 0)}</small>${r.fair != null ? `<small>fair ${num(r.fair, 1)}</small>` : ""}</td>
           <td class="mono">${books || "–"}</td><td class="mono">${best}</td></tr>`;
       }).join("")}
-    </tbody></table></div><p class="note">Model: the middle outcome, and the range 8 in 10 games fall in. Last games against each market's current line: blue over it, red under. Tap a number for the game.</p>`;
+    </tbody></table></div><p class="note">Model: the middle outcome, and the range 8 in 10 games fall in. Last games against each market's current line: green over it, red under. Tap a number for the game.</p>`;
   }
 
   // NFL card dropdown: the books, what moves the model's number, and the injury report
@@ -869,15 +1328,17 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
       <span class="m">Moneyline</span><b>No play</b><span class="pr">${esc(v.team)} fair ${am(v.fair)} · best ${am(v.best)}</span></span>`;
   }
   function card(g) {
-    const fin = g.status === "final";
+    const fin = g.status === "final", live = g.status === "live";
     const wx = g.dome ? "Indoors" : g.weather ? `${g.weather.temp}°F · wind ${g.weather.wind} mph` : "Outdoors";
-    const s = (side) => fin ? `<span class="score">${g.score[side]}</span>` : g.proj ? `<span class="score proj" title="Projected points">${num(g.proj[side], 1)}</span>` : "";
+    const mid = g.score && (fin || live) ? `<span class="sc">${g.score.away}<span class="dash">–</span>${g.score.home}</span><span class="at">${fin ? "Final" : "Live"}</span>`
+      : g.proj ? `<span class="sc proj" data-tip="Points in the model's average game">${num(g.proj.away, 1)}<span class="dash">–</span>${num(g.proj.home, 1)}</span><span class="at">projected</span>` : '<span class="at">at</span>';
     const P = g.picks || {};
     const picks = [pickChip(P.spread), pickChip(P.total), P.ml ? pickChip(P.ml) : ""].join("");
+    const team = (t) => `<div class="t">${logo(t, "lg")}<b>${nick(t)}</b><small>${esc(T[t].record)}</small></div>`;
     return `<article class="card">
-      <div class="card-top"><span class="${g.status === "live" ? "live" : ""}">${g.status === "live" ? "In progress" : fin ? "Final" : esc(g.kickoff.short)}</span><span>${esc(g.venue || "")}</span><span>${wx}</span></div>
-      <div class="trow">${badge(g.away)}<span class="tname">${nick(g.away)}<small>${esc(T[g.away].record)}</small></span>${s("away")}</div>
-      <div class="trow">${badge(g.home)}<span class="tname">${nick(g.home)}<small>${esc(T[g.home].record)}</small></span>${s("home")}</div>
+      <div class="card-top"><span class="${live ? "live" : "when"}">${live ? "In progress" : fin ? "Final" : esc(g.kickoff.short)}</span><span>${esc(g.venue || "")}</span><span>${wx}</span></div>
+      <div class="mu2">${team(g.away)}<div class="mid">${mid}</div>${team(g.home)}</div>
+      ${fin ? "" : wpBar(g.away, g.home, noVig(g.market.ml_away, g.market.ml_home), T[g.away], T[g.home], "Each team's chance to win by the market's moneyline, with the books' margin taken out")}
       <dl class="lines">
         <div><dt>Market</dt><dd>${fav(g.home, g.away, g.market.spread)} · ${g.market.total == null ? "–" : half(g.market.total)}</dd></div>
         <div><dt>Model</dt><dd>${g.model ? fav(g.home, g.away, g.model.spread, 1) + " · " + num(g.model.total, 1) : "–"}</dd></div>
@@ -930,37 +1391,40 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
       <p class="fine">Model output, not betting advice. Lines from ${esc(D.meta.books.join(", "))}, plus Pinnacle as the market reference. Updated ${esc(new Date(m.generated).toLocaleString())}.</p>`;
   }
 
-  // ---------- charts (inline SVG), drawn at the width they will show at so 12px labels stay 12px
+  // ---------- charts (inline SVG), drawn at the width they will show at so 12px labels stay 12px. Bars take the
+  // teams' colors, labels sit inside the plot, and every mark explains itself on hover or tap.
   function chartW(halfWidth) {
-    const content = app.clientWidth - 32;                      // main's side padding
-    const box = halfWidth && window.innerWidth >= 900 ? (content - 12) / 2 : content;
-    return Math.round(Math.max(280, Math.min(600, box - 30))); // the box's own padding and border
+    const content = app.clientWidth;                                  // the view (main has no side padding)
+    const box = halfWidth && content >= 800 ? (content - 16) / 2 : content;
+    return Math.round(Math.max(280, Math.min(1100, box - 38)));       // the box's own padding and border
   }
   function scoreBars(g) {
     const rows = [["away", g.away], ["home", g.home]];
-    const max = Math.max(g.proj.home, g.proj.away) * 1.18;
-    const W = chartW(true), H = 78, x0 = 48, w = W - x0 - 50;
-    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Projected score">
-      ${rows.map(([side, t], i) => { const y = 10 + i * 34, bw = (g.proj[side] / max) * w;
-        return `<text x="0" y="${y + 15}">${esc(t)}</text>
-        <rect class="gx" style="--d:${i}" x="${x0}" y="${y + 2}" width="${bw.toFixed(1)}" height="20" rx="4" fill="var(--s-${side})" data-tip="${esc(T[t].name)}: ${num(g.proj[side], 1)} points in the model's average game"></rect>
-        <text class="v" x="${(x0 + bw + 8).toFixed(1)}" y="${y + 17}">${num(g.proj[side], 1)}</text>`; }).join("")}
+    const max = Math.max(g.proj.home, g.proj.away) * 1.15;
+    const [ca, ch] = pairColors(T[g.away], T[g.home]);
+    const W = chartW(true), H = 84, x0 = 46, w = W - x0 - 50;
+    return `<svg class="chart vz" viewBox="0 0 ${W} ${H}" role="img" aria-label="Projected score">
+      ${rows.map(([side, t], i) => { const y = 6 + i * 40, bw = (g.proj[side] / max) * w;
+        return `<text class="lab-c" x="0" y="${y + 18}">${esc(t)}</text>
+        <rect class="gx" style="--d:${i}" x="${x0}" y="${y + 3}" width="${bw.toFixed(1)}" height="22" rx="11" fill="${side === "away" ? ca : ch}" data-tip="${esc(T[t].name)}: ${num(g.proj[side], 1)} points in the model's average game"></rect>
+        <text class="v" x="${(x0 + bw + 8).toFixed(1)}" y="${y + 19}">${num(g.proj[side], 1)}</text>`; }).join("")}
     </svg>`;
   }
+  // Where the margin comes from: one bar per part of the matchup, pointing toward the team it helps; each label
+  // sits by the center line on the bar's empty side
   function contribBars(g) {
     const c = g.contrib.slice().sort((a, b) => Math.abs(b.pts) - Math.abs(a.pts));
     if (!c.length) return "";
     const max = Math.max(1, ...c.map((x) => Math.abs(x.pts)));
-    const W = chartW(false), rowH = 28, H = c.length * rowH + 26, labelW = 110;
-    const reach = Math.max(40, (W - labelW - 70) / 2), mid = Math.round(labelW + 35 + reach);
-    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Where the margin comes from">
-      <line class="axis" x1="${mid}" x2="${mid}" y1="0" y2="${H - 22}"/>
-      ${c.map((x, i) => { const y = i * rowH + 4, bw = (Math.abs(x.pts) / max) * reach, toHome = x.pts > 0;
-        const bx = toHome ? mid : mid - bw, lx = toHome ? mid + bw + 6 : mid - bw - 6, team = toHome ? g.home : g.away;
-        return `<text x="0" y="${y + 15}">${esc(x.label)}</text>
-        <rect class="${toHome ? "gx" : "gxr"}" style="--d:${i}" x="${bx.toFixed(1)}" y="${y + 3}" width="${Math.max(bw, 1.5).toFixed(1)}" height="16" rx="3" fill="var(--s-${toHome ? "home" : "away"})" data-tip="${esc(x.label)}: worth ${Math.abs(x.pts).toFixed(1)} points of margin to ${esc(T[team].name)}"></rect>
-        <text class="v" x="${lx.toFixed(1)}" y="${y + 15}" text-anchor="${toHome ? "start" : "end"}">${Math.abs(x.pts).toFixed(1)}</text>`; }).join("")}
-      <text x="${mid - 8}" y="${H - 4}" text-anchor="end">← helps ${esc(g.away)}</text><text x="${mid + 8}" y="${H - 4}">helps ${esc(g.home)} →</text>
+    const [ca, ch] = pairColors(T[g.away], T[g.home]);
+    const W = chartW(false), rowH = 32, H = c.length * rowH + 4, mid = Math.round(W / 2), reach = mid - 52;
+    return `<div class="dv-head"><span>← ${badge(g.away, 1)}</span><span>points of margin</span><span>${badge(g.home, 1)} →</span></div>
+      <svg class="chart vz" viewBox="0 0 ${W} ${H}" role="img" aria-label="Where the margin comes from: ${esc(g.away)} to the left, ${esc(g.home)} to the right">
+      ${c.map((x, i) => { const y = i * rowH, bw = Math.max(2, (Math.abs(x.pts) / max) * reach), toHome = x.pts > 0, team = toHome ? g.home : g.away;
+        return `<text class="lab-c" x="${toHome ? mid - 10 : mid + 10}" y="${y + 21}" text-anchor="${toHome ? "end" : "start"}">${esc(x.label)}</text>
+        <rect class="${toHome ? "gx" : "gxr"}" style="--d:${i}" x="${(toHome ? mid : mid - bw).toFixed(1)}" y="${y + 9}" width="${bw.toFixed(1)}" height="16" rx="8" fill="${toHome ? ch : ca}" data-tip="${esc(x.label)}: worth ${Math.abs(x.pts).toFixed(1)} points of margin to ${esc(T[team].name)}"></rect>
+        <text class="v" x="${(toHome ? mid + bw + 7 : mid - bw - 7).toFixed(1)}" y="${y + 21}" text-anchor="${toHome ? "start" : "end"}">${Math.abs(x.pts).toFixed(1)}</text>`; }).join("")}
+      <line class="axis" x1="${mid}" x2="${mid}" y1="0" y2="${H}"/>
     </svg>`;
   }
   function pctWords(label, team, pctv) {
@@ -968,17 +1432,25 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     if (label === "Pace") return `${team} play faster than ${pctv}% of teams`;
     return `${team}: better than ${pctv}% of teams at ${label.toLowerCase()}`;
   }
+  // Both teams' percentiles face to face: the away team grows left, the home team right, the measure between
   function pctBars(g, side) {
-    const A = g.profiles.away[side], H = g.profiles.home[side];
-    const W = chartW(true), rowH = 40, x0 = 100, w = W - x0 - 36, Ht = A.length * rowH + 6;
-    const bar = (t, p, y, i, color) => `<rect class="gx" style="--d:${i}" x="${x0}" y="${y}" width="${Math.max(2, (p.pct / 100) * w).toFixed(1)}" height="12" rx="3" fill="var(--s-${color})" data-tip="${esc(pctWords(p.label, T[t].nick || t, p.pct))}"></rect>
-        <text class="v" x="${(x0 + Math.max(2, (p.pct / 100) * w) + 6).toFixed(1)}" y="${y + 10}">${p.pct}</text>`;
-    return `<svg class="chart" viewBox="0 0 ${W} ${Ht}" role="img" aria-label="${side === "off" ? "Offense" : "Defense"} percentiles">
-      ${[25, 50, 75].map((p) => `<line class="grid" x1="${x0 + (p / 100) * w}" x2="${x0 + (p / 100) * w}" y1="0" y2="${Ht - 4}"/>`).join("")}
-      ${A.map((a, i) => { const y = i * rowH + 4;
-        return `<text x="0" y="${y + 18}">${esc(a.label)}</text>${bar(g.away, a, y + 3, i, "away")}${bar(g.home, H[i], y + 18, i, "home")}`; }).join("")}
+    const A = g.profiles.away[side], Hm = g.profiles.home[side];
+    const [ca, ch] = pairColors(T[g.away], T[g.home]);
+    const W = chartW(true), rowH = 30, lw = Math.min(128, Math.round(W * 0.32)), mid = W / 2, reach = mid - lw / 2 - 30, Ht = A.length * rowH + 2;
+    const L0 = mid - lw / 2, R0 = mid + lw / 2;
+    return `<div class="dv-head"><span>${badge(g.away, 1)}</span><span>percentile, 50 is average</span><span>${badge(g.home, 1)}</span></div>
+      <svg class="chart vz" viewBox="0 0 ${W} ${Ht}" role="img" aria-label="${side === "off" ? "Offense" : "Defense"} percentiles: ${esc(g.away)} to the left, ${esc(g.home)} to the right">
+      <line class="grid" x1="${(L0 - reach / 2).toFixed(1)}" x2="${(L0 - reach / 2).toFixed(1)}" y1="0" y2="${Ht}"/><line class="grid" x1="${(R0 + reach / 2).toFixed(1)}" x2="${(R0 + reach / 2).toFixed(1)}" y1="0" y2="${Ht}"/>
+      ${A.map((a, i) => { const h = Hm[i], y = i * rowH, wa = Math.max(2, (a.pct / 100) * reach), wh = Math.max(2, (h.pct / 100) * reach);
+        return `<text class="lab-c" x="${mid}" y="${y + 19}" text-anchor="middle">${esc(a.label)}</text>
+        <rect class="gxr" style="--d:${i}" x="${(L0 - wa).toFixed(1)}" y="${y + 8}" width="${wa.toFixed(1)}" height="14" rx="7" fill="${ca}" data-tip="${esc(pctWords(a.label, T[g.away].nick || g.away, a.pct))}"></rect>
+        <text class="v" x="${(L0 - wa - 6).toFixed(1)}" y="${y + 19}" text-anchor="end">${a.pct}</text>
+        <rect class="gx" style="--d:${i}" x="${R0.toFixed(1)}" y="${y + 8}" width="${wh.toFixed(1)}" height="14" rx="7" fill="${ch}" data-tip="${esc(pctWords(h.label, T[g.home].nick || g.home, h.pct))}"></rect>
+        <text class="v" x="${(R0 + wh + 6).toFixed(1)}" y="${y + 19}">${h.pct}</text>`; }).join("")}
     </svg>`;
   }
+  // The favorite's spread at Pinnacle over the week: a step line over a soft fill, with a crosshair that reads
+  // out the line at any moment
   function moveChart(g) {
     const pts = (g.movement || []).filter((p) => p.spread != null);
     if (pts.length < 2) return '<p class="note">Not enough line history yet.</p>';
@@ -986,23 +1458,45 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     const val = (s) => (favTeam === g.home ? -s : s);   // the favorite's line, e.g. -8.5
     const ys = pts.map((p) => val(p.spread)), t0 = Date.parse(pts[0].t), t1 = Date.parse(pts[pts.length - 1].t);
     const lo = Math.floor(Math.min(...ys)) - 0.5, hi = Math.ceil(Math.max(...ys)) + 0.5;
-    const W = chartW(true), H = 150, x0 = 40, x1 = W - 52, y0 = 12, y1 = H - 26;
+    const W = chartW(true), H = 160, x0 = 40, x1 = W - 52, y0 = 12, y1 = H - 26;
     const X = (t) => x0 + ((t - t0) / Math.max(1, t1 - t0)) * (x1 - x0), Y = (v) => y0 + ((v - lo) / (hi - lo)) * (y1 - y0);
     let d = "";
     pts.forEach((p, i) => { const x = X(Date.parse(p.t)).toFixed(1), y = Y(val(p.spread)).toFixed(1); d += i ? ` H${x} V${y}` : `M${x} ${y}`; });
     const ticks = []; for (let v = Math.ceil(lo); v <= hi; v += Math.max(1, Math.round((hi - lo) / 4))) ticks.push(v);
     const day = (t) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
     const when = (t) => new Date(t).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric" });
-    const last = pts[pts.length - 1];
-    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(favTeam)} spread over time at Pinnacle">
+    const last = pts[pts.length - 1], gid = "mv" + String(g.id).replace(/\W/g, "");
+    const xh = pts.map((p) => [+X(Date.parse(p.t)).toFixed(1), +Y(val(p.spread)).toFixed(1), `${when(Date.parse(p.t))}: ${favTeam} ${signed(val(p.spread), 1)}`]);
+    const fill = teamColor(T[favTeam]);
+    return `<svg class="chart vz" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(favTeam)} spread over time at Pinnacle">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:${fill};stop-opacity:0.24"/><stop offset="1" style="stop-color:${fill};stop-opacity:0"/></linearGradient></defs>
       ${ticks.map((v) => `<line class="grid" x1="${x0}" x2="${x1}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text x="${x0 - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${signed(v, Number.isInteger(v) ? 0 : 1)}</text>`).join("")}
-      <path class="draw" pathLength="1" d="${d}" fill="none" stroke="var(--s-home)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-      <circle class="popin" cx="${X(t1).toFixed(1)}" cy="${Y(val(last.spread)).toFixed(1)}" r="4.5" fill="var(--s-home)" stroke="var(--surface)" stroke-width="2"></circle>
+      <path class="area" d="${d} V${y1} H${X(t0).toFixed(1)} Z" fill="url(#${gid})"/>
+      <path class="draw" pathLength="1" d="${d}" fill="none" stroke="${fill}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle class="popin" cx="${X(t1).toFixed(1)}" cy="${Y(val(last.spread)).toFixed(1)}" r="4.5" fill="${fill}" stroke="var(--surface)" stroke-width="2"></circle>
       <text class="v" x="${(X(t1) + 9).toFixed(1)}" y="${(Y(val(last.spread)) + 4).toFixed(1)}">${signed(val(last.spread), 1)}</text>
-      ${pts.map((p) => `<circle cx="${X(Date.parse(p.t)).toFixed(1)}" cy="${Y(val(p.spread)).toFixed(1)}" r="9" fill="transparent" data-tip="${esc(when(Date.parse(p.t)))}: ${esc(favTeam)} ${signed(val(p.spread), 1)}"></circle>`).join("")}
+      <g class="xh"><line class="xh-l" x1="0" x2="0" y1="${y0}" y2="${y1}"/><circle class="xh-d" cx="0" cy="0" r="5" fill="${fill}"/></g>
+      <rect class="xh-hit" x="${x0}" y="${y0}" width="${(x1 - x0).toFixed(1)}" height="${(y1 - y0).toFixed(1)}" fill="transparent" data-tip="${esc(xh[xh.length - 1][2])}" data-xh="${esc(JSON.stringify(xh))}"></rect>
       <text x="${x0}" y="${H - 6}">${day(t0)}</text><text x="${x1}" y="${H - 6}" text-anchor="end">${day(t1)}</text>
     </svg>`;
   }
+  // the crosshair: the nearest moment under the pointer, read out in the tooltip
+  let xhOn = null;
+  document.addEventListener("pointermove", (e) => {
+    const hit = e.target && e.target.closest ? e.target.closest(".xh-hit") : null;
+    if (!hit) { if (xhOn) { xhOn.classList.remove("on"); xhOn = null; } return; }
+    const svg = hit.ownerSVGElement, pts = hit._pts || (hit._pts = JSON.parse(hit.dataset.xh || "[]"));
+    if (!svg || !pts.length) return;
+    const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal, x = ((e.clientX - r.left) * vb.width) / r.width;
+    let best = pts[0];
+    for (const p of pts) if (Math.abs(p[0] - x) < Math.abs(best[0] - x)) best = p;
+    const gx = svg.querySelector(".xh");
+    gx.querySelector("line").setAttribute("x1", best[0]); gx.querySelector("line").setAttribute("x2", best[0]);
+    gx.querySelector("circle").setAttribute("cx", best[0]); gx.querySelector("circle").setAttribute("cy", best[1]);
+    gx.classList.add("on"); xhOn = gx;
+    hit.dataset.tip = best[2];
+    showTip(hit, e.clientX, e.clientY);
+  });
 
   // ---------- game breakdown
   const MX = [["pass_yds", "Passing yards", 1], ["pass_td", "Passing TDs", 1], ["ypa", "Yards per attempt", 1], ["ints", "Interceptions", 1],
@@ -1014,7 +1508,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     const rt = (roles || []).map((r) => `<tr><td>${esc(r.role)}</td><td class="num">${num(r.ypg, 1)}</td><td class="num ${cls(-r.vs_lg)}">${signed(r.vs_lg, 1)}</td><td class="num">${num(r.ypt, 1)}</td><td class="num">${pct(r.cmp)}</td><td class="num">${r.rk}/${r.n}</td><td class="num">${r.g}g · ${r.tgt}</td></tr>`).join("");
     return `<div class="box"><h3>${badge(team)} ${nick(team)} defense</h3>
       <p class="note">Allowed per game this season (${d.games} games), ranked against every defense. A longer bar is a better defense.</p>
-      <div class="mx"><b class="note">Pass defense</b>${MX.slice(0, 4).map(row).join("")}<b class="note">Run defense</b>${MX.slice(4).map(row).join("")}</div>
+      <div class="mx vz"><b class="note">Pass defense</b>${MX.slice(0, 4).map(row).join("")}<b class="note">Run defense</b>${MX.slice(4).map(row).join("")}</div>
       ${rt ? `<div class="scroll"><table class="t"><thead><tr><th>Allowed to</th><th class="num">Yds/G</th><th class="num">vs league</th><th class="num">Yds/target</th><th class="num">Comp%</th><th class="num">Rank</th><th class="num">Sample</th></tr></thead><tbody>${rt}</tbody></table></div>
       <p class="note">Roles come from usage: opponents' receivers ranked by targets within their own team. This is a record of what happened, not a forecast.</p>` : ""}
     </div>`;
@@ -1070,7 +1564,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     const fin = g.status === "final";
     const wx = g.dome ? "Indoors" : g.weather ? `${g.weather.temp}°F, wind ${g.weather.wind} mph (gusts ${g.weather.gust}), ${g.weather.precip}% chance of rain` : "Outdoors, no forecast yet";
     const side = (t, s) => { const v = fin ? g.score[s] : g.proj ? g.proj[s] : null;
-      return `<div class="side">${badge(t)}<b>${esc(T[t].name)} <span class="note">${esc(T[t].record)}</span></b><span class="big"${v != null && !fin ? ` data-count="${v}" data-fmt="n1"` : ""}>${fin ? g.score[s] : g.proj ? num(g.proj[s], 1) : "–"}</span><span class="note">${fin ? "Final" : "Projected"}</span></div>`; };
+      return `<div class="side">${logo(t, "xl")}<b>${esc(T[t].name)} <span class="note">${esc(T[t].record)}</span></b><span class="big"${v != null && !fin ? ` data-count="${v}" data-fmt="n1"` : ""}>${fin ? g.score[s] : g.proj ? num(g.proj[s], 1) : "–"}</span><span class="note">${fin ? "Final" : "Projected"}</span></div>`; };
     const sp = g.model ? fav(g.home, g.away, g.model.spread, 1) : "–";
     const inj = (t, list) => `<div class="box"><h3>${badge(t)} ${nick(t)}</h3>${list.length ? `<ul class="inj">${list.map((x) => `<li><span class="st ${esc(x.status)}">${esc(x.status)}</span><span>${esc(x.name)} <span class="note">${esc(x.pos)}${x.injury ? " · " + esc(x.injury) : ""}</span></span></li>`).join("")}</ul>` : '<p class="note">No one listed yet. Reports come out Wednesday through Friday.</p>'}</div>`;
     const qb = (s) => { const q = g.qb[s], t = g[s]; return `<tr><td>${badge(t, 1)} ${esc(q.name || "Not listed yet")}</td><td class="num">${signed(q.rating, 3)}</td><td class="num ${cls(q.adj)}">${signed(q.adj, 3)}</td></tr>`; };
@@ -1083,16 +1577,16 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     app.innerHTML = `
       <a class="back" href="#week">← Back to week ${D.meta.week}</a>
       <section class="gh"><h1>${esc(T[g.away].name)} at ${esc(T[g.home].name)}</h1><p>${esc(g.kickoff.day)} · ${esc(g.kickoff.time)} · ${esc(g.venue || "")} · ${esc(wx)}</p></section>
-      <div class="board2">${side(g.away, "away")}<span class="at">at</span>${side(g.home, "home")}</div>
+      <div class="board2">${side(g.away, "away")}<span class="at">at</span>${side(g.home, "home")}${fin ? "" : wpBar(g.away, g.home, noVig(g.market.ml_away, g.market.ml_home), T[g.away], T[g.home], "Each team's chance to win by the market's moneyline, with the books' margin taken out")}</div>
       <section class="sec"><header><h2>The calls</h2><span class="note">Hover or tap a dotted word for a plain explanation.</span></header>
         <div class="calls">${callCard(g, "spread")}${callCard(g, "total")}${callCard(g, "ml")}</div>
         <p class="note">Closing lines beat the model on their own, so every call starts from the market's number and moves it ${pct(k.k_spread)} of the way toward the model on spreads and ${pct(k.k_total)} on totals: the share lines have actually moved toward it this season.</p></section>
       <details class="acc" open><summary><h3>Why the model sees it this way</h3><span class="note">projected score and what drives the margin</span>${chev}</summary>
         <div class="acc-body">
           <div class="two"><section class="box"><h3>Projected score</h3>${g.proj ? scoreBars(g) : '<p class="note">No projection.</p>'}<p class="note">Points each team scores in the model's average game.</p></section>
-            <section class="box"><h3>How they rate</h3><div class="legend"><span><i style="background:var(--s-away)"></i>${esc(g.away)}</span><span><i style="background:var(--s-home)"></i>${esc(g.home)}</span></div>${pctBars(g, "off")}<p class="note">Offense, against the whole league after adjusting for opponents: 50 is average, 90 is better than 9 teams in 10. Pass rate and pace are styles, not grades.</p></section></div>
+            <section class="box"><h3>How they rate on offense</h3>${pctBars(g, "off")}<p class="note">Offense, against the whole league after adjusting for opponents: 50 is average, 90 is better than 9 teams in 10. Pass rate and pace are styles, not grades.</p></section></div>
           <section class="box"><h3>Where the margin comes from</h3>${contribBars(g)}<p class="note">Each bar is points of margin from one part of the matchup, pointing toward the team it helps. Together they add up to the model's ${sp}.</p></section>
-          <section class="box"><h3>Defense</h3><div class="legend"><span><i style="background:var(--s-away)"></i>${esc(g.away)}</span><span><i style="background:var(--s-home)"></i>${esc(g.home)}</span></div>${pctBars(g, "def")}<p class="note">Higher is a better defense.</p></section>
+          <section class="box"><h3>How they rate on defense</h3>${pctBars(g, "def")}<p class="note">Higher is a better defense.</p></section>
         </div></details>
       <details class="acc" open><summary><h3>How the line has moved</h3><span class="note">${moved}</span>${chev}</summary>
         <div class="acc-body">${moveChart(g)}<p class="note">The ${esc(favTeam)} spread at Pinnacle, the sharpest book, since it opened. When a line keeps moving toward the number we locked, that is ${term("clv", "line value")}.</p></div></details>
@@ -1463,10 +1957,10 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     const f = nflFocus(p), fm = f ? nflForm(p, f.m) : { vals: [] };
     const rows = p.markets.filter((m) => Object.keys(m.books || {}).length).map((m) => ({ name: PMK[m.market], median: m.median, q: m.q, fair: m.fair,
       books: m.books, lean: m.lean, hl: !!(p.pick && p.pick.market === m.market), ...nflForm(p, m.market) }));
-    return `<article class="pcard"><header class="phead"><div><a class="pname" href="#p-${esc(p.id)}">${esc(p.name)}</a> ${roleTag(p)}</div><span class="note">${usage}</span></header>
+    return `<article class="pcard"><header class="phead"><div>${headshot(p.name, p.img, T[p.team], p.team)}<span class="pwho"><a class="pname" href="#p-${esc(p.id)}">${esc(p.name)}</a><span class="meta">${roleTag(p)}<span>${usage}</span></span></span></div></header>
       <div class="chips">${p.pick ? propPickChip(p.pick) : leanChip(bestLean(p), false, p)}</div>
       ${p.pick ? ctxList(p.pick) : p.matchup ? `<ul class="ctx"><li>${esc(p.matchup)}</li></ul>` : ""}
-      ${fm.vals.length ? `<div class="l5row" data-tip="His last ${fm.vals.length} games: blue would have won this ${p.pick ? "pick" : "side"}, red would have lost. Tap a number for the game."><span class="note">Last ${fm.vals.length} · ${f.side === "under" ? "under" : "over"} ${num(f.line, 1).replace(/\.0$/, "")} ${PMK[f.m].toLowerCase()}</span>${formStrip(fm.vals, f.line, f.side, fm.tips)}</div>` : ""}
+      ${fm.vals.length ? `<div class="l5row" data-tip="His last ${fm.vals.length} games: green would have won this ${p.pick ? "pick" : "side"}, red would have lost. Tap a number for the game."><span class="note">Last ${fm.vals.length} · ${f.side === "under" ? "under" : "over"} ${num(f.line, 1).replace(/\.0$/, "")} ${PMK[f.m].toLowerCase()}</span>${formStrip(fm.vals, f.line, f.side, fm.tips)}</div>` : ""}
       ${rows.length ? `<details class="nmore"><summary>All markets</summary><div class="nmore-in">${mktTable(rows)}</div></details>` : closed(p.game_id) ? "" : '<p class="note">No lines yet.</p>'}
     </article>`;
   }
@@ -1564,7 +2058,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     const X = (v) => x0 + ((v - lo) / Math.max(1e-6, hi - lo)) * (x1 - x0);
     const clampX = (v) => Math.max(x0 + 34, Math.min(x1 - 34, X(v)));
     const u = m.market === "receptions" ? "" : " yds";
-    return `<svg class="chart strip-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Model range against the market and the books">
+    return `<svg class="chart strip-svg vz" viewBox="0 0 ${W} ${H}" role="img" aria-label="Model range against the market and the books">
       <line class="axis" x1="${x0}" x2="${x1}" y1="${y}" y2="${y}"/>
       <rect class="band80 gx" x="${X(q[0]).toFixed(1)}" y="${y - 8}" width="${Math.max(2, X(q[4]) - X(q[0])).toFixed(1)}" height="16" rx="8" data-tip="8 in 10 simulated games: ${num(q[0], 0)} to ${num(q[4], 0)}${u}"/>
       <rect class="band50 gx" style="--d:2" x="${X(q[1]).toFixed(1)}" y="${y - 8}" width="${Math.max(2, X(q[3]) - X(q[1])).toFixed(1)}" height="16" rx="8" data-tip="Middle half of simulated games: ${num(q[1], 0)} to ${num(q[3], 0)}${u}"/>
@@ -1633,7 +2127,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
   }
   function pcard(p, slider) {
     const usage = p.pos === "QB" ? `${num(p.usage.att, 1)} pass attempts` : `${num(p.usage.tgt, 1)} targets, ${num(p.usage.car, 1)} carries`;
-    return `<article class="pcard"><header class="phead"><div><a class="pname" href="#p-${esc(p.id)}">${esc(p.name)}</a> ${roleTag(p)}</div><span class="note">Projected ${usage}</span></header>
+    return `<article class="pcard"><header class="phead"><div>${headshot(p.name, p.img, T[p.team], p.team)}<span class="pwho"><a class="pname" href="#p-${esc(p.id)}">${esc(p.name)}</a><span class="meta">${roleTag(p)}<span>Projected ${usage}</span></span></span></div></header>
       ${p.markets.map((m) => marketBlock(p, m, slider)).join("") || '<p class="note">No lines yet.</p>'}</article>`;
   }
   const keyLegend = `<div class="legend keyl"><span><i class="band80-k"></i>Model's ${term("range80", "80% range")}</span><span><i class="med-k"></i>Model's middle outcome</span><span><i class="fair-k"></i>Market's number</span><span><i class="dot bk-draftkings"></i>DraftKings</span><span><i class="dot bk-fanduel"></i>FanDuel</span><span><i class="dot bk-pinnacle"></i>Pinnacle</span><span><i class="call-k"></i>Our call</span></div>`;
@@ -1666,7 +2160,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     const max = Math.max(10, ...vals, ...lines.filter((x) => x != null)) * 1.15;
     const W = chartW(false), H = 180, x0 = 12, y0 = 16, y1 = H - 26, slot = (W - x0 - 10) / rows.length, bw = Math.min(46, slot - 10);
     const X = (i) => x0 + 8 + i * slot, Y = (v) => y1 - (v / max) * (y1 - y0);
-    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${PMK[main]} by week">
+    return `<svg class="chart vz" viewBox="0 0 ${W} ${H}" role="img" aria-label="${PMK[main]} by week">
       <line class="axis" x1="${x0}" x2="${W - 4}" y1="${y1}" y2="${y1}"/>
       ${rows.map((r, i) => { const v = vals[i], L = lines[i], over = L != null ? v > L : null;
         return `<rect class="gy" style="--d:${i}" x="${X(i).toFixed(1)}" y="${Y(v).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, y1 - Y(v)).toFixed(1)}" rx="4" fill="${over === null ? "var(--line-2)" : over ? "var(--s-home)" : "var(--s-away)"}" data-tip="Week ${r.week} vs ${esc(r.opp)}: ${v} ${PMK[main].toLowerCase()}${L != null ? `, line ${L} (${over ? "over" : "under"})` : ""}"></rect>
@@ -1690,7 +2184,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     const oppRoles = (D.defense.roles[p.opp] || []).find((r) => r.role === p.role);
     app.innerHTML = `
       <a class="back" href="#props-players">← All players</a>
-      <section class="gh"><h1>${esc(p.name)}</h1><p>${badge(p.team, 1)} ${esc(p.pos)} · ${roleTag(p)} · ${g ? `${esc(g.away)} at ${esc(g.home)}, ${esc(g.kickoff.short)}` : ""}</p></section>
+      <section class="ph">${headshot(p.name, p.img, T[p.team], p.team, true)}<div class="gh"><h1>${esc(p.name)}</h1><p>${badge(p.team, 1)} ${esc(p.pos)} · ${roleTag(p)} · ${g ? `${esc(g.away)} at ${esc(g.home)}, ${esc(g.kickoff.short)}` : ""}</p></div></section>
       <section class="sec"><header><h2>This week</h2></header>${pcard(p, true)}${keyLegend}
         ${oppRoles ? `<p class="note">${esc(p.opp)} has allowed ${num(oppRoles.ypg, 1)} receiving yards a game to opponents' ${esc(p.role)} this season (rank ${oppRoles.rk} of ${oppRoles.n}, ${signed(oppRoles.vs_lg, 1)} vs league).</p>` : ""}</section>
       <section class="box"><h3>${D.meta.season} by week</h3>${logChart(p, logs) || '<p class="note">No games this season.</p>'}</section>
@@ -1999,7 +2493,7 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
         })()}
         <div class="strip four" style="margin-top:12px">${liveTile("All plays (paper)", P, R.fill_checked ? ` · price still there 30 s later on ${R.fill_checked - R.missed} of ${R.fill_checked}` : "")}${liveTile("You (accepted)", Y)}
         <div class="tile"><span class="k">${term("clv", "Line value")}</span><span class="v ${cls(P.clv)}">${P.clv == null ? "–" : signed(P.clv, 2)}</span><span class="s">units the line moved our way in 5 min</span></div>
-        <div class="tile"><span class="k">Go-live gate</span><span class="v">${P.n}/40</span><span class="s">graded paper plays; also needs 4 weekends and positive line value</span><span class="gate"><span class="gx" style="width:${(100 * gate).toFixed(0)}%"></span></span></div></div>
+        <div class="tile"><span class="k">Go-live gate</span><span class="v">${P.n}/40</span><span class="s">graded paper plays; also needs 4 weekends and positive line value</span><span class="gate vz"><span class="gx" style="width:${(100 * gate).toFixed(0)}%"></span></span></div></div>
         ${(() => { const SH = (LV.shadow || {}).record || {}; return `<p class="note" style="margin-top:8px"><b>${term("shadow", "Shadow picks")}</b> (each game's second-best play, off the record): ${SH.n ? `${SH.w}-${SH.l}${SH.p ? "-" + SH.p : ""}, <span class="${cls(SH.units)}">${units(SH.units)}</span>, ROI ${pct(SH.roi, 1)}` : "none graded yet"}. If they hold up over a few weekends, a second play a game earns a slot.</p>`; })()}
         ${GB.big ? `<p class="note"><b>Why the rubric skips big disagreements:</b> in the replay, when the model was 10 to 15 points off the market it said ${pct(GB.big.said)} and won ${pct(GB.big.won)} (${GB.big.flags} plays, ${units(GB.big.units)}); within 10 points ${GB.moderate.w}-${GB.moderate.l}, ${units(GB.moderate.units)}.</p>` : ""}</section>
       <section class="sec"><header><h2>Flagged plays</h2>${flags ? '<div class="ctl"><button class="btn" id="lexp">Expand all</button></div>' : ""}</header>
@@ -2065,7 +2559,8 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
   const N = JSON.parse(document.getElementById("kn-nba").textContent || "null");
   const NT = (N && N.teams) || {};
   const NG = Object.fromEntries(((N && N.games) || []).map((g) => [String(g.id), g]));
-  const nbadge = (t, sm) => { const m = NT[t] || { color: "#777", ink: "#fff" }; return `<span class="tb${sm ? " sm" : ""}" style="--tc:${m.color};--ti:${m.ink}">${esc(t)}</span>`; };
+  const nbadge = (t, sm) => teamMark(NT[t] || NOTEAM, t, sm);
+  const nlogo = (t, size) => logoOf(NT[t] || NOTEAM, t, size);
   const nnick = (t) => esc((NT[t] && NT[t].nick) || t);
   const NMK = { pts: "Points", reb: "Rebounds", ast: "Assists", fg3: "3-pointers", pra: "Pts+Reb+Ast", pr: "Pts+Reb", pa: "Pts+Ast", ra: "Reb+Ast" };
   const resN = (r) => (r === "V" ? '<span class="res P">VOID</span>' : resChip(r));
@@ -2178,14 +2673,17 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
   }
   function nCard(g) {
     const fin = g.status === "final", live = g.status === "live";
-    const s = (side) => (g.score ? `<span class="score">${g.score[side]}</span>` : "");
     const P = g.picks || {};
     const chips = [nChip(P.spread), nChip(P.total), nChip(P.ml)].join("");
     const wait = !chips && !fin && !live ? `<span class="note">Picks lock ${etTime(g.locks.lines)}.</span>` : "";
+    const F = g.fair || {}, ms = F.total != null && F.margin != null ? [(F.total - F.margin) / 2, (F.total + F.margin) / 2] : null;
+    const mid = g.score ? `<span class="sc">${g.score.away}<span class="dash">–</span>${g.score.home}</span><span class="at">${live ? esc(g.detail || "Live") : "Final"}</span>`
+      : ms ? `<span class="sc proj" data-tip="The score the market's no-vig spread and total imply">${num(ms[0], 1)}<span class="dash">–</span>${num(ms[1], 1)}</span><span class="at">the market's score</span>` : '<span class="at">at</span>';
+    const team = (t) => `<div class="t">${nlogo(t, "lg")}<b>${nnick(t)}</b><small>${esc((NT[t] || {}).record || "")}</small></div>`;
     return `<article class="card n">
-      <div class="card-top"><span class="${live ? "live" : ""}">${live ? esc(g.detail || "In progress") : fin ? "Final" : esc(g.tip.time)}</span>${g.fair.src && g.fair.src !== "pinnacle" ? '<span>No Pinnacle line: DraftKings and FanDuel set the market</span>' : ""}</div>
-      <div class="trow">${nbadge(g.away)}<span class="tname">${nnick(g.away)}<small>${esc((NT[g.away] || {}).record || "")}</small></span>${s("away")}</div>
-      <div class="trow">${nbadge(g.home)}<span class="tname">${nnick(g.home)}<small>${esc((NT[g.home] || {}).record || "")}</small></span>${s("home")}</div>
+      <div class="card-top"><span class="${live ? "live" : "when"}">${live ? esc(g.detail || "In progress") : fin ? "Final" : esc(g.tip.short || g.tip.time)}</span>${F.src && F.src !== "pinnacle" ? '<span>No Pinnacle line: DraftKings and FanDuel set the market</span>' : ""}</div>
+      <div class="mu2">${team(g.away)}<div class="mid">${mid}</div>${team(g.home)}</div>
+      ${fin || F.p_home == null ? "" : wpBar(g.away, g.home, 1 - F.p_home, NT[g.away], NT[g.home], "Each team's chance to win by Pinnacle's moneyline, with its margin taken out")}
       <dl class="lines">
         <div><dt>${term("novig", "Market, no-vig")}</dt><dd>${g.fair.margin == null ? "–" : fav(g.home, g.away, g.fair.margin, 1)} · ${num(g.fair.total, 1)}</dd></div>
         <div><dt>Model</dt><dd>${g.model ? fav(g.home, g.away, g.model.margin, 1) + " · " + num(g.model.total, 1) : "–"}</dd></div>
@@ -2288,11 +2786,11 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
     const fm = f ? nbaForm(p, f.m) : { vals: [] };
     const rows = p.markets.filter((m) => Object.keys(m.books || {}).length).map((m) => ({ name: NMK[m.market], median: m.median, q: m.q, fair: m.fair,
       books: m.books, lean: m.lean, hl: !!(p.pick && p.pick.market === m.market), ...nbaForm(p, m.market) }));
-    return `<article class="pcard"><header class="phead"><div><b class="pname">${esc(p.name)}</b> <span class="role">${p.role === "Starter" ? "Starter" : "6th man"}</span>${st}</div>
-        <span class="note">${num(p.min, 1)} min projected${p.games_now ? "" : " · from last season"}</span></header>
+    return `<article class="pcard"><header class="phead"><div>${headshot(p.name, p.img, NT[p.team], p.team)}<span class="pwho"><b class="pname">${esc(p.name)}</b>
+        <span class="meta"><span class="role">${p.role === "Starter" ? "Starter" : "6th man"}</span>${st}<span>${num(p.min, 1)} min projected${p.games_now ? "" : " · from last season"}</span></span></span></div></header>
       <div class="chips">${p.pick ? npChip(p.pick) : '<span class="note">No prop with 1%+ value.</span>'}</div>
       ${p.pick ? ctxList(p.pick) : p.matchup ? `<ul class="ctx"><li>${esc(p.matchup)}</li></ul>` : ""}
-      ${fm.vals.length ? `<div class="l5row" data-tip="His last ${fm.vals.length} games: blue would have won this ${p.pick ? "pick" : "side"}, red would have lost. Tap a number for the game."><span class="note">Last ${fm.vals.length} · ${f.side === "under" ? "under" : "over"} ${num(f.line, 1).replace(/\.0$/, "")} ${NMK[f.m].toLowerCase()}</span>${formStrip(fm.vals, f.line, f.side, fm.tips)}</div>` : ""}
+      ${fm.vals.length ? `<div class="l5row" data-tip="His last ${fm.vals.length} games: green would have won this ${p.pick ? "pick" : "side"}, red would have lost. Tap a number for the game."><span class="note">Last ${fm.vals.length} · ${f.side === "under" ? "under" : "over"} ${num(f.line, 1).replace(/\.0$/, "")} ${NMK[f.m].toLowerCase()}</span>${formStrip(fm.vals, f.line, f.side, fm.tips)}</div>` : ""}
       ${rows.length ? `<details class="nmore"><summary>All markets</summary><div class="nmore-in">${mktTable(rows)}</div></details>` : '<p class="note">No lines posted yet.</p>'}</article>`;
   }
   function lsSection() {
@@ -2396,7 +2894,463 @@ svg circle.ser-kelly { stroke: var(--surface); stroke-width: 2; }
       </div>`;
   }
 
-  const VIEWS = { week: renderWeek, mine: renderMine, defense: renderDefense, record: renderRecord, model: renderModel,
+  // ===================================================================== best bets: every pick in one ranked list
+  // The landing view (user, 2026-10-20: "a new way to allow me to choose the best pick I can given the information
+  // the model gives me as quickly and as accessible as possible"). Game lines and props together; each row is a
+  // pick from its own section with nothing recomputed: its value for the price, its win chance against what the
+  // price needs, the first context note, and the slip one tap away. A row opens in place for the rest.
+  const MKN = { spread: "Spread", total: "Total", ml: "Moneyline" };
+  const NUNIT = { pts: "points", reb: "rebounds", ast: "assists", fg3: "threes" };
+  const winOf = (p) => p.p_win / Math.max(1 - (p.p_push || 0), 1e-9);
+  const noteTxt = (n) => String(n).replace(/-(?=\d)/g, MINUS);
+  const lineTxt = (x, sgn, d) => {   // a line as a bettor reads it: +2.5, PK, 58.5; d decimals for a fair number
+    if (x == null) return "–";
+    if (!sgn) return d == null ? num(x, 1).replace(/\.0$/, "") : num(x, d);
+    return Math.abs(x) < 0.05 ? "PK" : (x > 0 ? "+" : MINUS) + (d == null ? half(x) : Math.abs(x).toFixed(d));
+  };
+  const duo = (a, b) => `<span class="duo">${a}${b}</span>`;
+  const BKC = { DraftKings: "dk", FanDuel: "fd", Pinnacle: "pin" };
+  const BKN = { draftkings: "DraftKings", fanduel: "FanDuel", pinnacle: "Pinnacle" };
+
+  // The line-shop strip: the market's fair number and every book's line on one axis, from the bettor's side
+  // (dir +1: a higher number is better for this bet, -1: lower), the pick's book ringed. Books on the same
+  // number sit side by side.
+  function shopStrip(o) {
+    const books = (o.books || []).filter((b) => b.line != null);
+    const vals = [...books.map((b) => b.line), o.me, o.fair].filter((v) => v != null);
+    if (!books.length || vals.length < 2) return "";
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    const pad = Math.max(0.5, (hi - lo) * 0.2);
+    lo -= pad; hi += pad;
+    const X = (v) => ((100 * (v - lo)) / (hi - lo)).toFixed(2);
+    const seen = {};
+    const dots = books.map((b) => {
+      const k = String(b.line), n = books.filter((x) => String(x.line) === k).length, j = (seen[k] = (seen[k] || 0) + 1) - 1;
+      const me = b.name === o.meBook && b.line === o.me;
+      return `<span class="mk ${BKC[b.name] || "pin"}${me ? " me" : ""}" style="left:calc(${X(b.line)}% + ${((j - (n - 1) / 2) * 13).toFixed(0)}px)" data-tip="${esc(b.name)}: ${lineTxt(b.line, o.sgn)}${b.px ? ", " + b.px : ""}${me ? " (the pick)" : ""}"></span>`;
+    }).join("");
+    const fair = o.fair == null ? "" : `<span class="mk fair" style="left:${X(o.fair)}%" data-tip="The market's fair number, the books' margin taken out: ${lineTxt(o.fair, o.sgn, 1)}"></span><span class="lab b" style="left:${X(o.fair)}%">Fair ${lineTxt(o.fair, o.sgn, 1)}</span>`;
+    let say = "";
+    if (o.fair != null) {
+      const gap = (o.me - o.fair) * o.dir, u = o.unit ? " " + o.unit : "";
+      say = Math.abs(gap) < 0.05 ? `${esc(o.meBook)} hangs the market's own number; the value is in the price.`
+        : `${esc(o.meBook)}'s ${lineTxt(o.me, o.sgn)} is ${num(Math.abs(gap), 1)}${u} ${gap > 0 ? "better" : "worse"} for this bet than the fair ${lineTxt(o.fair, o.sgn, 1)}${gap > 0 ? "." : o.ev > 0 ? "; the price makes up for it." : "."}`;
+    }
+    return `<div class="lshop"><div class="ax">${fair}${dots}<span class="lab" style="left:${X(o.me)}%">Pick ${lineTxt(o.me, o.sgn)}</span></div>
+      <div class="key"><span><i style="background:var(--s-home)"></i>DraftKings</span><span><i style="background:var(--s-away)"></i>FanDuel</span><span><i style="background:var(--muted)"></i>Pinnacle</span><span><i class="fair"></i>${term("fair", "Fair")}</span></div>
+      ${say ? `<p class="note">${say}</p>` : ""}</div>`;
+  }
+  function lineShop(books, p, F) {   // game lines, both sports: spreads from the picked team's side, totals as they are
+    if (p.market === "ml" || !books || !books.length) return null;
+    if (p.market === "spread") {
+      const sd = (s) => (s == null ? null : p.side === "home" ? -s : s);
+      return { books: books.map((b) => ({ name: b.book, line: sd(b.spread), px: am(p.side === "home" ? b.spread_home : b.spread_away) })),
+        fair: sd(F), me: p.line, meBook: p.book_name, dir: 1, unit: "points", sgn: true, ev: p.ev };
+    }
+    return { books: books.map((b) => ({ name: b.book, line: b.total, px: am(p.side === "over" ? b.over : b.under) })),
+      fair: F, me: p.line, meBook: p.book_name, dir: p.side === "over" ? -1 : 1, unit: "points", sgn: false, ev: p.ev };
+  }
+  function nflFair(p) {   // the NFL's fair number: the market moved k of the way toward the model (board/market.py)
+    const k = D.model.clv || {};
+    if (p.market === "spread") return p.market_spread == null ? null : p.market_spread + (k.k_spread || 0) * ((p.model_margin == null ? p.market_spread : p.model_margin) - p.market_spread);
+    return p.market_total == null ? null : p.market_total + (k.k_total || 0) * ((p.model_total == null ? p.market_total : p.model_total) - p.market_total);
+  }
+  function propShop(m, L, unit) {
+    return { books: Object.entries(m.books || {}).map(([k, b]) => ({ name: BKN[k] || k, line: b.line, px: `over ${am(b.over)}, under ${am(b.under)}` })),
+      fair: m.fair, me: L.line, meBook: L.book, dir: L.side === "over" ? -1 : 1, unit, sgn: false, ev: L.ev };
+  }
+  function bbItem(o) {
+    o.need = 1 / o.dec;
+    o.kf = o.ev / Math.max(o.dec - 1, 1e-6);   // edge relative to the payout, the Picks of the Week/Day ranking
+    o.search = `${o.search || ""} ${o.title}`.toLowerCase();
+    return o;
+  }
+  function nflBest() {
+    const out = [], now = Date.now();
+    for (const g of D.games) {
+      const started = g.status !== "upcoming" || Date.parse(g.kickoff.iso) <= now;
+      const srch = [g.away, g.home, T[g.away].name, T[g.home].name].join(" ");
+      for (const m of ["spread", "total", "ml"]) {
+        const p = (g.picks || {})[m];
+        if (!p) continue;
+        out.push(bbItem({ key: "nfl:" + p.id, sport: "nfl", kind: "line", mk: MKN[m], title: p.label, bet: "",
+          media: p.team ? logo(p.team) : duo(logo(g.away), logo(g.home)), mt: `${g.away} at ${g.home}`, when: g.kickoff.short, start: g.kickoff.iso, started, games: [g.id],
+          american: p.american, book: p.book_name, dec: p.dec, p: winOf(p), ev: p.ev, result: p.result,
+          gold: !!p.potw, goldTxt: "Pick of the week", verdict: p.checks ? p.checks.verdict : null, failed: p.checks ? failedOf(p.checks) : [],
+          lean: p.risk === 0, leanTxt: "Lean · no stake", notes: p.notes || [],
+          href: `#g-${g.id}`, hrefTxt: "Game breakdown", why: pickWhy(p), checks: p.checks ? checksBlock(p.checks) : "",
+          shop: lineShop(g.books, p, nflFair(p)), search: srch }));
+      }
+    }
+    if (PR) for (const pl of PR.players) {
+      const g = GAMES[pl.game_id];
+      if (!g) continue;
+      const started = g.status !== "upcoming" || Date.parse(g.kickoff.iso) <= now;
+      const pk = pl.pick;
+      let m, L;
+      if (pk) {
+        m = pl.markets.find((x) => x.market === pk.market);
+        L = { market: pk.market, side: pk.side, line: pk.line, american: pk.american, book: pk.book_name, dec: pk.dec, p: winOf(pk), ev: pk.ev };
+      } else {
+        m = bestLean(pl);
+        if (!m || !(m.lean.ev > 0)) continue;
+        L = { market: m.market, side: m.lean.side, line: m.lean.line, american: m.lean.american, book: m.lean.book, dec: decOf(m.lean.american), p: m.lean.p, ev: m.lean.ev };
+      }
+      const f = nflForm(pl, L.market);
+      out.push(bbItem({ key: `nfl:${pl.game_id}:${pl.id}:${L.market}`, sport: "nfl", kind: "prop", mk: PMK[L.market], title: pl.name, bet: `${sideWord(L.side)} ${lineTxt(L.line)}`,
+        media: headshot(pl.name, pl.img, T[pl.team], pl.team), mt: `${pl.team} ${g.home === pl.team ? "vs" : "at"} ${pl.opp}`, when: g.kickoff.short, start: g.kickoff.iso, started, games: [g.id],
+        american: L.american, book: L.book, dec: L.dec, p: L.p, ev: L.ev, result: pk ? pk.result : null,
+        gold: !!(pk && pk.potw), goldTxt: "Pick of the week", verdict: pk && pk.checks ? pk.checks.verdict : null, failed: pk && pk.checks ? failedOf(pk.checks) : [],
+        lean: !pk, leanTxt: "Not locked", shopFlag: !!(m && isShop(L.side, L.line, m.median)), promoted: pl.promoted,
+        notes: (pk && pk.notes) || (pl.matchup ? [pl.matchup] : []),
+        href: `#p-${pl.id}`, hrefTxt: `${pl.name}'s page`, why: pk ? `Stake 1u. Quarter Kelly, its own record: ${stakeU(pk.kelly_u)}.` : `Not locked yet: props lock ${lockAt(pl.game_id)}.`,
+        checks: pk && pk.checks ? checksBlock(pk.checks) : "", shop: m ? propShop(m, L, L.market === "receptions" ? "catches" : "yards") : null,
+        form: f.vals.length ? { vals: f.vals, tips: f.tips, line: L.line, side: L.side, what: PMK[L.market].toLowerCase() } : null,
+        search: [pl.name, pl.team, pl.opp, (T[pl.team] || {}).name].join(" ") }));
+    }
+    return out;
+  }
+  function nbaBest() {
+    const out = [], now = Date.now();
+    for (const g of N.games) {
+      const started = g.status !== "upcoming" || Date.parse(g.tip.iso) <= now;
+      const srch = [g.away, g.home, (NT[g.away] || {}).name, (NT[g.home] || {}).name].join(" ");
+      for (const m of ["spread", "total", "ml"]) {
+        const p = (g.picks || {})[m];
+        if (!p) continue;
+        out.push(bbItem({ key: "nba:" + p.id, sport: "nba", kind: "line", mk: MKN[m], title: p.label, bet: "",
+          media: p.team ? nlogo(p.team) : duo(nlogo(g.away), nlogo(g.home)), mt: `${g.away} at ${g.home}`, when: g.tip.short, start: g.tip.iso, started, games: ["nba" + g.id],
+          american: p.american, book: p.book_name, dec: p.dec, p: winOf(p), ev: p.ev, result: p.result,
+          gold: !!p.potd, goldTxt: "Pick of the day", lean: p.risk === 0, leanTxt: "Lean · no stake", notes: p.notes || [],
+          href: "#nba", hrefTxt: "Game lines", why: nWhy(p), shop: lineShop(g.books, p, p.market === "spread" ? p.fair_margin : p.fair_total), search: srch }));
+      }
+    }
+    const NP = N.props || {}, locked = new Set((NP.locked || []).map(String));
+    for (const pl of NP.players || []) {
+      const g = NG[String(pl.game_id)];
+      if (!g) continue;
+      const started = g.status !== "upcoming" || Date.parse(g.tip.iso) <= now;
+      const pk = pl.pick;
+      let m, L;
+      if (pk) {
+        m = pl.markets.find((x) => x.market === pk.market);
+        L = { market: pk.market, side: pk.side, line: pk.line, american: pk.american, book: pk.book_name, dec: pk.dec, p: winOf(pk), ev: pk.ev };
+      } else {   // before the lock: the best side with 1%+ value, as the props section shows it
+        if (started || locked.has(String(pl.game_id))) continue;
+        m = pl.markets.filter((x) => x.lean && x.lean.ev >= 0.01).sort((a, b) => b.lean.ev - a.lean.ev)[0];
+        if (!m) continue;
+        L = { market: m.market, side: m.lean.side, line: m.lean.line, american: m.lean.american, book: m.lean.book, dec: decOf(m.lean.american), p: m.lean.p, ev: m.lean.ev };
+      }
+      const f = nbaForm(pl, L.market);
+      out.push(bbItem({ key: `nba:${pl.game_id}:${pl.id}:${L.market}`, sport: "nba", kind: "prop", mk: NMK[L.market], title: pl.name, bet: `${sideWord(L.side)} ${lineTxt(L.line)}`,
+        media: headshot(pl.name, pl.img, NT[pl.team], pl.team), mt: `${pl.team} ${g.home === pl.team ? "vs" : "at"} ${pl.opp}`, when: g.tip.short, start: g.tip.iso, started, games: ["nba" + g.id],
+        american: L.american, book: L.book, dec: L.dec, p: L.p, ev: L.ev, result: pk ? pk.result : null,
+        gold: !!(pk && pk.potd), goldTxt: "Pick of the day", lean: !pk, leanTxt: "Not locked", status: pl.status,
+        notes: (pk && pk.notes) || (pl.matchup ? [pl.matchup] : []),
+        href: "#nba-props", hrefTxt: "Player props", why: pk ? npWhy(pk) : `Not locked yet: props lock ${etTime(g.locks.props)}.`,
+        shop: m ? propShop(m, L, NUNIT[L.market] || "") : null,
+        form: f.vals.length ? { vals: f.vals, tips: f.tips, line: L.line, side: L.side, what: NMK[L.market].toLowerCase() } : null,
+        search: [pl.name, pl.team, pl.opp, (NT[pl.team] || {}).name].join(" ") }));
+    }
+    return out;
+  }
+
+  // The day's or week's parlays, ready to go on the slip whole
+  const PZ = new Map();
+  function pzCards(sport) {
+    PZ.clear();
+    const nba = sport === "nba";
+    const src = nba ? [["game lines", N.parlays], ["props", (N.props || {}).parlays]] : [["game lines", D.parlays], ["props", PR && PR.parlays]];
+    const out = [];
+    for (const [what, P] of src) for (const [type, name] of [["golden", "Golden parlay"], ["lottery", "+EV lottery"]]) {
+      const x = P && P[type];
+      if (!x || !x.leg_picks || !x.leg_picks.length) continue;
+      const legs = x.leg_picks;
+      const gs = legs.map((l) => (nba ? NG[String(l.game_id)] : GAMES[l.game_id])).filter(Boolean);
+      const key = `${sport}:${x.id || type + ":" + what}`, inS = SLIP.has(key);
+      PZ.set(key, { key, sport, kind: "parlay", title: `${name}, ${what}`, bet: "", mk: "", american: x.american, dec: x.dec, p: x.p, ev: x.ev,
+        games: legs.map((l) => (nba ? "nba" : "") + l.game_id), book: `${legs.length} legs`, mt: legs.map((l) => l.label).join(" + "), when: "",
+        start: gs.map((g) => (nba ? g.tip.iso : g.kickoff.iso)).sort()[0] || "" });
+      out.push(`<article class="pz${type === "golden" ? " gold" : " lotto"}"><div class="pz-top"><span class="tag">${name}</span><span class="note">${what}</span></div>
+        <div class="odds-big">${am(x.american)} ${resN(x.result)}</div>
+        <ul class="legs">${legs.map((l) => `<li><span><b>${label(l.label)}</b></span><span class="mono">${am(l.american)}</span></li>`).join("")}</ul>
+        <div class="acts"><span class="note">Hits ${pct(x.p)} · ${term("ev", "EV")} <span class="${cls(x.ev)}">${evPct(x.ev)}</span></span>
+          <button class="btn${inS ? " primary" : ""}" type="button" data-add="${esc(key)}" aria-pressed="${inS}">${inS ? "In the slip" : "Add to slip"}</button></div></article>`);
+    }
+    return out.length ? `<section class="sec"><header><h2>Parlays <em>built from the picks below</em></h2></header><div class="pzs">${out.join("")}</div></section>` : "";
+  }
+
+  // ---------- the list: filters, sort, rows
+  const BB = { type: "all", sort: "value", value: true, open: true, q: "" };
+  try { const s = JSON.parse(localStorage.getItem("kn-bb") || "{}"); for (const k of ["type", "sort", "value", "open"]) if (k in s) BB[k] = s[k]; } catch (e) { /* the defaults */ }
+  const saveBB = () => { try { localStorage.setItem("kn-bb", JSON.stringify({ type: BB.type, sort: BB.sort, value: BB.value, open: BB.open })); } catch (e) { /* this visit only */ } };
+  const ITEMS = new Map(), bbOpen = new Set();
+  const byValue = (a, b) => b.kf - a.kf || b.ev - a.ev;
+  const SORTS = { value: byValue, likely: (a, b) => b.p - a.p || byValue(a, b), soon: (a, b) => a.start.localeCompare(b.start) || byValue(a, b) };
+  function bbList() {
+    const q = BB.q.trim().toLowerCase();
+    return [...ITEMS.values()].filter((it) => (BB.type === "all" || it.kind === BB.type) && (!BB.value || it.ev > 0) && (!BB.open || !it.started) && (!q || it.search.includes(q)))
+      .sort((a, b) => (a.started - b.started) || (SORTS[BB.sort] || byValue)(a, b));
+  }
+  const PLUS = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4.5v11M4.5 10h11" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>';
+  const TICK = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10.5l3.2 3.2L15 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
+  const CHEV = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 8l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
+  // The win chance as a ring, with a tick at what the price needs: green past the tick has value, red short of it
+  function ring(p, need, american) {
+    const C = 131.95, a = 2 * Math.PI * need, x = (r) => (25 + r * Math.cos(a)).toFixed(2), y = (r) => (25 + r * Math.sin(a)).toFixed(2);
+    return `<div class="ring" data-tip="Wins ${pct(p, 1)} by the board's numbers; at ${am(american)} it needs ${pct(need, 1)} to break even (the tick).">
+      <svg viewBox="0 0 50 50" aria-hidden="true"><circle class="trk" cx="25" cy="25" r="21" fill="none" stroke-width="5"/>
+        <circle class="val${p > need ? "" : " low"}" cx="25" cy="25" r="21" fill="none" stroke-width="5" stroke-dasharray="${C}" stroke-dashoffset="${(C * (1 - p)).toFixed(2)}"/>
+        <line class="need" x1="${x(16.5)}" y1="${y(16.5)}" x2="${x(25.5)}" y2="${y(25.5)}" stroke-width="2.5" stroke-linecap="round"/></svg><b>${pct(p)}</b></div>`;
+  }
+  function ebFlags(it) {
+    return [it.gold ? `<span class="flag gold">${it.goldTxt}</span>` : "",
+      it.verdict === "good" ? '<span class="flag good" data-tip="+EV and passes every check">Good pick</span>' : "",
+      it.verdict === "ev" ? `<span class="flag lean" data-tip="${esc("+EV, but fails: " + failedNames(it.failed))}">+EV only</span>` : "",
+      it.shopFlag ? '<span class="flag shop" data-term="shop">Line shop</span>' : "",
+      it.promoted ? '<span class="flag lean" data-term="promoted">Promoted</span>' : "",
+      it.status ? stChip(it.status) : "",
+      it.lean ? `<span class="flag lean">${it.leanTxt}</span>` : "",
+      it.result ? resN(it.result) : ""].join("");
+  }
+  function ebRow(it, i) {
+    const inS = SLIP.has(it.key), what = esc(it.title + (it.bet ? " " + it.bet : ""));
+    return `<li class="eb-row vz${it.gold ? " gold" : ""}${it.started ? " gone" : ""}" data-key="${esc(it.key)}" style="--i:${i}">
+      <div class="eb-main">
+        <span class="media">${it.media}</span>
+        <div class="eb-who"><div class="l1"><span class="lbl">${label(it.title)}</span>${it.bet ? `<span class="bet">${label(it.bet)}</span>` : ""}<span class="mkt">${esc(it.mk)}</span>${ebFlags(it)}</div>
+          <div class="l2"><span class="px">${am(it.american)}</span><span>${esc(it.book)}</span><span>${esc(it.mt)}</span><span>${esc(it.when)}</span></div>
+          ${it.notes.length ? `<div class="l3">${esc(noteTxt(it.notes[0]))}</div>` : ""}</div>
+        <div class="eb-num"><span class="ev ${cls(it.ev)}">${evPct(it.ev)}</span><small>EV</small></div>
+        <div class="eb-side">${ring(it.p, it.need, it.american)}
+          <button class="add" type="button" data-add="${esc(it.key)}" aria-pressed="${inS}" aria-label="${inS ? "Remove from" : "Add to"} the slip: ${what}">${inS ? TICK : PLUS}</button>
+          <button class="exp" type="button" aria-expanded="false" aria-label="Details: ${what}">${CHEV}</button></div>
+      </div>
+      <div class="eb-more"><div class="eb-in"><div class="eb-pad"></div></div></div></li>`;
+  }
+  function ebMore(it) {
+    const notes = it.notes.length ? `<ul class="ctx">${it.notes.map((n) => `<li${/within chance/.test(n) ? ' class="chance"' : ""}>${esc(noteTxt(n))}</li>`).join("")}</ul>` : "";
+    const f = it.form;
+    const form = f ? `<div class="l5row" data-tip="His last ${f.vals.length} games against this line: green would have won, red would have lost. Tap a number for the game."><span class="note">Last ${f.vals.length} · ${f.side} ${lineTxt(f.line)} ${esc(f.what)}</span>${formStrip(f.vals, f.line, f.side, f.tips)}</div>` : "";
+    return `${notes}${it.shop ? shopStrip(it.shop) : ""}${form}${it.checks || ""}
+      <div class="eb-links">${it.why ? `<p class="note">${esc(it.why)}</p>` : ""}<a class="more" href="${it.href}">${esc(it.hrefTxt)} →</a></div>`;
+  }
+  function ebToggle(row, force) {
+    if (!row) return;
+    const it = ITEMS.get(row.dataset.key), pad = row.querySelector(".eb-pad");
+    if (pad && it && !pad.dataset.filled) { pad.innerHTML = ebMore(it); pad.dataset.filled = "1"; }
+    const open = force === undefined ? !row.classList.contains("open") : force;
+    row.classList.toggle("open", open);
+    const b = row.querySelector(".exp");
+    if (b) b.setAttribute("aria-expanded", String(open));
+    if (open) bbOpen.add(row.dataset.key); else bbOpen.delete(row.dataset.key);
+  }
+  function bbCtl() {
+    const chip = (k, l) => `<button type="button" data-bbtype="${k}" aria-pressed="${BB.type === k}">${l}</button>`;
+    const opt = (k, l) => `<option value="${k}"${BB.sort === k ? " selected" : ""}>${l}</option>`;
+    return `<div class="eb-f"><div class="chipsel" role="group" aria-label="Show">${chip("all", "All")}${chip("line", "Game lines")}${chip("prop", "Props")}</div>
+      <span class="sel"><select id="ebs" aria-label="Sort">${opt("value", "Best value")}${opt("likely", "Most likely")}${opt("soon", "Soonest")}</select></span>
+      <label class="tgl"><input type="checkbox" id="ebv"${BB.value ? " checked" : ""}>Value only</label>
+      <label class="tgl"><input type="checkbox" id="ebo"${BB.open ? " checked" : ""}>Not started</label></div>
+      <input class="search" id="ebq" type="search" placeholder="Team or player" aria-label="Search the picks" value="${esc(BB.q)}">`;
+  }
+  function fillBest(first) {
+    const ol = document.getElementById("eb");
+    if (!ol) return;
+    const xs = bbList();
+    ol.classList.toggle("cascade", !!first);
+    ol.innerHTML = xs.length ? xs.map(ebRow).join("")
+      : `<li class="empty">${ITEMS.size ? "No picks match. Try <b>All</b>, or switch off <b>Value only</b> or <b>Not started</b>." : "Picks show up here as they lock."}</li>`;
+    const n = document.getElementById("eb-n");
+    if (n) n.textContent = `${xs.length} of ${ITEMS.size}`;
+    if (!first) ol.querySelectorAll(".vz").forEach((el) => el.classList.add("in"));   // a re-sort shows rings full at once
+    for (const row of ol.children) if (bbOpen.has(row.dataset.key)) ebToggle(row, true);
+  }
+  function renderBest(sport) {
+    const nba = sport === "nba";
+    if (nba && !N) return noNba();
+    const items = nba ? nbaBest() : nflBest();
+    ITEMS.clear();
+    for (const it of items) ITEMS.set(it.key, it);
+    const live = items.filter((it) => !it.started), val = live.filter((it) => it.ev > 0), top = val.slice().sort(byValue)[0];
+    const finding = !items.length ? (nba ? "Nothing has locked yet today. Game lines lock at 10:30am ET, props at 10:30am and 5:30pm ET." : "Nothing has locked yet this week.")
+      : !live.length ? "Every game on this slate has started. Switch off <b>Not started</b> to see how the picks did."
+      : !val.length ? `No pick has value at the posted prices; the ${live.length} below are leans with no stake. Zero is a valid ${nba ? "day" : "week"}.`
+      : `<b>${val.length}</b> pick${val.length > 1 ? "s" : ""} with value ${nba ? "today" : "this week"}. Best for the price: <b>${label(top.title)}${top.bet ? " " + label(top.bet) + " " + esc(top.mk.toLowerCase()) : ""}</b> at ${am(top.american)}, ${term("ev", "EV")} <span class="pos">${evPct(top.ev)}</span>.`;
+    const upd = new Date((nba ? N : D).meta.generated).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" }) + " ET";
+    app.innerHTML = `
+      <section class="hello"><h1>Best bets<span class="h1s">${nba ? "NBA · " + esc(N.meta.day_label) : `NFL · Week ${D.meta.week}`}</span></h1><p class="finding">${finding}</p></section>
+      ${pzCards(sport)}
+      <section class="sec"><header><h2>Every pick <em id="eb-n"></em></h2></header>
+        <div class="eb-ctl">${bbCtl()}</div><ol class="eb" id="eb"></ol>
+        <p class="note">${term("ev", "EV")} is the value at the price. The ring is the chance the pick wins; its tick marks what the price needs to break even, so green past the tick has value. Open a row for its notes, where the books' lines sit against the fair number, and its checks.</p></section>
+      <p class="fine">Model output, not betting advice. Prices as of the last update, ${esc(upd)}; books move.</p>`;
+    fillBest(true);
+  }
+  app.addEventListener("click", (e) => {
+    const t = e.target;
+    if (!t || !t.closest) return;
+    const ty = t.closest("[data-bbtype]");
+    if (ty) { BB.type = ty.dataset.bbtype; saveBB(); app.querySelectorAll("[data-bbtype]").forEach((b) => b.setAttribute("aria-pressed", String(b === ty))); fillBest(false); return; }
+    const ex = t.closest(".exp");
+    if (ex) { ebToggle(ex.closest(".eb-row")); return; }
+    const mn = t.closest(".eb-main");
+    if (mn && !t.closest("button, a, input, label, select")) ebToggle(mn.closest(".eb-row"));
+  });
+  app.addEventListener("change", (e) => {
+    const t = e.target;
+    if (t.id === "ebv") BB.value = t.checked; else if (t.id === "ebo") BB.open = t.checked; else if (t.id === "ebs") BB.sort = t.value; else return;
+    saveBB();
+    fillBest(false);
+  });
+  app.addEventListener("input", (e) => { if (e.target.id === "ebq") { BB.q = e.target.value; fillBest(false); } });
+
+  // ===================================================================== the slip
+  // What you picked, priced together: the parlay price, how often it hits by the board's numbers (legs from
+  // different games multiply), and its value. Kept on this device; a pick drops off 12 hours after its start.
+  const SLIP = new Map();
+  try {
+    for (const x of JSON.parse(localStorage.getItem("kn-slip") || "[]")) if (x && x.key && !(x.start && Date.parse(x.start) < Date.now() - 12 * 3600e3)) SLIP.set(x.key, x);
+  } catch (e) { /* an empty slip */ }
+  const saveSlip = () => { try { localStorage.setItem("kn-slip", JSON.stringify([...SLIP.values()])); } catch (e) { /* this visit only */ } };
+  const amOf = (dec) => (dec >= 2 ? Math.round((dec - 1) * 100) : -Math.round(100 / (dec - 1)));
+  function parlayOf(xs) {
+    const games = xs.flatMap((x) => x.games || []);
+    if (new Set(games).size < games.length) return { same: true };
+    const dec = xs.reduce((a, x) => a * x.dec, 1);
+    const p = xs.every((x) => x.p != null) ? xs.reduce((a, x) => a * x.p, 1) : null;
+    return { dec, p, ev: p == null ? null : p * dec - 1 };
+  }
+  (() => {   // the parlay arithmetic, checked on load: two -110 legs pay +264 and hit 25% at 50% each
+    const P = parlayOf([{ dec: 1 + 100 / 110, p: 0.5, games: ["a"] }, { dec: 1 + 100 / 110, p: 0.5, games: ["b"] }]);
+    console.assert(amOf(P.dec) === 264 && Math.abs(P.p - 0.25) < 1e-9 && parlayOf([{ dec: 2, games: ["a"] }, { dec: 2, games: ["a"] }]).same, "slip parlay math");
+  })();
+  function slipHtml() {
+    const xs = [...SLIP.values()].sort((a, b) => (a.start || "").localeCompare(b.start || ""));
+    const onBest = shownSec === "best" || shownSec === "nba-best";
+    if (!xs.length) return `<section class="slip"><h3>Slip</h3><div class="empty-s"><p class="note">Tap <b>+</b> on any pick in Best bets to add it. The slip prices your picks as a parlay, shows how often that hits by the board's numbers, and stays on this device.</p>${onBest ? "" : `<a class="more" href="${shownSport === "nba" ? "#nba-best" : "#best"}">Best bets →</a>`}</div></section>`;
+    const now = Date.now();
+    const li = xs.map((x) => `<li><b>${label(x.label)}</b><span class="px">${am(x.american)}</span><button class="x" type="button" data-rm="${esc(x.key)}" aria-label="Remove ${esc(x.label)}">×</button><small>${esc(x.sub)}${x.start && Date.parse(x.start) <= now ? " · started" : ""}</small></li>`).join("");
+    let tot = "";
+    if (xs.length > 1) {
+      const P = parlayOf(xs);
+      tot = P.same ? '<div class="tot"><p class="note">Two picks are from the same game. Books price same-game parlays their own way, so there is no parlay price here.</p></div>'
+        : `<div class="tot"><div class="big"><span>As a ${xs.length}-leg parlay</span><b>${am(amOf(P.dec))}</b></div>
+          <div><span>Hits, by the board's numbers</span><b>${P.p == null ? "–" : pct(P.p, 1)}</b></div>
+          <div><span>${term("ev", "EV")}</span><b class="${cls(P.ev)}">${P.ev == null ? "–" : evPct(P.ev)}</b></div>
+          <div><span>1u pays</span><b>+${(P.dec - 1).toFixed(2)}u</b></div></div>`;
+    }
+    const known = xs.filter((x) => x.p != null), exp = known.reduce((a, x) => a + x.p * x.dec - 1, 0);
+    return `<section class="slip"><h3>Slip <span class="cnt">${xs.length}</span><button class="btn" type="button" data-slip="clear">Clear</button></h3>
+      <ul>${li}</ul>${tot}
+      ${known.length ? `<p class="note">As straight bets at 1u each: <span class="${cls(exp)}">${units(exp)}</span> expected on ${known.length}u.</p>` : ""}
+      <div class="acts"><button class="btn primary" type="button" data-slip="copy">Copy picks</button></div>
+      <p class="fine">Hit chances multiply each pick's own, treating different games as independent. Not betting advice.</p></section>`;
+  }
+  function glance() {   // the season beside the slip: the record next to the picks being weighed
+    const row = (k, r) => `<div class="gr"><span>${k}</span><b>${r && r.n ? `${rec(r)} · <span class="${cls(r.units)}">${units(r.units)}</span>` : "–"}</b></div>`;
+    if (shownSport === "nba") {
+      if (!N) return "";
+      const R = N.record.live, P = ((N.props || {}).record || {}).live || {};
+      return `<section class="glance"><h3>NBA ${esc(N.meta.label)} <a href="#nba-record">Record →</a></h3>${row("Game lines", R.all)}${row("Props", P.all)}${row("Picks of the day", R.potd)}${row("Golden parlay", R.parlay)}</section>`;
+    }
+    const A = D.record.all, P = PR ? PR.record.all : null;
+    return `<section class="glance"><h3>NFL ${D.meta.season} <a href="#record">Record →</a></h3>${row("Game lines", A.all)}${row("Props", P && P.all)}${row("Picks of the week", A.potw)}${row("Golden parlay", A.parlay)}</section>`;
+  }
+  const RAILQ = window.matchMedia ? window.matchMedia("(min-width: 1240px)") : null;
+  const railShown = () => !!(RAILQ && RAILQ.matches);
+  const sheet = document.getElementById("sheet"), fab = document.getElementById("fab");
+  function renderRail() {
+    const html = slipHtml();
+    document.getElementById("rail").innerHTML = `<div class="rail-in">${html}${glance()}</div>`;
+    document.getElementById("sheet-in").innerHTML = html;
+    fab.hidden = SLIP.size === 0;
+    fab.querySelector("b").textContent = SLIP.size;
+  }
+  function openSheet() { if (sheet.open) return; renderRail(); if (sheet.showModal) sheet.showModal(); else sheet.setAttribute("open", ""); }
+  function closeSheet() { if (sheet.close) sheet.close(); else sheet.removeAttribute("open"); }
+  fab.addEventListener("click", openSheet);
+  sheet.addEventListener("click", (e) => {
+    if (e.target.closest && e.target.closest(".grab")) { closeSheet(); return; }
+    if (e.target !== sheet) return;
+    const r = sheet.getBoundingClientRect();   // a click on the backdrop closes it
+    if (e.clientY < r.top || e.clientY > r.bottom || e.clientX < r.left || e.clientX > r.right) closeSheet();
+  });
+  if (RAILQ && RAILQ.addEventListener) RAILQ.addEventListener("change", () => { if (RAILQ.matches && sheet.open) closeSheet(); });
+  function toast(html, action) {
+    const box = document.getElementById("toasts");
+    const el = document.createElement("div");
+    el.className = "toast";
+    el.innerHTML = `<span class="ok" aria-hidden="true">✓</span><span>${html}</span>${action ? `<button class="btn" type="button">${action[0]}</button>` : ""}`;
+    box.appendChild(el);
+    while (box.children.length > 3) box.firstElementChild.remove();
+    const kill = () => { if (!el.isConnected) return; el.classList.add("out"); setTimeout(() => el.remove(), REDUCED ? 0 : 220); };
+    const t = setTimeout(kill, action ? 4000 : 2400);
+    if (action) el.querySelector("button").addEventListener("click", () => { clearTimeout(t); action[1](); kill(); });
+  }
+  function syncAdd(key) {
+    const inS = SLIP.has(key);
+    document.querySelectorAll("[data-add]").forEach((b) => {
+      if (b.dataset.add !== key) return;
+      b.setAttribute("aria-pressed", String(inS));
+      if (b.classList.contains("add")) { b.innerHTML = inS ? TICK : PLUS; b.setAttribute("aria-label", (b.getAttribute("aria-label") || "").replace(/^(Add to|Remove from)/, inS ? "Remove from" : "Add to")); }
+      else { b.textContent = inS ? "In the slip" : "Add to slip"; b.classList.toggle("primary", inS); }
+    });
+  }
+  function slipToggle(key) {
+    const it = ITEMS.get(key) || PZ.get(key);
+    let added = false;
+    if (SLIP.has(key)) SLIP.delete(key);
+    else if (it) {
+      SLIP.set(key, { key, sport: it.sport, label: it.kind === "prop" ? `${it.title} ${it.bet} ${it.mk.toLowerCase()}` : it.title,
+        sub: [it.book, it.mt, it.when].filter(Boolean).join(" · "), american: it.american, dec: it.dec, p: it.p, games: it.games, start: it.start });
+      added = true;
+    } else return;
+    saveSlip();
+    syncAdd(key);
+    renderRail();
+    if (!fab.hidden && !REDUCED) { fab.classList.remove("bump"); void fab.offsetWidth; fab.classList.add("bump"); }
+    if (!railShown()) toast(added ? `Added <b>${label(SLIP.get(key).label)}</b>` : "Removed from the slip", added ? ["View slip", openSheet] : null);
+  }
+  function slipText() {
+    const xs = [...SLIP.values()];
+    const out = xs.map((x) => `${x.label} ${am(x.american)} (${x.sub})`);
+    if (xs.length > 1) { const P = parlayOf(xs); if (!P.same) out.push(`Parlay ${am(amOf(P.dec))}${P.p != null ? `, hits ${pct(P.p, 1)} by the board's numbers` : ""}`); }
+    return out.join("\n").replace(/−/g, "-");
+  }
+  function copySlip() {
+    const txt = slipText();
+    const fallback = () => {   // a host that refuses the clipboard: select the text and copy the old way
+      const ta = document.createElement("textarea");
+      ta.value = txt; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      ta.remove();
+      toast(ok ? "Copied the picks" : "Copying is blocked here");
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => toast("Copied the picks"), fallback);
+    else fallback();
+  }
+  document.addEventListener("click", (e) => {
+    const t = e.target;
+    if (!t || !t.closest) return;
+    const a = t.closest("[data-add]");
+    if (a) { slipToggle(a.dataset.add); return; }
+    const rm = t.closest("[data-rm]");
+    if (rm) { const k = rm.dataset.rm; SLIP.delete(k); saveSlip(); syncAdd(k); renderRail(); return; }
+    const act = t.closest("[data-slip]");
+    if (!act) return;
+    if (act.dataset.slip === "copy") copySlip();
+    else if (act.dataset.slip === "clear") {
+      const prev = [...SLIP.entries()];
+      SLIP.clear(); saveSlip(); prev.forEach(([k]) => syncAdd(k)); renderRail();
+      toast("Cleared the slip", ["Undo", () => { for (const [k, v] of prev) SLIP.set(k, v); saveSlip(); prev.forEach(([k]) => syncAdd(k)); renderRail(); }]);
+    }
+  });
+
+  const VIEWS = { best: () => renderBest("nfl"), "nba-best": () => renderBest("nba"),
+                  week: renderWeek, mine: renderMine, defense: renderDefense, record: renderRecord, model: renderModel,
                   props: renderProps, "props-players": renderPropsPlayers, "props-mine": renderPropsMine, "props-defense": renderDefense,
                   "props-record": renderPropsRecord, "props-model": renderPropsModel, live: renderLive, "live-model": renderLiveModel,
                   nba: renderNba, "nba-record": renderNbaRecord, "nba-model": renderNbaModel,
