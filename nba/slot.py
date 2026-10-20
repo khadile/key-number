@@ -46,7 +46,7 @@ def main() -> None:
         if out:
             with open(out, "a") as f:
                 f.write(f"due={'true' if d else 'false'}\nslot={s}\n")
-    if a.mark:
+    if a.mark and slot_of(now):   # a forced build before 10:30am is no slot's build: the morning one still runs
         last = json.loads(STATE.read_text()) if STATE.exists() else {}
         last.update({s: now.astimezone(ET).date().isoformat(), "at": now.isoformat()})
         STATE.write_text(json.dumps(last) + "\n")
