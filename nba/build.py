@@ -673,6 +673,44 @@ def main() -> None:
         for pk in c["picks"].values():
             pk["notes"] = trends.notes(pk, ctx)
     pnotes = PropNotes(hist, today + timedelta(days=1), SEASON)
+    # regulars (24+ minutes) ruled out tonight, by team, most minutes first: whose absence a teammate's notes read
+    usual = dict(zip(prof["athlete_id"].to_list(), prof["exp_min"].to_list()))
+    outs = inj.filter(pl.col("status").is_in(list(espn.OUT_STATUSES)))
+    mates_out: dict[str, list] = {}
+    for o in outs.iter_rows(named=True):
+        if (usual.get(o["athlete_id"]) or 0) >= PropNotes.REGULAR_MIN:
+            mates_out.setdefault(o["team"], []).append((o["athlete_id"], o["name"], o["status"], usual[o["athlete_id"]]))
+    mates_out = {t: [x[:3] for x in sorted(v, key=lambda x: -x[3])] for t, v in mates_out.items()}
+
+    def player_notes(r: dict, market: str, pick: dict | None, matchup: bool = True) -> list[str]:
+        """Facts for a player in one market ("sig": his own stat): the matchup (and, in a combo, the stat that is
+        his), a teammate out, a back-to-back, the game's pace, and his form against a pick's line. A fact is
+        decoration: one that fails is printed and left out, never stopping the build."""
+        try:
+            return _player_notes(r, market, pick, matchup)
+        except Exception as e:   # noqa: BLE001
+            print(f"notes skipped for {r.get('name')}: {type(e).__name__}: {e}")
+            return []
+
+    def _player_notes(r: dict, market: str, pick: dict | None, matchup: bool) -> list[str]:
+        if market == "sig":
+            market = pnotes.signature(r["athlete_id"], r["pos"])[0]
+        out = []
+        if matchup:
+            out.append(pnotes.matchup(r["opp"], r["pos"], market))
+            sig = pnotes.signature(r["athlete_id"], r["pos"])[0]
+            if market in NP.COMBOS and sig in NP.COMBOS[market] and sig != "pts":
+                out.append(pnotes.matchup(r["opp"], r["pos"], sig))
+        out.append(pnotes.without(r["athlete_id"], r["team"], mates_out.get(r["team"], []), market))
+        m = models.get(r["game_id"]) or {}
+        if (m.get("rest") or {}).get("home" if r["home"] else "away") == 1:
+            out.append(pnotes.b2b(r["athlete_id"], market))
+        pf = m.get("pace_factor")
+        if pf and abs(pf - 1) >= 0.02:
+            out.append(f"Projected pace {m['pace']:.1f} possessions, {100 * (pf - 1):+.0f}% against the league average")
+        if pick:
+            out.append(pnotes.form(r["athlete_id"], market, pick["line"], pick["side"]))
+        return [n for n in out if n]
 
     # --- page data: today's tracked players
     pres = {r["id"]: r for r in p_results}
@@ -700,11 +738,17 @@ def main() -> None:
                            "actual": stats.get((r["game_id"], r["athlete_id"]), {}).get(m)})
             pk = p_by.get((r["game_id"], r["athlete_id"]))
             if pk:
-                pk["notes"] = [n for n in (pnotes.matchup(r["opp"], r["pos"], pk["market"]),
-                                           pnotes.form(r["athlete_id"], pk["market"], pk["line"], pk["side"])) if n]
-            pm = pk["market"] if pk else "pts"
+                pk["notes"] = player_notes(r, pk["market"], pk)
+            # without a pick, his card reads his own stats (a center's rebounds, a passing guard's assists), then
+            # the teammate, back-to-back and pace facts in his main stat
+            try:
+                card = pnotes.card(r["athlete_id"], r["pos"], r["opp"])
+            except Exception as e:   # noqa: BLE001
+                print(f"card notes skipped for {r['name']}: {type(e).__name__}: {e}")
+                card = []
+            extra = player_notes(r, "sig", None, matchup=False)
             players.append({"img": f"https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/{r['athlete_id']}.png&w=96&h=70&scale=crop",
-                            "matchup": pnotes.matchup(r["opp"], r["pos"], pm), "recent": pnotes.recent(r["athlete_id"]),
+                            "notes": (card + extra)[:4], "matchup": card[0] if card else None, "recent": pnotes.recent(r["athlete_id"]),
                             "id": r["athlete_id"], "name": r["name"], "team": r["team"], "opp": r["opp"], "game_id": r["game_id"],
                             "role": r["role"], "status": r["status"], "min": round(r["exp_min"], 1), "min_short": round(r.get("min_short") or 0.0, 1), "games_now": r["games_now"],
                             "markets": mk, "pick": p_by.get((r["game_id"], r["athlete_id"]))})

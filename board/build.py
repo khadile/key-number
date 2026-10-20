@@ -118,6 +118,36 @@ def _kick(dt: datetime) -> dict:
             "time": et.strftime("%I:%M %p").lstrip("0") + " ET", "short": et.strftime("%a ") + et.strftime("%I:%M %p").lstrip("0")}
 
 
+def prop_facts(cards: list[dict], props_out: dict, roles: dict, def_rows: list[dict], season: int, week: int) -> None:
+    """Every props player's facts, in place: a pick's notes in its own market, a card's role matchups (board/notes.py)."""
+    from board.notes import CARD_MARKETS, RoleDefense, Situations, implied_note, prop_notes, usage_note
+    from props.backtest import baselines, load as props_params
+    from props.section import _frames_cached
+    phist = baselines(_frames_cached(props_params()[0]))
+    rd = RoleDefense(phist.filter((pl.col("season") == season) & (pl.col("week") < week)))
+    sit = Situations(phist.filter(pl.col("season").is_between(2018, season - 1)), pl.read_parquet(RAW / "schedules.parquet"))
+    implied, env_of = {}, {}
+    for c in cards:
+        s, t = c["market"].get("spread"), c["market"].get("total")
+        if s is not None and t is not None:
+            implied[c["home"]], implied[c["away"]] = t / 2 + s / 2, t / 2 - s / 2
+        for team, sign in ((c["home"], 1), (c["away"], -1)):
+            env_of[(c["id"], team)] = {"spread": None if s is None else sign * s, "wind": (c.get("weather") or {}).get("wind"),
+                                       "outdoors": not c["dome"], "implied": implied}
+    for pp in props_out["players"]:
+        logs = props_out["logs"].get(pp["id"], [])
+        env = env_of.get((pp["game_id"], pp["team"]), {"implied": implied})
+        if pp.get("pick"):
+            pp["pick"]["notes"] = prop_notes(pp["pick"], roles, def_rows, logs, season, rd, sit, env)
+        # without a pick, his card reads his role's two markets (a QB's passing and rushing, an RB's rushing and
+        # catches, a receiver's catches and yards), then his usage and the game's environment in his main market
+        main = (CARD_MARKETS.get(pp["role"]) or ("rec_yds",))[0]
+        extra = [usage_note(logs, season, main), implied_note(pp["team"], implied)]
+        notes = rd.card(pp["opp"], pp["role"]) + [n for n in extra if n] + sit.notes(pp["role"], main, env.get("spread"), env.get("wind"), env.get("outdoors", False))
+        pp["notes"] = notes[:4]
+        pp["matchup"] = notes[0] if notes else None
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--offline", action="store_true", help="no downloads; rebuild from data on disk")
@@ -479,18 +509,22 @@ def main() -> None:
     def_rows, def_league = defense.season_table(season)
 
     # --- context notes on each pick (user, 2026-10-20): situation records, matchups and form, computed from data
-    from board.notes import MAIN_MARKET, GameTrends, matchup_note, prop_notes
+    from board.notes import GameTrends, prop_notes
     trends = GameTrends(games.filter((pl.col("season") < season) | (pl.col("week") < week)))
     game_row = {g["game_id"]: g for g in week_games.iter_rows(named=True)}
     for c in cards:
         for pk in c["picks"].values():
             pk["notes"] = trends.notes(pk, game_row[c["id"]])
-    for pp in props_data_out["players"]:
-        if pp.get("pick"):
-            pp["pick"]["notes"] = prop_notes(pp["pick"], roles, def_rows, props_data_out["logs"].get(pp["id"], []), season)
-        # every player's matchup in his main market (the pick's when he has one), shown on his card
-        pm = (pp.get("pick") or {}).get("market") or MAIN_MARKET.get(pp["pos"], "rec_yds")
-        pp["matchup"] = matchup_note(pp["opp"], pp["role"], pm, roles, def_rows)
+    # props facts in the pick's own market and the player's role (user, 2026-10-20): the role defense this season,
+    # the league's history by spread and wind, his recent usage, and the week's implied team points. A fact is
+    # decoration: if one fails, the build says so and carries on with the older matchup line
+    try:
+        prop_facts(cards, props_data_out, roles, def_rows, season, week)
+    except Exception as e:   # noqa: BLE001
+        print(f"props facts skipped: {type(e).__name__}: {e}")
+        for pp in props_data_out["players"]:
+            if pp.get("pick"):
+                pp["pick"]["notes"] = prop_notes(pp["pick"], roles, def_rows, props_data_out["logs"].get(pp["id"], []), season)
 
     # --- how it works: backtest headline numbers, computed from saved reports
     model_card = {"clv": clv_study, "sigma_margin": round(sm, 1), "sigma_total": round(st, 1)}

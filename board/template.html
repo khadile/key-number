@@ -1963,7 +1963,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       books: m.books, lean: m.lean, hl: !!(p.pick && p.pick.market === m.market), ...nflForm(p, m.market) }));
     return `<article class="pcard"><header class="phead"><div>${headshot(p.name, p.img, T[p.team], p.team)}<span class="pwho"><a class="pname" href="#p-${esc(p.id)}">${esc(p.name)}</a><span class="meta">${roleTag(p)}<span>${usage}</span></span></span></div></header>
       <div class="chips">${p.pick ? propPickChip(p.pick) : leanChip(bestLean(p), false, p)}</div>
-      ${p.pick ? ctxList(p.pick) : p.matchup ? `<ul class="ctx"><li>${esc(p.matchup)}</li></ul>` : ""}
+      ${p.pick ? ctxList(p.pick, 5) : ctxList({ notes: p.notes || (p.matchup ? [p.matchup] : []) }, 4)}
       ${fm.vals.length ? `<div class="l5row" data-tip="His last ${fm.vals.length} games: green would have won this ${p.pick ? "pick" : "side"}, red would have lost. Tap a number for the game."><span class="note">Last ${fm.vals.length} · ${f.side === "under" ? "under" : "over"} ${num(f.line, 1).replace(/\.0$/, "")} ${PMK[f.m].toLowerCase()}</span>${formStrip(fm.vals, f.line, f.side, fm.tips)}</div>` : ""}
       ${rows.length ? `<details class="nmore"><summary>All markets</summary><div class="nmore-in">${mktTable(rows)}</div></details>` : closed(p.game_id) ? "" : '<p class="note">No lines yet.</p>'}
     </article>`;
@@ -2793,7 +2793,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     return `<article class="pcard"><header class="phead"><div>${headshot(p.name, p.img, NT[p.team], p.team)}<span class="pwho"><b class="pname">${esc(p.name)}</b>
         <span class="meta"><span class="role">${p.role === "Starter" ? "Starter" : "6th man"}</span>${st}<span${p.min_short >= 1 ? ` data-tip="Players coming back from time off, the summer included, play fewer minutes for a few games: ${num(p.min_short, 1)} are taken off his usual."` : ""}>${num(p.min, 1)} min projected${p.games_now ? " from last season" : ""}${p.min_short >= 1 ? `, ${num(p.min_short, 1)} fewer ${p.games_now ? "back from time off" : "in his first game"}` : ""}</span></span></span></div></header>
       <div class="chips">${p.pick ? npChip(p.pick) : '<span class="note">No prop with 1%+ value.</span>'}</div>
-      ${p.pick ? ctxList(p.pick) : p.matchup ? `<ul class="ctx"><li>${esc(p.matchup)}</li></ul>` : ""}
+      ${p.pick ? ctxList(p.pick, 5) : ctxList({ notes: p.notes || (p.matchup ? [p.matchup] : []) }, 4)}
       ${fm.vals.length ? `<div class="l5row" data-tip="His last ${fm.vals.length} games: green would have won this ${p.pick ? "pick" : "side"}, red would have lost. Tap a number for the game."><span class="note">Last ${fm.vals.length} · ${f.side === "under" ? "under" : "over"} ${num(f.line, 1).replace(/\.0$/, "")} ${NMK[f.m].toLowerCase()}</span>${formStrip(fm.vals, f.line, f.side, fm.tips)}</div>` : ""}
       ${rows.length ? `<details class="nmore"><summary>All markets</summary><div class="nmore-in">${mktTable(rows)}</div></details>` : '<p class="note">No lines posted yet.</p>'}</article>`;
   }
@@ -3006,7 +3006,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
         american: L.american, book: L.book, dec: L.dec, p: L.p, ev: L.ev, result: pk ? pk.result : null,
         gold: !!(pk && pk.potw), goldTxt: "Pick of the week", verdict: pk && pk.checks ? pk.checks.verdict : null, failed: pk && pk.checks ? failedOf(pk.checks) : [],
         lean: !pk, leanTxt: "Not locked", shopFlag: !!(m && isShop(L.side, L.line, m.median)), promoted: pl.promoted,
-        notes: (pk && pk.notes) || (pl.matchup ? [pl.matchup] : []),
+        notes: (pk && pk.notes) || pl.notes || (pl.matchup ? [pl.matchup] : []),
         href: `#p-${pl.id}`, hrefTxt: `${pl.name}'s page`, why: pk ? `Stake 1u. Quarter Kelly, its own record: ${stakeU(pk.kelly_u)}.` : `Not locked yet: props lock ${lockAt(pl.game_id)}.`,
         checks: pk && pk.checks ? checksBlock(pk.checks) : "", shop: m ? propShop(m, L, L.market === "receptions" ? "catches" : "yards") : null,
         form: f.vals.length ? { vals: f.vals, tips: f.tips, line: L.line, side: L.side, what: PMK[L.market].toLowerCase() } : null,
@@ -3050,7 +3050,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
         media: headshot(pl.name, pl.img, NT[pl.team], pl.team), mt: `${pl.team} ${g.home === pl.team ? "vs" : "at"} ${pl.opp}`, when: g.tip.short, start: g.tip.iso, started, games: ["nba" + g.id],
         american: L.american, book: L.book, dec: L.dec, p: L.p, ev: L.ev, result: pk ? pk.result : null,
         gold: !!(pk && pk.potd), goldTxt: "Pick of the day", lean: !pk, leanTxt: "Not locked", status: pl.status,
-        notes: (pk && pk.notes) || (pl.matchup ? [pl.matchup] : []),
+        notes: (pk && pk.notes) || pl.notes || (pl.matchup ? [pl.matchup] : []),
         href: "#nba-props", hrefTxt: "Player props", why: pk ? npWhy(pk) : `Not locked yet: props lock ${etTime(g.locks.props)}.`,
         shop: m ? propShop(m, L, NUNIT[L.market] || "") : null,
         form: f.vals.length ? { vals: f.vals, tips: f.tips, line: L.line, side: L.side, what: NMK[L.market].toLowerCase() } : null,

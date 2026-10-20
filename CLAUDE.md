@@ -638,6 +638,19 @@ budget with the NFL) comes after the pregame side is stable.
   against the player's role or position (rank of 30/32), and his recent games against the pick's line.
   History, not the model: none of it is used in pricing. NFL game cards got the NBA-style "Books, model
   and injury report" dropdown.
+  - Facts follow the market and the role (user, 2026-10-20: "centers for rebounds, PG's for assists", "RB
+    receptions -> the defense to RB receiving, QB rushing -> QB rushing defense"). NFL: `RoleDefense`, what
+    each defense allowed per game this season to opposing QB1/RB1/RB2/WR1/WR2/TE1 (the props board's own
+    roles) in the pick's market; NBA: per 36 minutes to the position group (hoopR labels only G/F/C) in the
+    pick's market, or for a card without a pick the player's own stat (`PropNotes.signature`: a center's
+    rebounds, a guard's assists or threes, by his rate against the group) and points.
+  - Correlations, each with its sample: NBA, his numbers without a 24+ minute teammate ruled out tonight
+    (5+ games each side, during that teammate's time on the team), back-to-back minutes, the game's pace;
+    NFL, the team's implied points (top or bottom quarter of the week), his target share or carries over
+    his last 3 games when 20%+ off, and `Situations`: a role's production by spread and in 15+ mph wind
+    since 2018, against the role's typical game (a role's raw ratio to season averages drifts: RB2s ran 13%
+    under in every kind of game), shown only at 5%+ on 200+ games and two standard errors. What passes:
+    RB1s as 3-7 point underdogs -6% rushing, and wind -8% to -12% on passing and receiving.
 - Checkups every other Monday from 2026-11-02 (Claude scheduled task
   `nba-checkup`): the record and EV at the close, overs vs unders, the model's
   lean, morning vs evening locks replayed on the same games, and the edges still

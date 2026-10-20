@@ -2,6 +2,12 @@
 
 - Matchup (props): what the opponent has allowed in that stat per 36 minutes to the player's position group
   (guards, forwards, centers) and where that ranks among 30, this season once each team has 5 games, else last season.
+  A player without a pick gets his own stats' matchups (user, 2026-10-20: "centers for rebounds, PG's for assists,
+  guards for threes"): the stat he produces most above his position's average (a passing guard's assists, a
+  shooter's threes, a big's rebounds), then points. The box scores label positions only G, F or C.
+- Teammate out (props): his numbers in the games he played without a regular (20+ minutes) ruled out tonight,
+  against the games with him, this season and last.
+- Back-to-backs (props): his minutes and the stat on the second night of a back-to-back against other nights.
 - Form (props): how often the player cleared the pick's line in his last 10 games.
 - Trends (game lines): how sides in the same situation (home underdogs, the second night of a back-to-back,
   10-point favorites, ...) have done against the consensus closing line since 2020-21, with the record and the
@@ -19,10 +25,25 @@ from nba import props as NP
 
 GROUP_NAME = {"G": "guards", "F": "forwards", "C": "centers"}
 MIN_TEAM_GAMES = 5
+CORE = ("pts", "reb", "ast", "fg3")
+# a stat counts as his when he makes at least this much of it per 36 minutes: enough for a book to post it
+MIN_RATE = {"reb": 7.0, "ast": 4.5, "fg3": 1.6}
+# the stats a position is read in, after points: a center's rebounds; a guard's assists or threes; a forward's any
+POS_STATS = {"C": ("reb",), "G": ("ast", "fg3"), "F": ("reb", "fg3", "ast")}
+MIN_SPLIT = 5                       # games on each side of a with/without or back-to-back split
+REGULAR_MIN = 24.0                  # a teammate whose absence is worth a note plays this many minutes
 
 
 def _ord(n: int) -> str:
     return f"{n}{'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"
+
+
+def _where(rank: int, n: int) -> str:
+    """Rank 1 = the most of n."""
+    if rank <= n / 2:
+        return "the most" if rank == 1 else f"the {_ord(rank)}-most"
+    k = n - rank + 1
+    return "the fewest" if k == 1 else f"the {_ord(k)}-fewest"
 
 
 def _record(w: int, l: int, p: int = 0) -> str:
@@ -32,6 +53,8 @@ def _record(w: int, l: int, p: int = 0) -> str:
 # ---------------------------------------------------------------- props
 
 class PropNotes:
+    REGULAR_MIN = REGULAR_MIN
+
     def __init__(self, hist: pl.DataFrame, before: date, season: int):
         h = hist.filter((pl.col("date") < before) & (pl.col("min") > 0) & (pl.col("season") >= season - 1))
         h = h.with_columns(pg=pl.col("pos").map_elements(NP._pos, return_dtype=pl.String),
@@ -55,6 +78,13 @@ class PropNotes:
                    .join(games, on="opp", how="inner"))
             self.allowed[s] = avg
         self.season = season
+        self.before = before
+        # each position group's per-minute rate in every stat, to find the stats a player makes more of than his peers
+        base = h.filter(pl.col("min") >= 10)
+        self.grp_rate = {r["pg"]: r for r in base.group_by("pg").agg(*[(pl.col(m).sum() / pl.col("min").sum()).alias(m) for m in CORE]).iter_rows(named=True)}
+        # each team-game's rest: days since that team's previous game (1 = the second night of a back-to-back)
+        tg = h.select("team", "game_id", "date").unique().sort("team", "date")
+        self.rest = tg.with_columns(rest=(pl.col("date") - pl.col("date").shift(1).over("team")).dt.total_days()).select("game_id", "team", "rest")
 
     def matchup(self, opp: str, pos: str, market: str) -> str | None:
         grp = NP._pos(pos)
@@ -69,9 +99,56 @@ class PropNotes:
             rank = x["opp"].to_list().index(opp) + 1
             v = row[market][0]
             lab = NP.MARKET_LABEL[market].lower()
-            where = f"the {_ord(rank)}-most" if rank <= 15 else f"the {_ord(len(x) - rank + 1)}-fewest"
-            return f"{opp} allowed {GROUP_NAME[grp]} {v:.1f} {lab} per 36 minutes, {where} of {len(x)} ({label}, {row['g'][0]} games)"
+            return f"{opp} allowed {GROUP_NAME[grp]} {v:.1f} {lab} per 36 minutes, {_where(rank, len(x))} of {len(x)} ({label}, {row['g'][0]} games)"
         return None
+
+    def signature(self, athlete_id: int, pos: str) -> list[str]:
+        """The stats that are his: of the ones his position is read in (a center's rebounds, a guard's assists or
+        threes), the one he makes most of against his position group, if he makes enough of it; then points."""
+        x = self.h.filter(pl.col("athlete_id") == athlete_id)
+        mins = float(x["min"].sum())
+        grp = NP._pos(pos)
+        g = self.grp_rate.get(grp)
+        if mins < 150 or not g:
+            return ["pts"]
+        own = {m: float(x[m].sum()) / mins for m in CORE}
+        cand = [m for m in POS_STATS[grp] if own[m] * 36 >= MIN_RATE[m] and g[m] > 0]
+        best = max(cand, key=lambda m: own[m] / g[m], default=None)
+        return [best, "pts"] if best else ["pts"]
+
+    def card(self, athlete_id: int, pos: str, opp: str) -> list[str]:
+        """A card's matchups when he has no pick: his own stat first, then points."""
+        out = [(m, self.matchup(opp, pos, m)) for m in self.signature(athlete_id, pos)]
+        return [n for _, n in out if n]
+
+    def without(self, athlete_id: int, team: str, mates: list[tuple[int, str, str]], market: str) -> str | None:
+        """His numbers without the most-used teammate ruled out tonight. `mates`: (id, name, status), most minutes
+        first. Only games inside the teammate's time on this team count, so a trade is not an absence."""
+        lab = NP.MARKET_LABEL[market].lower()
+        p = self.h.filter((pl.col("athlete_id") == athlete_id) & (pl.col("team") == team))
+        for mid, name, status in mates:
+            t = self.h.filter((pl.col("athlete_id") == mid) & (pl.col("team") == team))
+            if t.height < MIN_SPLIT:
+                continue
+            mine = p.filter(pl.col("date") >= t["date"].min())
+            with_ids = set(t["game_id"].to_list())
+            w = mine.filter(pl.col("game_id").is_in(list(with_ids)))
+            wo = mine.filter(~pl.col("game_id").is_in(list(with_ids)))
+            if wo.height < MIN_SPLIT or w.height < MIN_SPLIT:
+                continue
+            return (f"Without {name} ({status.lower()} tonight): {wo[market].mean():.1f} {lab} and {wo['min'].mean():.1f} minutes a game "
+                    f"in {wo.height} games, vs {w[market].mean():.1f} and {w['min'].mean():.1f} with him (this season and last)")
+        return None
+
+    def b2b(self, athlete_id: int, market: str) -> str | None:
+        """His minutes and the stat on the second night of a back-to-back against other nights."""
+        x = self.h.filter(pl.col("athlete_id") == athlete_id).join(self.rest, on=["game_id", "team"], how="left")
+        b, o = x.filter(pl.col("rest") == 1), x.filter(pl.col("rest") > 1)
+        if b.height < MIN_SPLIT + 1 or o.height < MIN_SPLIT:
+            return None
+        lab = NP.MARKET_LABEL[market].lower()
+        return (f"Second night of a back-to-back: {b['min'].mean():.1f} minutes and {b[market].mean():.1f} {lab} a game in {b.height} such games, "
+                f"vs {o['min'].mean():.1f} and {o[market].mean():.1f} otherwise (this season and last)")
 
     def recent(self, athlete_id: int, n: int = 5) -> dict:
         """His last `n` games, oldest first: date, opponent and every market's value (for the card's strip)."""
