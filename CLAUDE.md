@@ -382,6 +382,23 @@ the closing line, the board says so.
     The model knows a little the Saturday line does not, too little to bet on.
   - Anchor: Pinnacle alone beats averaging books (2025, same line: Pinnacle
     0.6845, bet365 0.6874, average 0.6856; 2026's 599 lines are noise).
+- Where the edge comes from (2026-10-20, after live weeks 5-6 went 38-51;
+  `python -m props.edge_source` -> reports/props_edge_source.json, on the
+  props "How it works"). Every tracked prop of weeks 1-6 at the lock, the best
+  DK/FD side priced the board's way, judged at Pinnacle's close the same way:
+  a better NUMBER than Pinnacle's held up (245 bets, +4.9% at the lock, +4.4%
+  at the close, 72% still +EV); the same number with a better PRICE did not
+  (137, +1.6% -> -0.5%, 54%). Under 2% nothing held (better number -0.1%,
+  same -1.2%); price-only edges held only when large (4%+). The SportsGameOdds
+  2026 opens split the same way (0-2%: -0.4% / -1.8% at the close). Weeks 5-6
+  had few and small better-number chances (about 19 a week at +2%, against
+  about 55 at +5-7% in weeks 1-4), so the one-prop-a-player rule filled with
+  price-only edges: the live picks were worth -0.2% at the close (the weeks
+  1-4 replay's +4.0%). Week 6's 18-26 had a 7.6% chance at the stated
+  chances; injuries and game script explained 2-3 losses a week, not more.
+  A rule of 2%+ EV, and 4%+ when the edge is the price alone, keeps 155 of
+  the 392 bets (+6.9% at the close, 82% still +EV). It is the user's call:
+  until they decide it is a finding, not a pick rule.
 
 ## 6c. Live engine (live/)
 

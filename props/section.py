@@ -489,6 +489,11 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
     if sg.exists():
         import json
         sgo = json.loads(sg.read_text()).get("board", {})
+    edge = {}
+    ep = REPORTS / "props_edge_source.json"     # python -m props.edge_source: where the props edge comes from
+    if ep.exists():
+        import json
+        edge = json.loads(ep.read_text())
     bt = {}
     pp = REPORTS / "props_params.json"
     if pp.exists():
@@ -504,7 +509,7 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
                    "live_rows": (lr := _rows(live_picks, live_results, verdict_by)), "pre_rows": (pr := _rows(sim_picks, sim_results, verdict_by)),
                    "verdicts": {"all": C.tally(pr + lr), "since": C.tally(lr, C.SINCE_WEEK)}},
         "players": players, "games": games_out, "logs": logs, "parlays": parlays,
-        "model": {"backtest": bt, "study": study, "sgo": sgo},
+        "model": {"backtest": bt, "study": study, "sgo": sgo, "edge": edge},
         "mypicks": {"lines": pickable, "results": results},
     }
 
