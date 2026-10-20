@@ -114,3 +114,9 @@
 {"id": "2026_06_DAL_GB:00-0038041:receptions:1792374768", "expired": "time", "logged_at": "2026-10-19T01:59:04.177368+00:00"}
 {"id": "2026_06_DAL_GB:game:total:1792374863", "clv_units": 0.0, "logged_at": "2026-10-19T01:59:40.309997+00:00"}
 {"id": "2026_06_DAL_GB:game:total:1792374863", "expired": "time", "logged_at": "2026-10-19T02:00:52.804543+00:00"}
+{"id": "2026_06_WAS_SF:00-0037834:pass_yds:1792460444", "fill": "filled", "fill_dec": 1.8695652173913042, "fill_line": 303.5, "logged_at": "2026-10-20T01:41:20.495302+00:00"}
+{"id": "2026_06_WAS_SF:game:spread:1792460538", "fill": "filled", "fill_dec": 1.8620689655172413, "fill_line": 18.5, "logged_at": "2026-10-20T01:42:55.114514+00:00"}
+{"id": "2026_06_WAS_SF:00-0037834:pass_yds:1792460444", "clv_units": 0.0, "logged_at": "2026-10-20T01:45:51.565366+00:00"}
+{"id": "2026_06_WAS_SF:00-0037834:pass_yds:1792460444", "expired": "time", "logged_at": "2026-10-20T01:47:04.799761+00:00"}
+{"id": "2026_06_WAS_SF:game:spread:1792460538", "clv_units": 0.0, "logged_at": "2026-10-20T01:47:41.109967+00:00"}
+{"id": "2026_06_WAS_SF:game:spread:1792460538", "expired": "time", "logged_at": "2026-10-20T01:48:55.302393+00:00"}

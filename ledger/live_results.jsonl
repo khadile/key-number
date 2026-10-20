@@ -37,3 +37,5 @@
 {"id": "2026_06_BUF_LV:00-0037261:receptions:1792360123", "result": "L", "actual": 4.0, "logged_at": "2026-10-18T23:32:25.732520+00:00"}
 {"id": "2026_06_DAL_GB:00-0038041:receptions:1792374768", "result": "W", "actual": 2.0, "logged_at": "2026-10-19T03:47:56.913164+00:00"}
 {"id": "2026_06_DAL_GB:game:total:1792374863", "result": "L", "actual": null, "logged_at": "2026-10-19T03:47:56.913406+00:00"}
+{"id": "2026_06_WAS_SF:00-0037834:pass_yds:1792460444", "result": "L", "actual": 264.0, "logged_at": "2026-10-20T03:22:05.451386+00:00"}
+{"id": "2026_06_WAS_SF:game:spread:1792460538", "result": "W", "actual": null, "logged_at": "2026-10-20T03:22:05.451614+00:00"}
