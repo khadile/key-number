@@ -7,7 +7,9 @@ slot with no build, it dispatches that workflow WITHOUT force, so the workflow's
 and never builds a slot twice. Nothing is dispatched while a run of that workflow is queued or running, and at
 most twice a slot (40+ minutes apart), so a build that keeps failing is left for a person to look at.
 
-    python -m board.catchup            # one check; the log is %LOCALAPPDATA%/key-number-catchup/catchup.log
+    python -m board.catchup            # one check; the log is ~/key-number-catchup/catchup.log
+
+The log lives in the home folder, not AppData: Store Python redirects AppData writes into its own sandbox.
 """
 import json
 import os
@@ -19,7 +21,7 @@ from zoneinfo import ZoneInfo
 ET = ZoneInfo("America/New_York")
 REPO = "khadile/key-number"
 GH = r"C:\Program Files\GitHub CLI\gh.exe"
-HOME = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "key-number-catchup"
+HOME = Path.home() / "key-number-catchup"
 GRACE = timedelta(minutes=30)
 RETRY = timedelta(minutes=40)
 NBA_SLOTS = (("evening", time(17, 30)), ("morning", time(10, 30)))   # latest first, as nba/slot.py
