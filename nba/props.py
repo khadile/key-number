@@ -275,7 +275,7 @@ def slate(games: list[dict], prof: pl.DataFrame, roster: pl.DataFrame, injuries:
                              "sd_min": float(min(max((p["sd_min"] or 6.0) * SD_MIN_SCALE, SD_MIN_FLOOR), SD_MIN_CAP)),
                              "pace_factor": float(g.get("pace_factor") or 1.0), "games_now": int(p["games_now"] or 0),
                              **{f"r_{k}": float(p[f"r_{k}"]) for k in STATS}})
-    return pl.DataFrame(rows) if rows else pl.DataFrame()
+    return pl.DataFrame(rows, infer_schema_length=None) if rows else pl.DataFrame()   # "status" is null for most players
 
 
 def samples(x: pl.DataFrame, seed: int = 17) -> dict[tuple[int, int, str], np.ndarray]:
