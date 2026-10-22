@@ -365,6 +365,8 @@ details.nmore[open] > summary::before { transform: rotate(45deg); }
 .tag.shop { background: var(--accent-soft); color: var(--accent); margin-left: 4px; }
 .tag.promo, .chip.promo .m { background: var(--you-soft); color: var(--you); }
 .tag.lean { background: transparent; color: var(--muted); border: 1px dashed var(--line-2); }
+.tag.mu-yes { background: var(--good-soft); color: var(--good); margin-left: 4px; }
+.tag.mu-no { background: transparent; color: var(--muted); border: 1px dashed var(--line-2); margin-left: 4px; }
 .stk { font: 600 11px var(--f-mono); padding: 2px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
 .stk.none { background: transparent; color: var(--muted); border: 1px dashed var(--line-2); }
 tr.lean td { color: var(--muted); }
@@ -1863,9 +1865,20 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   const shopTag = (side, line, median) => (median != null && line != null && ((side === "over" && median < line) || (side === "under" && median > line))
     ? ' <span class="tag shop" title="The model alone leans the other way. This call comes from DraftKings or FanDuel hanging a number off the Pinnacle line, the edge source that held up in testing.">Line shop</span>' : "");
   const roleTag = (p) => `<span class="role">${esc(p.role)}</span>${p.promoted ? ' <span class="tag promo" title="Moved up because a teammate who ranked above him last game is not playing">Promoted</span>' : ""}`;
+  // Matchup tag (passing-game props): the opponent's rank allowing this position this stat, and whether it agrees
+  // with the side. A tag, not a check (CLAUDE.md 4b).
+  const MU_STAT = { pass_yds: "passing yards", rec_yds: "receiving yards", receptions: "catches" };
+  const ordn = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" }[n % 10] || "th"));
+  function muTag(mu, side, market, opp, pos) {
+    if (!mu || !mu.tag || !side) return "";
+    const soft = mu.tag === "soft", agrees = soft === (side === "over");
+    const what = `${opp} has allowed ${pos}s the ${soft ? ordn(mu.rank) + "-most" : ordn(mu.n - mu.rank + 1) + "-fewest"} ${MU_STAT[market]} per game of ${mu.n} defenses (${num(mu.per_game, 1)} a game in ${mu.g} games). `
+      + `${agrees ? "That agrees with this " + side + "." : "That goes against this " + side + "."} In 2025, passing-game overs against the softest fifth of defenses beat Pinnacle's close by 4.5 points, and unders against the toughest fifth did best; 2026 has not confirmed it yet. A tag, not a check.`;
+    return ` <span class="tag ${agrees ? "mu-yes" : "mu-no"}" title="${esc(what)}">${soft ? "Soft" : "Tough"} matchup${agrees ? "" : " · against"}</span>`;
+  }
   function propPickChip(p) {
     return `<span class="chip${p.potw ? " potw" : ""}${p.promoted ? " promo" : ""}" data-tip="${esc(`EV ${signed(100 * p.ev, 1)}%. Stake 1u. Quarter Kelly, its own record: ${stakeU(p.kelly_u)}.` + checksTip(p.checks))}"><span class="m">${p.potw ? "Pick of the week" : PMK[p.market]}</span>
-      <b>${esc(p.side === "over" ? "Over" : "Under")} ${num(p.line, 1).replace(/\.0$/, "")}</b><span class="pr">${am(p.american)} ${esc(p.book_name)}</span>${shopTag(p.side, p.line, p.model_median)}${stakePill(p)}${p.checks ? vdTag(p.checks.verdict, failedOf(p.checks)) : ""}${resChip(p.result)}</span>`;
+      <b>${esc(p.side === "over" ? "Over" : "Under")} ${num(p.line, 1).replace(/\.0$/, "")}</b><span class="pr">${am(p.american)} ${esc(p.book_name)}</span>${shopTag(p.side, p.line, p.model_median)}${muTag(p.matchup, p.side, p.market, p.opp, p.position)}${stakePill(p)}${p.checks ? vdTag(p.checks.verdict, failedOf(p.checks)) : ""}${resChip(p.result)}</span>`;
   }
   // When this game's props lock: the last board update before it (Thursday or Saturday, 10am ET).
   const lockAt = (gid) => {
@@ -1898,7 +1911,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     if (!leanOk(L) || locked) return `<span class="chip pass" title="${!locked && L.ev > 0 ? esc(underBar(L)) : "Best price available has no value against the market's number."}">
       <span class="m">${PMK[m.market]}</span><b>No play</b><span class="pr">model ${num(m.median, 1)} · fair ${num(m.fair, 1)}</span></span>`;
     return `<span class="chip lean" title="Not locked yet: props lock ${esc(p ? lockAt(p.game_id) : PR.meta.lock_note)}."><span class="m">Lean · ${PMK[m.market]}</span>
-      <b>${L.side === "over" ? "Over" : "Under"} ${num(L.line, 1).replace(/\.0$/, "")}</b><span class="pr">${am(L.american)} ${esc(L.book)} · EV ${signed(100 * L.ev, 1)}%</span>${shopTag(L.side, L.line, m.median)}</span>`;
+      <b>${L.side === "over" ? "Over" : "Under"} ${num(L.line, 1).replace(/\.0$/, "")}</b><span class="pr">${am(L.american)} ${esc(L.book)} · EV ${signed(100 * L.ev, 1)}%</span>${shopTag(L.side, L.line, m.median)}${p ? muTag(m.matchup, L.side, m.market, p.opp, p.pos) : ""}</span>`;
   }
   function pStrip(R, sim) {
     if (!R) return "";

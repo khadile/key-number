@@ -301,6 +301,13 @@ Each check was tested on its own market, with the EV at Pinnacle's closing no-vi
   what everyone can see; the board shows them as facts on the cards, not checks. Pinnacle's 2026 opens moved
   toward the over by the close 61% of the time for cold players (276 moves) vs 52% for others: openers may
   overreact to cold form. One season, one look: re-test at season's end before acting.
+  Matchup, pushed harder the same day (props/section.py `matchups()`): every prop with a Pinnacle close, else
+  bet365's (7,393 with a defense rank), the defense as a percentile. Passing game (pass yds, rec yds,
+  receptions): overs vs the softest fifth +4.5 points beyond the close (SE 1.4), the toughest fifth -2.5 (SE
+  1.4); +2.2 and +2.6 points per SD of softness in 2025's two halves; 2026's 462 flat (SE 2.4). Rushing yards
+  went the other way: overs vs the softest fifth of run defenses -7.9 (SE 2.8). No prop lines exist before
+  2025 in any source we have (SGO 2024: 225 props). Shown as a tag on passing-game picks and leans ("Soft /
+  Tough matchup", agreeing with the side or against it); not a check, not tracked (user, 2026-10-22).
 - **Price now:** each pick also shows the best DK/FD price and EV as of the last build.
 - **Freezing:** each build appends a verdict line to `ledger/pick_checks.jsonl` (append-only) when a pick's
   verdict changes before kickoff. The record uses the last line before kickoff. Older picks are rebuilt from what

@@ -41,6 +41,12 @@ EV_MIN = 0.0          # weeks 1-6: a prop is a pick when its best price has posi
 # would have added go to ledger/props_shadow.jsonl, off the books, to check on live data that they were worth nothing.
 RULE_WEEK = 7
 EV_FLOOR, EV_FLOOR_PRICE = 0.02, 0.04
+# Matchup tags (user, 2026-10-22; CLAUDE.md 4b): a tag on passing-game props, never a check. In 2025, passing-game
+# overs against the softest fifth of defenses (what each allowed that position in that stat per game, season to
+# date, 3+ games) beat Pinnacle's close by 4.5 points beyond the market's usual miss, and unders against the
+# toughest fifth did best too; both halves of the season agreed, 2026's small sample has not confirmed it yet.
+# Rushing yards went the other way (overs against the softest run defenses lost to the close), so they get no tag.
+TAG_MARKETS = ("pass_yds", "rec_yds", "receptions")
 POTW_N = 5
 BOOK_NAMES = {"draftkings": "DraftKings", "fanduel": "FanDuel", "pinnacle": "Pinnacle"}
 ROLE_ORDER = {"QB1": 0, "RB1": 1, "RB2": 2, "WR1": 3, "WR2": 4, "TE1": 5}
@@ -279,6 +285,30 @@ def _rows(picks: list[dict], results: list[dict], verdict_by: dict | None = None
     return out
 
 
+def matchups(season: int, week: int) -> dict[tuple[str, str, str], dict]:
+    """(defense, position, market) -> the defense's rank by what it allowed that position in that stat per game
+    this season before `week` (1 = the most; defenses with 3+ games), and its tag: soft (the fifth that allowed the
+    most), tough (the fifth that allowed the least) or None. Passing-game markets only (TAG_MARKETS)."""
+    pg = pl.read_parquet(PLAYER_GAMES).filter((pl.col("season") == season) & (pl.col("week") < week))
+    pg = pg.with_columns(pos=pl.col("position").replace("FB", "RB")).filter(pl.col("pos").is_in(["QB", "RB", "WR", "TE"]))
+    out = {}
+    for m in TAG_MARKETS:
+        c = STAT_COL[m]
+        t = (pg.group_by("opp", "pos", "week").agg(pl.col(c).fill_null(0).sum())
+             .group_by("opp", "pos").agg(g=pl.len(), per_game=pl.col(c).mean()).filter(pl.col("g") >= 3))
+        t = t.with_columns(rank=pl.col("per_game").rank("ordinal", descending=True).over("pos"), n=pl.len().over("pos"))
+        for r in t.filter((pl.col("pos") == "QB") == (m == "pass_yds")).iter_rows(named=True):   # QBs pass, the rest catch
+            q = 1 - (r["rank"] - 1) / max(r["n"] - 1, 1)          # 1: allowed the most
+            out[(r["opp"], r["pos"], m)] = {"rank": int(r["rank"]), "n": int(r["n"]), "g": int(r["g"]), "per_game": round(r["per_game"], 1),
+                                            "tag": "soft" if q >= 0.8 else ("tough" if q < 0.2 else None)}
+    return out
+
+
+def _mtag(mtab: dict, opp: str, pos: str, market: str) -> dict | None:
+    mu = mtab.get((opp, "RB" if pos == "FB" else pos, market))
+    return mu if mu and mu["tag"] else None
+
+
 def _ev_close(q: dict, samples: dict, close_b: dict) -> float | None:
     """A pick's expected value at Pinnacle's closing number, priced the board's way (k = 0): the yardstick of
     props/edge_source.py, which settles long before wins and losses do. None without Pinnacle's close."""
@@ -488,7 +518,13 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
 
     # --- cards: every tracked player in this week's games with lines, projections, picks
     res_by = {r["id"]: r for r in live_results}
+    try:
+        mtab = matchups(season, week)
+    except Exception as e:   # noqa: BLE001  (a tag is decoration: never stop the build)
+        print(f"matchup tags skipped: {type(e).__name__}: {e}")
+        mtab = {}
     picks_by_player = {(q["game_id"], q["gsis_id"]): {**q, "kelly_u": kelly_of(q),   # older picks carry no kelly_u
+                                                      "matchup": _mtag(mtab, q["opp"], q["position"], q["market"]),
                                                       "checks": checked.get(q["id"]) or checks_of(q),
                                                       **({"result": res_by[q["id"]]["result"]} if q["id"] in res_by else {})}
                        for q in live_picks if q.get("kind") == "prop" and q["week"] == week}
@@ -519,6 +555,7 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
                                  "american": american(priced["dec"]), "p": round(priced["p_win"], 3), "ev": round(priced["ev"], 4),
                                  "edge_from": src, "clears": clears(priced, src, week >= RULE_WEEK)}
                                 if priced else None),
+                       "matchup": _mtag(mtab, r["opp"], r["position"], m),
                        "actual": stats.get((r["game_id"], r["gsis_id"]), {}).get(m)})
         pick = picks_by_player.get((r["game_id"], r["gsis_id"]))
         eid = espn_ids.get(r["gsis_id"])
