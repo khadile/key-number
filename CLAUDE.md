@@ -714,6 +714,25 @@ budget with the NFL) comes after the pregame side is stable.
   to test (back-to-backs and rest, a teammate's props when a starter sits,
   referee crews on totals). The decision to pay for more odds data is revisited
   at the first one.
+- Props back-test (2026-10-22, user asked; nba/espn_props.py pulls ESPN's public prop lines, nba/prop_backtest.py
+  replays the model walk-forward; data in data/nba/, off the repo):
+  - Data: ESPN keeps each game's props (open and latest line and price) from 2022-23. Usable: 2022-23 and
+    2023-24, 5-6 books a game, ~500k main-line props, opening prices calibrated (results on price slope ~1.0).
+    ESPN BET 2024-25 and 2025-26 prices are scrambled (slope ~0; the line numbers are fine: line-only tests can
+    use them). Latest prices are stamped after tip: no EV-at-the-close test from ESPN. No Pinnacle in it.
+  - Blind replay (`--blind`: no actual scratches or starters, only what was known before the line opened): the
+    model alone predicts worse than the open (log loss 0.706 vs 0.686) but a blend 15% toward it beats the open
+    in both seasons. Its picks at the same line as every other book (no shopping): 2-5% EV +5.1% (SE 1.4), 5-10%
+    +5.6% (SE 2.3) in 2023-24, +2.7% in 2022-23 (k fitted on 2022-23). Almost all unders, and only in REBOUNDS
+    (+10.6%, SE 2.1) and ASSISTS (+8.1%, SE 2.5); points and threes ~0. Picks on a line off the other books'
+    returned far more (stale openers: real but limited). At the OPEN; the board locks at 5:30pm, later and
+    sharper, which this data cannot test.
+  - The market: overs lose 7-12% at the opening price, unders 2-6% (rebounds and threes unders nearest even).
+    Factors beyond the open, both seasons agreeing (points of over hit rate): bench -1.0, second night of a
+    back-to-back -0.8, away -0.5, 10+ point spread -0.4, toughest-fifth matchup -1.6 (assists -2.6, threes -2.3),
+    cold (0-2 of last 10 over this line) -1.6, hot (8-10) +0.9 (form persists, unlike NFL), minutes up 4+
+    lately -1.4 and down 4+ +1.2 (the open overreacts to minutes swings). Stacked (fit 2022-23): unders the
+    factors lean -4 points or more returned +1.3% at the best of 2-3 books in 2023-24 (+2.5% in 2022-23).
 
 ## Layout
 

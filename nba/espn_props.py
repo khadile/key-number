@@ -10,8 +10,10 @@ What it holds (checked 2026-10-22 on one game per season):
 - 2025-26 and 2026-27: DraftKings; latest lines within 1-2 points of the open (pregame-like).
 
 Which latest prices are clean is decided per prop downstream (nba/prop_backtest.py), never assumed here.
-ESPN does not label the over and the under: each pair comes over first, under second (checked: when a
-line drops, the second price was the favorite at the open). Odds data: data/nba/ stays off the public repo.
+ESPN does not label the over and the under, and besides the main line it can list one-sided alternate lines
+in the same market. Every entry is kept in its order (`seq`); the main line is the pair of entries sharing a line,
+over first, under second (checked: when a line drops, the second price was the favorite at the open; and in the
+back-test the over's hit rate rises with the first price's chance). Odds data: data/nba/ stays off the public repo.
 
     python -m nba.espn_props 2023 2024 2025 2026     # seasons by the year they end; resumable
 """
@@ -59,7 +61,7 @@ def _num(x) -> float | None:
 
 
 def game(e: int) -> list[dict]:
-    """Every core player prop at every pregame provider for one game: one row per side."""
+    """Every core player-prop entry at every pregame provider for one game, in ESPN's order."""
     odds = _get(BASE.format(e=e) + "?lang=en&region=us")
     rows = []
     for it in (odds or {}).get("items", []):
@@ -67,20 +69,14 @@ def game(e: int) -> list[dict]:
         if "live" in (prov.get("name") or "").lower():
             continue
         pb = _get(BASE.format(e=e) + f"/{prov['id']}/propBets?lang=en&region=us&limit=1000")
-        seen: dict[tuple, int] = {}
-        for p in (pb or {}).get("items", []):
+        for seq, p in enumerate((pb or {}).get("items", [])):
             m = MARKETS.get((p.get("type") or {}).get("name"))
             if not m or "athlete" not in p:
                 continue
             aid = int(p["athlete"]["$ref"].split("/athletes/")[1].split("?")[0])
-            k = (aid, m)
-            n = seen.get(k, 0)
-            seen[k] = n + 1
-            if n > 1:
-                continue
             o = p.get("odds", {})
             rows.append({"game_id": e, "provider": int(prov["id"]), "provider_name": prov.get("name"), "athlete_id": aid,
-                         "market": m, "side": "over" if n == 0 else "under",
+                         "market": m, "seq": seq,
                          "line_open": _num((p.get("open") or {}).get("target", {}).get("value")),
                          "line": _num((p.get("current") or {}).get("target", {}).get("value")),
                          "am_open": _num(o.get("american", {}).get("open")), "am": _num(o.get("american", {}).get("value")),
