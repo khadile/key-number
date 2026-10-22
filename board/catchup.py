@@ -1,8 +1,8 @@
-"""Start a board build GitHub's scheduler skipped (user, 2026-10-21). Runs on the laptop every 15 minutes
+"""Start a board build GitHub's scheduler skipped (user, 2026-10-21). Runs on the laptop every 5 minutes
 (Windows Task Scheduler, task "Key Number catch-up"); does nothing while the laptop is off.
 
 A slot counts as built when the repo's slot file says so: board/nba_last.json (NBA morning 10:30am ET,
-evening 5:30pm ET) and board/last_build.json (NFL Tuesday, Thursday, Saturday 10am ET). Thirty minutes past a
+evening 5:30pm ET) and board/last_build.json (NFL Tuesday, Thursday, Saturday 10am ET). Fifteen minutes past a
 slot with no build, it dispatches that workflow WITHOUT force, so the workflow's own slot check still decides
 and never builds a slot twice. Nothing is dispatched while a run of that workflow is queued or running, and at
 most twice a slot (40+ minutes apart), so a build that keeps failing is left for a person to look at.
@@ -22,7 +22,7 @@ ET = ZoneInfo("America/New_York")
 REPO = "khadile/key-number"
 GH = r"C:\Program Files\GitHub CLI\gh.exe"
 HOME = Path.home() / "key-number-catchup"
-GRACE = timedelta(minutes=30)
+GRACE = timedelta(minutes=15)       # user, 2026-10-22 (was 30)
 RETRY = timedelta(minutes=40)
 NBA_SLOTS = (("evening", time(17, 30)), ("morning", time(10, 30)))   # latest first, as nba/slot.py
 NFL_DAYS, NFL_AT = (1, 3, 5), time(10, 0)                            # Tue, Thu, Sat (board/slot.py)
