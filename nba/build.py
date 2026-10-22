@@ -741,7 +741,14 @@ def main() -> None:
                 bk = now_b.get(key) or {}
                 priced = pp.price(mix, bk) if bk else None
                 q = mix.quantiles()
-                mk.append({"market": m, "median": q[2], "q": q, "mean": round(mix.mean(), 1),
+                # the model's own chance of the under at the main bettable line (tagged at 55%+ for rebounds: the one
+                # model edge that held against the close in 2023-24, 2024-25 and 2025-26, CLAUDE.md 9)
+                mu = None
+                b0 = next((b for b in ("draftkings", "fanduel", "pinnacle") if b in bk), None)
+                if m == "reb" and b0:
+                    o_, _, u_ = mix.probs(bk[b0]["line"])
+                    mu = {"line": bk[b0]["line"], "book": BOOK_NAMES[b0], "p": round(u_ / max(o_ + u_, 1e-12), 3)}
+                mk.append({"market": m, "median": q[2], "q": q, "mean": round(mix.mean(), 1), "model_under": mu,
                            "books": {BOOK_NAMES[b]: {"line": v["line"], "over": american(v["over"]), "under": american(v["under"])} for b, v in bk.items()},
                            "fair": _f(priced["fair_median"], 1) if priced else None,
                            "lean": ({"side": priced["side"], "line": priced["line"], "book": BOOK_NAMES[priced["book"]],
@@ -758,11 +765,21 @@ def main() -> None:
                 print(f"card notes skipped for {r['name']}: {type(e).__name__}: {e}")
                 card = []
             extra = player_notes(r, "sig", None, matchup=False)
+            # situations that leaned the under against the close in all three back-test seasons (CLAUDE.md 9), each
+            # 1-3 points: tagged only when two or more stack
+            sit = []
+            if ((models.get(r["game_id"]) or {}).get("rest") or {}).get("home" if r["home"] else "away") == 1:
+                sit.append("second night of a back-to-back")
+            if r["role"] != "Starter":
+                sit.append("off the bench")
+            mins = pnotes.h.filter(pl.col("athlete_id") == r["athlete_id"]).sort("date")["min"].to_list()
+            if len(mins) >= 15 and np.mean(mins[-3:]) - np.mean(mins[-15:]) >= 4:
+                sit.append(f"minutes up lately ({np.mean(mins[-3:]):.0f} a game over his last 3, {np.mean(mins[-15:]):.0f} over 15)")
             players.append({"img": f"https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/{r['athlete_id']}.png&w=96&h=70&scale=crop",
                             "notes": (card + extra)[:4], "matchup": card[0] if card else None, "recent": pnotes.recent(r["athlete_id"]),
                             "id": r["athlete_id"], "name": r["name"], "team": r["team"], "opp": r["opp"], "game_id": r["game_id"],
                             "role": r["role"], "status": r["status"], "min": round(r["exp_min"], 1), "min_short": round(r.get("min_short") or 0.0, 1), "games_now": r["games_now"],
-                            "markets": mk, "pick": p_by.get((r["game_id"], r["athlete_id"]))})
+                            "markets": mk, "pick": p_by.get((r["game_id"], r["athlete_id"])), "situation": sit if len(sit) >= 2 else []})
 
     def daily(rows, results, prefix):
         res = {r["id"]: r for r in results}

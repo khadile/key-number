@@ -2871,6 +2871,21 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     return `<span class="chip${p.potd ? " potw" : ""}" data-tip="${esc(npWhy(p))}"><span class="m">${p.potd ? "Pick of the day" : NMK[p.market]}</span><b>${p.side === "over" ? "Over" : "Under"} ${num(p.line, 1).replace(/\.0$/, "")}</b>
       <span class="pr">${am(p.american)} ${esc(p.book_name)}</span>${resN(p.result)}${p.actual != null ? ` <span class="note">final ${num(p.actual, 0)}</span>` : ""}</span>`;
   }
+  // Tags from the props back-test (CLAUDE.md 9), never checks: the model's rebound under at 55%+, and situations
+  // that leaned the under against the close in all three seasons when two or more stack.
+  function nTags(p) {
+    const pk = p.pick, out = [];
+    const reb = (p.markets || []).find((m) => m.market === "reb" && m.model_under && m.model_under.p >= 0.55);
+    if (reb) {
+      const U = reb.model_under, agrees = !pk || (pk.market === "reb" && pk.side === "under"), against = pk && pk.market === "reb" && pk.side === "over";
+      out.push(`<span class="tag ${against ? "mu-no" : "mu-yes"}" title="${esc(`The model alone gives the under ${num(U.line, 1).replace(/\.0$/, "")} rebounds (${U.book}) ${pct(U.p)}. Rebound unders the model liked at 55%+ beat the closing line at -110 in each of the last three seasons (+5.7% to +7.6%, 11,150 bets); no other stat held up. A tag, not a check.`)}">Model: reb under ${pct(U.p, 0)}${against ? " · against" : ""}</span>`);
+    }
+    if ((p.situation || []).length) {
+      const against = pk && pk.side === "over";
+      out.push(`<span class="tag ${against ? "mu-no" : "mu-yes"}" title="${esc(`Leans under: ${p.situation.join("; ")}. Each of these ran 1-3 points under the closing line in 2023-24 through 2025-26; tagged when two or more stack. A tag, not a check.`)}">Situation: leans under${against ? " · against" : ""}</span>`);
+    }
+    return out.join(" ");
+  }
   function npMarkets(p) {
     const rows = p.markets.filter((m) => Object.keys(m.books).length);
     if (!rows.length) return '<p class="note">No lines posted yet.</p>';
@@ -2894,7 +2909,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       books: m.books, lean: m.lean, hl: !!(p.pick && p.pick.market === m.market), ...nbaForm(p, m.market) }));
     return `<article class="pcard"><header class="phead"><div>${headshot(p.name, p.img, NT[p.team], p.team)}<span class="pwho"><b class="pname">${esc(p.name)}</b>
         <span class="meta"><span class="role">${p.role === "Starter" ? "Starter" : "6th man"}</span>${st}<span${p.min_short >= 1 ? ` data-tip="Players coming back from time off, the summer included, play fewer minutes for a few games: ${num(p.min_short, 1)} are taken off his usual."` : ""}>${num(p.min, 1)} min projected${p.games_now ? " from last season" : ""}${p.min_short >= 1 ? `, ${num(p.min_short, 1)} fewer ${p.games_now ? "back from time off" : "in his first game"}` : ""}</span></span></span></div></header>
-      <div class="chips">${p.pick ? npChip(p.pick) : '<span class="note">No prop with 1%+ value.</span>'}</div>
+      <div class="chips">${p.pick ? npChip(p.pick) : '<span class="note">No prop with 1%+ value.</span>'}${nTags(p)}</div>
       ${p.pick ? ctxList(p.pick, 5) : ctxList({ notes: p.notes || (p.matchup ? [p.matchup] : []) }, 4)}
       ${fm.vals.length ? `<div class="l5row" data-tip="His last ${fm.vals.length} games: green would have won this ${p.pick ? "pick" : "side"}, red would have lost. Tap a number for the game."><span class="note">Last ${fm.vals.length} · ${f.side === "under" ? "under" : "over"} ${num(f.line, 1).replace(/\.0$/, "")} ${NMK[f.m].toLowerCase()}</span>${formStrip(fm.vals, f.line, f.side, fm.tips)}</div>` : ""}
       ${rows.length ? `<details class="nmore"><summary>All markets</summary><div class="nmore-in">${mktTable(rows)}</div></details>` : '<p class="note">No lines posted yet.</p>'}</article>`;
