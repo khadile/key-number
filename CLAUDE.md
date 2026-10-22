@@ -308,6 +308,14 @@ Each check was tested on its own market, with the EV at Pinnacle's closing no-vi
   went the other way: overs vs the softest fifth of run defenses -7.9 (SE 2.8). No prop lines exist before
   2025 in any source we have (SGO 2024: 225 props). Shown as a tag on passing-game picks and leans ("Soft /
   Tough matchup", agreeing with the side or against it); not a check, not tracked (user, 2026-10-22).
+  By stat and position (2025): softest-fifth overs QB pass +10.4, RB rec yds +9.0, RB catches +6.5, TE catches
+  +5.2, TE rec yds +5.1, WR rec yds +4.5, WR catches -1.8; rushing reversed for RBs (-7.6) and QBs (-11.9).
+  Rushing props get a "Soft / Tough run D" tag that agrees with the UNDER against a soft run defense. Picks and
+  leans whose edge is a better number than Pinnacle's get a "Better number" tag (props/edge_source.py).
+  Not in pricing (user, 2026-10-22: wait for the next calibration). The re-check, set now: 2026 weeks 7 on only
+  (Pinnacle closes from our own archive), at the lock and at the close; it passes if catching/passing props
+  still show +1 point or more per SD of softer defense and rushing still runs the other way. Pass: a price nudge
+  at HALF the measured size, judged by EV at the close like the 2%/4% rule. Fail: tags only, or drop them.
 - **Price now:** each pick also shows the best DK/FD price and EV as of the last build.
 - **Freezing:** each build appends a verdict line to `ledger/pick_checks.jsonl` (append-only) when a pick's
   verdict changes before kickoff. The record uses the last line before kickoff. Older picks are rebuilt from what

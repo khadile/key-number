@@ -45,8 +45,9 @@ EV_FLOOR, EV_FLOOR_PRICE = 0.02, 0.04
 # overs against the softest fifth of defenses (what each allowed that position in that stat per game, season to
 # date, 3+ games) beat Pinnacle's close by 4.5 points beyond the market's usual miss, and unders against the
 # toughest fifth did best too; both halves of the season agreed, 2026's small sample has not confirmed it yet.
-# Rushing yards went the other way (overs against the softest run defenses lost to the close), so they get no tag.
-TAG_MARKETS = ("pass_yds", "rec_yds", "receptions")
+# Rushing yards went the other way for QBs and RBs alike (overs against the softest run defenses lost to the close:
+# the line over-adjusts), so a rushing tag agrees with the under against a soft run defense (the board flips it).
+TAG_MARKETS = {"pass_yds": ("QB",), "rush_yds": ("QB", "RB"), "rec_yds": ("RB", "WR", "TE"), "receptions": ("RB", "WR", "TE")}
 POTW_N = 5
 BOOK_NAMES = {"draftkings": "DraftKings", "fanduel": "FanDuel", "pinnacle": "Pinnacle"}
 ROLE_ORDER = {"QB1": 0, "RB1": 1, "RB2": 2, "WR1": 3, "WR2": 4, "TE1": 5}
@@ -288,7 +289,7 @@ def _rows(picks: list[dict], results: list[dict], verdict_by: dict | None = None
 def matchups(season: int, week: int) -> dict[tuple[str, str, str], dict]:
     """(defense, position, market) -> the defense's rank by what it allowed that position in that stat per game
     this season before `week` (1 = the most; defenses with 3+ games), and its tag: soft (the fifth that allowed the
-    most), tough (the fifth that allowed the least) or None. Passing-game markets only (TAG_MARKETS)."""
+    most), tough (the fifth that allowed the least) or None, for the positions each market is tagged for."""
     pg = pl.read_parquet(PLAYER_GAMES).filter((pl.col("season") == season) & (pl.col("week") < week))
     pg = pg.with_columns(pos=pl.col("position").replace("FB", "RB")).filter(pl.col("pos").is_in(["QB", "RB", "WR", "TE"]))
     out = {}
@@ -297,7 +298,7 @@ def matchups(season: int, week: int) -> dict[tuple[str, str, str], dict]:
         t = (pg.group_by("opp", "pos", "week").agg(pl.col(c).fill_null(0).sum())
              .group_by("opp", "pos").agg(g=pl.len(), per_game=pl.col(c).mean()).filter(pl.col("g") >= 3))
         t = t.with_columns(rank=pl.col("per_game").rank("ordinal", descending=True).over("pos"), n=pl.len().over("pos"))
-        for r in t.filter((pl.col("pos") == "QB") == (m == "pass_yds")).iter_rows(named=True):   # QBs pass, the rest catch
+        for r in t.filter(pl.col("pos").is_in(list(TAG_MARKETS[m]))).iter_rows(named=True):
             q = 1 - (r["rank"] - 1) / max(r["n"] - 1, 1)          # 1: allowed the most
             out[(r["opp"], r["pos"], m)] = {"rank": int(r["rank"]), "n": int(r["n"]), "g": int(r["g"]), "per_game": round(r["per_game"], 1),
                                             "tag": "soft" if q >= 0.8 else ("tough" if q < 0.2 else None)}
