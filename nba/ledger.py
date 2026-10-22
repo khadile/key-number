@@ -142,7 +142,9 @@ def record_games(picks: list[dict], results: list[dict]) -> dict:
                        "against": _tally([r for r in st if r.get("with_model") is False])},
         "kelly": _kelly(rows),
         "days": [{"day": d, "all": _tally([r for r in rows if r["day"] == d]),
-                  "pos": _tally([r for r in st if r["day"] == d and r["ev"] > 0])} for d in days],
+                  "pos": _tally([r for r in st if r["day"] == d and r["ev"] > 0]),
+                  **{k: _tally([r for r in st if r["day"] == d and r["market"] == m]) for k, m in (("ats", "spread"), ("ou", "total"), ("ml", "ml"))},
+                  "potd": _tally([r for r in st if r["day"] == d and r.get("potd")])} for d in days],
         "calibration": _cal(st),
     }
 
@@ -175,6 +177,12 @@ def record_props(picks: list[dict], results: list[dict]) -> dict:
         "lottery": _tally([r for r in rows if r.get("kind") == "parlay" and r.get("type") == "lottery"]),
         "all": _tally(rows), "straight": _tally(st), "kelly": _kelly(rows),
         "voids": sum(r["result"] == "V" for r in st),
-        "days": [{"day": d, "all": _tally([r for r in rows if r["day"] == d])} for d in days],
+        # by the size of the edge at the lock: the NFL props rule's question, asked of NBA's own picks
+        "split": {"big": _tally([r for r in st if r["ev"] >= 0.02]), "small": _tally([r for r in st if r["ev"] < 0.02])},
+        "days": [{"day": d, "all": _tally([r for r in rows if r["day"] == d]),
+                  "big": _tally([r for r in st if r["day"] == d and r["ev"] >= 0.02]),
+                  **{m: _tally([r for r in st if r["day"] == d and r["market"] == m]) for m in ("pts", "reb", "ast", "fg3")},
+                  "combo": _tally([r for r in st if r["day"] == d and r["market"] in ("pra", "pr", "pa", "ra")]),
+                  "potd": _tally([r for r in st if r["day"] == d and r.get("potd")])} for d in days],
         "calibration": _cal(st),
     }

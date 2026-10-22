@@ -1059,7 +1059,8 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <div class="gauge-lbl"><span>${term("win", "Win chance")} <b>${pct(p, 1)}</b></span><span>${term("need", "Needs")} <b>${pct(need, 1)}</b></span></div></div>`;
   }
   // Cumulative units by week, one line for the whole record (weeks before launch included).
-  function unitsChart(A, specs) {
+  function unitsChart(A, specs, xlab) {
+    const xl = xlab || ((w) => "W" + w), xt = xlab || ((w) => "week " + w);
     const cum = (weeks, get) => { let c = 0; return weeks.map((w) => { const r = get(w); c += r.units; return { wk: w.week, u: c, r }; }); };
     const series = (specs || (A && A.weeks.length ? [{ name: "Units", cls: "ser-live", weeks: A.weeks, get: (w) => w.all }] : []))
       .filter((s) => s.weeks && s.weeks.length).map((s) => ({ ...s, pts: cum(s.weeks, s.get) }));
@@ -1078,13 +1079,13 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       const d = pts.map((p, i) => `${i ? "L" : "M"}${X(p.wk).toFixed(1)} ${Y(p.u).toFixed(1)}`).join(" ");
       const last = s.pts[s.pts.length - 1];
       return `<path class="draw ${s.cls}" pathLength="1" d="${d}" fill="none" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-        ${s.pts.map((p, i) => `<circle class="popin ${s.cls}" style="--d:${i + si * 3}" cx="${X(p.wk).toFixed(1)}" cy="${Y(p.u).toFixed(1)}" r="5" data-tip="${esc(s.name)}, week ${p.wk}: ${rec(p.r)} for ${units(p.r.units)}; ${units(p.u)} in total"/>`).join("")}
+        ${s.pts.map((p, i) => `<circle class="popin ${s.cls}" style="--d:${i + si * 3}" cx="${X(p.wk).toFixed(1)}" cy="${Y(p.u).toFixed(1)}" r="5" data-tip="${esc(s.name)}, ${esc(xt(p.wk))}: ${rec(p.r)} for ${units(p.r.units)}; ${units(p.u)} in total"/>`).join("")}
         <text class="v" x="${(X(last.wk) + 9).toFixed(1)}" y="${(Y(last.u) + 4).toFixed(1)}">${units(last.u)}</text>`;
     }).join("");
     return `<svg class="chart vz" viewBox="0 0 ${W} ${H}" role="img" aria-label="Units won over time">
       ${ticks.map((v) => `<line class="grid" x1="${x0}" x2="${x1}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text x="${x0 - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${v > 0 ? "+" : v < 0 ? MINUS : ""}${Math.abs(v)}u</text>`).join("")}
       <line class="axis" x1="${x0}" x2="${x1}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}"/>
-      ${[...new Set(all.map((p) => p.wk))].map((w) => `<text x="${X(w).toFixed(1)}" y="${H - 8}" text-anchor="middle">W${w}</text>`).join("")}
+      ${[...new Set(all.map((p) => p.wk))].map((w) => `<text x="${X(w).toFixed(1)}" y="${H - 8}" text-anchor="middle">${esc(xl(w))}</text>`).join("")}
       ${body}
     </svg><div class="legend">${series.map((s) => `<span><i class="${s.cls}"></i>${esc(s.name)}</span>`).join("")}</div>`;
   }
@@ -1768,15 +1769,15 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     return [g.length ? `${t.w}-${t.l}${t.p ? "-" + t.p : ""} · <span class="${cls(t.units)}">${units(t.units)}</span>` : "",
       nl ? `${nl} lean${nl > 1 ? "s" : ""} included` : "", pend ? `${pend} pending` : ""].filter(Boolean).join(" · ");
   }
-  function catTable(rows, isParlay) {
-    return `<div class="scroll"><table class="t"><thead><tr><th>Pick</th><th>${isParlay ? "Legs" : "Game"}</th><th class="num">Price</th><th class="num">Win chance</th>${isParlay ? "" : `<th class="num">${term("kelly", "Quarter Kelly")}</th>`}<th>Result</th><th class="num">Units</th>${isParlay ? "" : '<th class="num">Line value</th>'}</tr></thead><tbody>
-      ${rows.map((h) => `<tr><td><b>${label(h.label)}</b>${h.potw ? ' <span class="tag">POTW</span>' : ""}${h.risk === 0 ? ' <span class="tag lean">Lean</span>' : ""}${h.verdict ? " " + vdTag(h.verdict, h.failed) : ""}</td>
+  function catTable(rows, isParlay, o = {}) {   // o: {ev: EV and EV at the close, final: the stat line, tag: "POTD"}
+    return `<div class="scroll"><table class="t"><thead><tr><th>Pick</th><th>${isParlay ? "Legs" : "Game"}</th><th class="num">Price</th><th class="num">Win chance</th>${o.ev ? '<th class="num">EV</th>' : ""}${isParlay ? "" : `<th class="num">${term("kelly", "Quarter Kelly")}</th>`}${o.final && !isParlay ? '<th class="num">Final</th>' : ""}<th>Result</th><th class="num">Units</th>${isParlay ? "" : '<th class="num">Line value</th>'}${o.ev ? `<th class="num">${term("evclose", "EV at the close")}</th>` : ""}</tr></thead><tbody>
+      ${rows.map((h) => `<tr><td><b>${label(h.label)}</b>${h.potw ? ` <span class="tag">${o.tag || "POTW"}</span>` : ""}${h.risk === 0 ? ' <span class="tag lean">Lean</span>' : ""}${h.verdict ? " " + vdTag(h.verdict, h.failed) : ""}</td>
         <td>${isParlay ? h.legs.map((l) => label(l)).join(" · ") : esc(h.game)}</td>
-        <td class="num">${am(h.american)}${h.book ? " " + esc(h.book) : ""}</td><td class="num">${pct(h.p_win)}</td>
-        ${isParlay ? "" : `<td class="num">${h.kelly_u ? stakeU(h.kelly_u) : "–"}</td>`}
-        <td>${h.result ? resChip(h.result) : '<span class="res P">PENDING</span>'}</td>
+        <td class="num">${am(h.american)}${h.book ? " " + esc(h.book) : ""}</td><td class="num">${pct(h.p_win)}</td>${o.ev ? `<td class="num">${evPct(h.ev)}</td>` : ""}
+        ${isParlay ? "" : `<td class="num">${h.kelly_u ? stakeU(h.kelly_u) : "–"}</td>`}${o.final && !isParlay ? `<td class="num">${h.actual == null ? "" : num(h.actual, 0)}</td>` : ""}
+        <td>${h.result ? (o.ev ? resN(h.result) : resChip(h.result)) : '<span class="res P">PENDING</span>'}</td>
         <td class="num ${cls(h.units)}">${h.units == null ? "–" : units(h.units)}</td>
-        ${isParlay ? "" : `<td class="num">${h.clv == null ? "–" : signed(h.clv, 1)}</td>`}</tr>`).join("")}
+        ${isParlay ? "" : `<td class="num">${h.clv == null ? "–" : signed(h.clv, 1)}</td>`}${o.ev ? `<td class="num ${cls(h.ev_close)}">${evPct(h.ev_close)}</td>` : ""}</tr>`).join("")}
     </tbody></table></div>`;
   }
   function weekBrowser() {
@@ -2750,25 +2751,40 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   }
 
   // ---------- records
-  function nDays(R, what) {
-    const D_ = (R.days || []).slice().reverse();
-    if (!D_.length) return '<p class="note">Nothing graded yet.</p>';
-    return `<div class="scroll"><table class="t"><thead><tr><th>Day</th><th class="num">${what}</th><th class="num">Record</th><th class="num">Units</th><th class="num">ROI</th><th class="num">EV at close</th></tr></thead><tbody>
-      ${D_.map((d) => `<tr><td>${esc(dayShort(d.day))}</td><td class="num">${d.all.n}</td><td class="num">${rec(d.all)}</td><td class="num ${cls(d.all.units)}">${units(d.all.units)}</td><td class="num">${pct(d.all.roi, 1)}</td><td class="num">${evPct(d.all.ev_close)}</td></tr>`).join("")}
-    </tbody></table></div>`;
-  }
   let nRecDay = null, npRecDay = null;
-  function nPickTable(rows, which) {
+  // The NBA record pages in the NFL record's format (user, 2026-10-22): picks by day grouped by bet type, each
+  // group with its own subtotal; a day-by-day table with a column per bet type; units over time.
+  const NCATS = [["spread", "Spread"], ["total", "Over/under"], ["ml", "Moneyline"], ["parlay", "Parlays"]];
+  const NPCATS = [["pts", "Points"], ["reb", "Rebounds"], ["ast", "Assists"], ["fg3", "3-pointers"], ["combo", "Combos"], ["parlay", "Parlays"]];
+  const nCat = (r) => (r.legs && r.legs.length ? "parlay" : ["pra", "pr", "pa", "ra"].includes(r.market) ? "combo" : r.market);
+  const mdShort = (d) => `${+d.slice(5, 7)}/${+d.slice(8, 10)}`;
+  function nDayBrowser(rows, which, cats) {
     const days = [...new Set(rows.map((r) => r.day))].sort().reverse();
     if (!days.length) return '<p class="note">Picks show up here as they lock.</p>';
     let cur = which === "lines" ? nRecDay : npRecDay;
     if (!days.includes(cur)) cur = days[0];
-    const rs = rows.filter((r) => r.day === cur);
-    const body = rs.map((r) => `<tr${r.risk === 0 ? ' class="lean"' : ""}><td>${r.potd ? '<span class="tag">POTD</span> ' : ""}${label(r.label)}${r.legs && r.legs.length ? `<div class="note">${r.legs.map(esc).join(" · ")}</div>` : ""}</td><td>${r.game}</td>
-      <td class="num">${am(r.american)}</td><td>${esc(r.book || "")}</td><td class="num">${r.risk === 0 ? "lean" : stakeU(r.risk)}</td><td class="num">${evPct(r.ev)}</td>
-      <td class="num">${r.actual == null ? "" : num(r.actual, 0)}</td><td>${resN(r.result) || '<span class="note">pending</span>'}</td><td class="num ${cls(r.units)}">${r.units == null ? "–" : units(r.units)}</td><td class="num">${evPct(r.ev_close)}</td></tr>`).join("");
+    const rs = rows.filter((r) => r.day === cur).map((r) => ({ ...r, potw: !!r.potd }));
+    const sections = cats.map(([k, name]) => {
+      const g = rs.filter((r) => nCat(r) === k).sort((a, b) => (b.potw - a.potw) || ((a.risk === 0) - (b.risk === 0)) || ((b.ev || 0) - (a.ev || 0)));
+      return g.length ? `<div class="box"><h3>${name} <span class="note">${subtotal(g)}</span></h3>${catTable(g, k === "parlay", { ev: true, final: which === "props", tag: "POTD" })}</div>` : "";
+    }).join("");
     return `<div class="pills" role="tablist" aria-label="Day">${days.slice(0, 21).map((d) => `<button class="pill" data-nday="${which}:${d}" aria-pressed="${d === cur}">${esc(dayShort(d))}</button>`).join("")}</div>
-      <div class="scroll"><table class="t"><thead><tr><th>Pick</th><th>Game</th><th class="num">Price</th><th>Book</th><th class="num">Stake</th><th class="num">EV</th><th class="num">Final</th><th>Result</th><th class="num">Units</th><th class="num">EV at close</th></tr></thead><tbody>${body}</tbody></table></div>`;
+      <p class="note">${esc(dayShort(cur))}: ${subtotal(rs) || "no picks"}.</p>${sections}`;
+  }
+  function nDayTable(R, cols, extra) {   // extra: [label, key] a second record beside All (the +EV picks, the 2%+ props)
+    const D_ = (R.days || []).slice().reverse();
+    if (!D_.length) return '<p class="note">Nothing graded yet.</p>';
+    return `<div class="scroll"><table class="t"><thead><tr><th>Day</th>${cols.map(([, k]) => `<th class="num">${k}</th>`).join("")}<th class="num">${term("potd", "Picks of the day")}</th>${extra ? `<th class="num">${extra[0]}</th><th class="num">Their units</th>` : ""}<th class="num">All picks</th><th class="num">Units</th><th class="num">${term("evclose", "EV at the close")}</th></tr></thead><tbody>
+      ${D_.map((d) => `<tr><td>${esc(dayShort(d.day))}</td>${cols.map(([c]) => `<td class="num">${rec(d[c])}</td>`).join("")}<td class="num">${rec(d.potd)}</td>${extra ? `<td class="num">${rec(d[extra[1]])}</td><td class="num ${cls(d[extra[1]] && d[extra[1]].units)}">${d[extra[1]] && d[extra[1]].n ? units(d[extra[1]].units) : "–"}</td>` : ""}<td class="num">${rec(d.all)}</td><td class="num ${cls(d.all.units)}">${units(d.all.units)}</td><td class="num">${evPct(d.all.ev_close)}</td></tr>`).join("")}
+    </tbody></table></div>`;
+  }
+  function nUnitsChart(R, second) {   // all picks and one subset, cumulative by day
+    const days = R.days || [];
+    if (!days.length) return "";
+    const W = days.map((d, i) => ({ week: i + 1, ...d }));
+    return unitsChart(null, [{ name: "All picks at 1u", cls: "ser-live", weeks: W, get: (w) => w.all },
+                             ...(second && W.some((w) => w[second[1]]) ? [{ name: second[0], cls: "ser-kelly", weeks: W, get: (w) => w[second[1]] || { units: 0, n: 0 } }] : [])],
+                      (i) => mdShort(days[i - 1].day));
   }
   app.addEventListener("click", (e) => {
     const b = e.target.closest && e.target.closest("[data-nday]");
@@ -2785,11 +2801,14 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     const t = (r) => (r && r.n ? `${rec(r)}, <span class="${cls(r.units)}">${units(r.units)}</span>` : "none graded");
     app.innerHTML = `
       <section class="hello"><h1>NBA game lines record</h1><p class="lede">Every pick at 1u, leans included, graded at the price it locked at.</p></section>
-      <section class="sec"><header><h2>Season to date</h2></header>${nStrip(R)}${leansNote(R)}
+      <section class="sec"><header><h2>Season to date</h2></header>${nStrip(R)}
+        <p class="note">Every pick counts at 1u here, ${term("lean", "leans")} included, so this is the model's full record; the board gives leans no stake because their price is against them.</p>
+        ${leansNote(R)}
         <p class="note">Picks on the model's side went ${t(W.with)}; picks against it (the price alone) went ${t(W.against)}. The first checkup reads this to see whether the model's early-season lean is worth anything.</p>
         ${nKelly(R.kelly, "picks")}</section>
-      <section class="sec"><header><h2>Picks by day</h2></header>${nPickTable(N.record.rows, "lines")}</section>
-      <section class="sec"><header><h2>Day by day</h2></header>${nDays(R, "Picks")}</section>
+      <section class="sec"><header><h2>Units over time</h2></header><div class="box">${nUnitsChart(R, ["+EV picks", "pos"]) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
+      <section class="sec"><header><h2>Picks by day</h2></header>${nDayBrowser(N.record.rows, "lines", NCATS)}</section>
+      <section class="sec"><header><h2>Day by day</h2></header>${nDayTable(R, [["ats", "ATS"], ["ou", "O/U"], ["ml", "Moneyline"]], ["+EV picks", "pos"])}</section>
       <section class="sec"><header><h2>Calibration</h2></header><p class="note">When a pick is given a 55% chance, it should win about 55% of the time.</p>${nCal(R)}</section>`;
   }
 
@@ -2886,12 +2905,15 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     const mk = Object.keys(NMK).map((m) => [NMK[m], R[m]]);
     app.innerHTML = `
       <section class="hello"><h1>NBA props record</h1><p class="lede">Every prop pick at 1u, graded at the line and price it locked at. Voids (the player sat) are left out${R.voids ? `: ${R.voids} so far` : ""}.</p></section>
-      <section class="sec"><header><h2>Season to date</h2></header>${npStrip(R)}${nKelly(R.kelly, "props")}</section>
+      <section class="sec"><header><h2>Season to date</h2></header>${npStrip(R)}
+        ${R.split && (R.split.big.n + R.split.small.n) ? `<p class="note">Of these, props at 2%+ expected value went ${rec(R.split.big)}, <span class="${cls(R.split.big.units)}">${units(R.split.big.units)}</span> (${term("evclose", "EV at the close")} ${evPct(R.split.big.ev_close)}); props at 1–2% went ${rec(R.split.small)}, <span class="${cls(R.split.small.units)}">${units(R.split.small.units)}</span> (${evPct(R.split.small.ev_close)}). NFL props now need 2%+; the Nov 2 checkup asks the same of these.</p>` : ""}
+        ${nKelly(R.kelly, "props")}</section>
+      <section class="sec"><header><h2>Units over time</h2></header><div class="box">${nUnitsChart(R, ["Props at 2%+ EV", "big"]) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
       <section class="sec"><header><h2>By market</h2></header><div class="scroll"><table class="t"><thead><tr><th>Market</th><th class="num">Record</th><th class="num">Units</th><th class="num">ROI</th><th class="num">EV at lock</th><th class="num">EV at close</th></tr></thead><tbody>
         ${[...mk, ["Overs", R.over], ["Unders", R.under]].map(([k, r]) => `<tr><td>${k}</td><td class="num">${rec(r)}</td><td class="num ${cls(r && r.units)}">${r && r.n ? units(r.units) : "–"}</td><td class="num">${r && r.n ? pct(r.roi, 1) : "–"}</td><td class="num">${r && r.n ? evPct(r.ev) : "–"}</td><td class="num">${r && r.n ? evPct(r.ev_close) : "–"}</td></tr>`).join("")}
       </tbody></table></div><p class="note">Overs and unders are kept apart from day one: books shade popular overs, and the first checkup tests whether unders carry the edge.</p></section>
-      <section class="sec"><header><h2>Picks by day</h2></header>${nPickTable(N.props.record.rows, "props")}</section>
-      <section class="sec"><header><h2>Day by day</h2></header>${nDays(R, "Props")}</section>
+      <section class="sec"><header><h2>Picks by day</h2></header>${nDayBrowser(N.props.record.rows, "props", NPCATS)}</section>
+      <section class="sec"><header><h2>Day by day</h2></header>${nDayTable(R, [["pts", "Points"], ["reb", "Rebounds"], ["ast", "Assists"], ["fg3", "3-pointers"], ["combo", "Combos"]], ["2%+ EV", "big"])}</section>
       <section class="sec"><header><h2>Calibration</h2></header>${nCal(R)}</section>
       ${lsCalSection()}`;
   }
