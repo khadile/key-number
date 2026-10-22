@@ -140,3 +140,37 @@ if __name__ == "__main__":
     ap.add_argument("--blind", action="store_true", help="no actual scratches or starters: the fair test at the open")
     a = ap.parse_args()
     build(a.blind)
+
+
+def espnbet_reconstruct(seasons=(2025, 2026)) -> pl.DataFrame:
+    """ESPN BET 2024-25 and 2025-26 (user, 2026-10-22: make them usable). Its stored prices fail the calibration
+    test with the over-first order (slope ~0), so the order is not reliable there; but besides the main line it
+    lists one-sided alternate lines (always overs), and where the main line falls on that ladder tells which of
+    its two prices is the over. Reconstructed this way the prices predict results only weakly (slope ~0.35: they
+    are degraded at the source), while the main LINE is a real pregame close (it misses the result by the same
+    4.5 points as the opening line, like the clean 2023-24 books). Use these for line-only tests (at -110)."""
+    dec = lambda a: (1 + a / 100) if a > 0 else (1 + 100 / -a)  # noqa: E731
+    lg = lambda p: float(np.log(min(max(p, 1e-4), 1 - 1e-4) / (1 - min(max(p, 1e-4), 1 - 1e-4))))  # noqa: E731
+    raw = pl.concat([pl.read_parquet(SRC / f"props_{s}.parquet").with_columns(season=pl.lit(s)) for s in seasons], how="diagonal_relaxed")
+    raw = raw.filter((pl.col("provider_name") == "ESPN BET") & pl.col("line").is_not_null() & pl.col("am").is_not_null() & (pl.col("am") != 0))
+    rows = []
+    for key, g in raw.group_by("season", "game_id", "athlete_id", "market"):
+        lines_, ams = g["line"].to_list(), g["am"].to_list()
+        cnt = {l: lines_.count(l) for l in set(lines_)}
+        ladder = sorted((l, 1 / dec(a)) for l, a in zip(lines_, ams) if cnt[l] == 1)
+        best = None
+        for L in (l for l, c in cnt.items() if c == 2):
+            q = [1 / dec(a) for a in g.filter(pl.col("line") == L).sort("seq")["am"].to_list()]
+            if 0.02 <= sum(q) - 1 <= 0.12 and (best is None or abs(q[0] - q[1]) < abs(best[1][0] - best[1][1])):
+                best = (L, q)
+        if best is None:
+            continue
+        L, q = best
+        lo, hi = [x for x in ladder if x[0] < L], [x for x in ladder if x[0] > L]
+        if not lo or not hi:
+            continue
+        (l1, p1), (l2, p2) = lo[-1], hi[0]
+        qL = 1 / (1 + np.exp(-(lg(p1) + (lg(p2) - lg(p1)) * (L - l1) / (l2 - l1))))
+        o, u = (q[0], q[1]) if abs(q[0] - qL) <= abs(q[1] - qL) else (q[1], q[0])
+        rows.append({"season": key[0], "game_id": key[1], "athlete_id": key[2], "market": key[3], "line": L, "p": o / (o + u)})
+    return pl.DataFrame(rows)

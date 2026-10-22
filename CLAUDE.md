@@ -733,6 +733,12 @@ budget with the NFL) comes after the pregame side is stable.
     cold (0-2 of last 10 over this line) -1.6, hot (8-10) +0.9 (form persists, unlike NFL), minutes up 4+
     lately -1.4 and down 4+ +1.2 (the open overreacts to minutes swings). Stacked (fit 2022-23): unders the
     factors lean -4 points or more returned +1.3% at the best of 2-3 books in 2023-24 (+2.5% in 2022-23).
+  - ESPN BET 2024-25 and 2025-26 reconstructed (`espnbet_reconstruct()`, the over found from its one-sided
+    alternate-line ladder): prices only weakly honest (slope ~0.35), but the main LINE is a real pregame close.
+    Line-only test, the model's side against the CLOSE at -110 (52.4% to break even): 2023-24 +3% / +8% / +12%
+    at 55-60 / 60-65 / 65%+ model confidence, 2024-25 and 2025-26 about break-even (-0.4% to -5%). The one
+    edge that held in all three seasons: REBOUND UNDERS at 55%+ (+7.6%, +5.7%, +7.2%; 11,150 bets). Assists
+    faded (+5.3, -0.9, -1.9). The close is near the board's 5:30pm lock, so this is the timing that counts.
 
 ## Layout
 
