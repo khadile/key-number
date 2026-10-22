@@ -144,7 +144,8 @@ def record_games(picks: list[dict], results: list[dict]) -> dict:
         "days": [{"day": d, "all": _tally([r for r in rows if r["day"] == d]),
                   "pos": _tally([r for r in st if r["day"] == d and r["ev"] > 0]),
                   **{k: _tally([r for r in st if r["day"] == d and r["market"] == m]) for k, m in (("ats", "spread"), ("ou", "total"), ("ml", "ml"))},
-                  "potd": _tally([r for r in st if r["day"] == d and r.get("potd")])} for d in days],
+                  "potd": _tally([r for r in st if r["day"] == d and r.get("potd")]),
+                  "kelly": kelly_tally([r for r in st if r["day"] == d and kelly_of(r) > 0])} for d in days],
         "calibration": _cal(st),
     }
 
@@ -183,6 +184,7 @@ def record_props(picks: list[dict], results: list[dict]) -> dict:
                   "big": _tally([r for r in st if r["day"] == d and r["ev"] >= 0.02]),
                   **{m: _tally([r for r in st if r["day"] == d and r["market"] == m]) for m in ("pts", "reb", "ast", "fg3")},
                   "combo": _tally([r for r in st if r["day"] == d and r["market"] in ("pra", "pr", "pa", "ra")]),
-                  "potd": _tally([r for r in st if r["day"] == d and r.get("potd")])} for d in days],
+                  "potd": _tally([r for r in st if r["day"] == d and r.get("potd")]),
+                  "kelly": kelly_tally([r for r in st if r["day"] == d and kelly_of(r) > 0])} for d in days],
         "calibration": _cal(st),
     }

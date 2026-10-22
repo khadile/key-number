@@ -498,6 +498,10 @@ svg circle.ser-sim, svg circle.ser-live, svg circle.ser-kelly { stroke: var(--su
 .legend i.ser-live { background: var(--ink); }
 svg .ser-kelly { stroke: var(--gold-fill); fill: var(--gold-fill); }
 .legend i.ser-kelly { background: var(--gold-fill); }
+svg .ser-sub { stroke: var(--accent); fill: var(--accent); }
+svg path.ser-sub { fill: none; }
+svg circle.ser-sub { stroke: var(--surface); stroke-width: 2; }
+.legend i.ser-sub { background: var(--accent); }
 .finds { display: grid; gap: 14px; grid-template-columns: 1fr; }
 @container (min-width: 700px) { .finds { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .find { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
@@ -1107,8 +1111,8 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     lines: [["week", "This week"], ["mine", "My picks"], ["defense", "Defenses"], ["record", "Record"], ["model", "How it works"]],
     props: [["props", "This week"], ["props-players", "Players"], ["props-mine", "My picks"], ["props-defense", "Defenses"], ["props-record", "Record"], ["props-model", "How it works"]],
     live: [["live", "Live"], ["live-model", "How it works"]],
-    "nba-lines": [["nba", "Today"], ["nba-record", "Record"], ["nba-model", "How it works"]],
-    "nba-props": [["nba-props", "Today"], ["nba-props-record", "Record"], ["nba-props-model", "How it works"]],
+    "nba-lines": [["nba", "Today"], ["nba-defense", "Defenses"], ["nba-record", "Record"], ["nba-model", "How it works"]],
+    "nba-props": [["nba-props", "Today"], ["nba-props-defense", "Defenses"], ["nba-props-record", "Record"], ["nba-props-model", "How it works"]],
   };
   const SPORT_SECTIONS = { nfl: [["best", "#best", "Best bets", "Best"], ["lines", "#week", "Game lines", "Lines"], ["props", "#props", "Player props", "Props"], ["live", "#live", "Live", "Live"]],
                            nba: [["nba-best", "#nba-best", "Best bets", "Best"], ["nba-lines", "#nba", "Game lines", "Lines"], ["nba-props", "#nba-props", "Player props", "Props"]] };
@@ -2772,18 +2776,20 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <p class="note">${esc(dayShort(cur))}: ${subtotal(rs) || "no picks"}.</p>${sections}`;
   }
   function nDayTable(R, cols, extra) {   // extra: [label, key] a second record beside All (the +EV picks, the 2%+ props)
-    const D_ = (R.days || []).slice().reverse();
+    const D_ = R.days || [];   // oldest first, like NFL's weeks
     if (!D_.length) return '<p class="note">Nothing graded yet.</p>';
     return `<div class="scroll"><table class="t"><thead><tr><th>Day</th>${cols.map(([, k]) => `<th class="num">${k}</th>`).join("")}<th class="num">${term("potd", "Picks of the day")}</th>${extra ? `<th class="num">${extra[0]}</th><th class="num">Their units</th>` : ""}<th class="num">All picks</th><th class="num">Units</th><th class="num">${term("evclose", "EV at the close")}</th></tr></thead><tbody>
       ${D_.map((d) => `<tr><td>${esc(dayShort(d.day))}</td>${cols.map(([c]) => `<td class="num">${rec(d[c])}</td>`).join("")}<td class="num">${rec(d.potd)}</td>${extra ? `<td class="num">${rec(d[extra[1]])}</td><td class="num ${cls(d[extra[1]] && d[extra[1]].units)}">${d[extra[1]] && d[extra[1]].n ? units(d[extra[1]].units) : "–"}</td>` : ""}<td class="num">${rec(d.all)}</td><td class="num ${cls(d.all.units)}">${units(d.all.units)}</td><td class="num">${evPct(d.all.ev_close)}</td></tr>`).join("")}
     </tbody></table></div>`;
   }
-  function nUnitsChart(R, second) {   // all picks and one subset, cumulative by day
+  function nUnitsChart(R, second) {   // all picks, one subset, and quarter Kelly, cumulative by day
     const days = R.days || [];
     if (!days.length) return "";
     const W = days.map((d, i) => ({ week: i + 1, ...d }));
+    const none = { units: 0, n: 0, w: 0, l: 0, p: 0 };
     return unitsChart(null, [{ name: "All picks at 1u", cls: "ser-live", weeks: W, get: (w) => w.all },
-                             ...(second && W.some((w) => w[second[1]]) ? [{ name: second[0], cls: "ser-kelly", weeks: W, get: (w) => w[second[1]] || { units: 0, n: 0 } }] : [])],
+                             ...(second && W.some((w) => w[second[1]]) ? [{ name: second[0], cls: "ser-sub", weeks: W, get: (w) => w[second[1]] || none }] : []),
+                             ...(W.some((w) => w.kelly) ? [{ name: "Quarter Kelly", cls: "ser-kelly", weeks: W, get: (w) => w.kelly || none }] : [])],
                       (i) => mdShort(days[i - 1].day));
   }
   app.addEventListener("click", (e) => {
@@ -2792,6 +2798,31 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     const [which, d] = b.dataset.nday.split(":");
     if (which === "lines") { nRecDay = d; renderNbaRecord(); } else { npRecDay = d; renderNbaPropsRecord(); }
   });
+  // ---------- defenses (user, 2026-10-22): this season's games only, what each team allowed per game
+  const NDEF_CATS = {
+    overall: ["Overall", [["pts", "Pts/G"], ["reb", "Reb/G"], ["ast", "Ast/G"], ["fg3", "3PM/G"]]],
+    G: ["vs Guards", [["pts_G", "Pts/G"], ["reb_G", "Reb/G"], ["ast_G", "Ast/G"], ["fg3_G", "3PM/G"]]],
+    F: ["vs Forwards", [["pts_F", "Pts/G"], ["reb_F", "Reb/G"], ["ast_F", "Ast/G"], ["fg3_F", "3PM/G"]]],
+    C: ["vs Centers", [["pts_C", "Pts/G"], ["reb_C", "Reb/G"], ["ast_C", "Ast/G"], ["fg3_C", "3PM/G"]]],
+  };
+  let nDefCat = "overall", nDefSort = null;
+  function renderNbaDefense() {
+    if (!N) return noNba();
+    const DF = N.defense || { rows: [] }, n = DF.rows.length;
+    const cols = NDEF_CATS[nDefCat][1];
+    const sort = nDefSort && cols.some((c) => c[0] === nDefSort.col) ? nDefSort : { col: cols[0][0], dir: 1 };
+    const rows = DF.rows.slice().sort((a, b) => ((a[sort.col + "_rk"] ?? 99) - (b[sort.col + "_rk"] ?? 99)) * sort.dir);
+    const chip = (rk) => (rk == null ? "" : `<span class="rk ${rk <= 8 ? "top" : rk > n - 8 ? "bot" : ""}">${rk}</span>`);
+    const head = cols.map(([k, l]) => `<th class="num sort" data-col="${k}" ${sort.col === k ? `aria-sort="${sort.dir > 0 ? "ascending" : "descending"}"` : ""}>${esc(l)}${sort.col === k ? (sort.dir > 0 ? " ↑" : " ↓") : ""}</th>`).join("");
+    const body = rows.map((r, i) => `<tr><td class="num">${i + 1}</td><td><span class="tcell">${nbadge(r.team, 1)}${nnick(r.team)}</span></td><td class="num">${r.g}</td>${cols.map(([k]) => `<td class="num">${num(r[k], 1)}${chip(r[k + "_rk"])}</td>`).join("")}</tr>`).join("");
+    app.innerHTML = `
+      <section class="hello"><h1>Defenses</h1><p class="lede">What every team has allowed per game this season${DF.through ? `, through ${esc(dayShort(DF.through))}` : ""}: this season's games only. Small numbers are ranks: 1 allowed the least. Click a column to sort.</p></section>
+      <div class="pills" role="group" aria-label="Category">${Object.entries(NDEF_CATS).map(([k, [l]]) => `<button class="pill" data-ncat="${k}" aria-pressed="${k === nDefCat}">${esc(l)}</button>`).join("")}</div>
+      <section class="sec">${n ? `<div class="scroll"><table class="t"><thead><tr><th class="num">#</th><th>Team</th><th class="num">Games</th>${head}</tr></thead><tbody>${body}</tbody></table></div>
+        <p class="note">${nDefCat === "overall" ? "Everything opponents scored, rebounded, assisted and made from three, per game." : `Only what opponents' ${{ G: "guards", F: "forwards", C: "centers" }[nDefCat]} did, per game. Box scores label every player G, F or C.`} A team or two games in, one big night moves a rank a long way: read the Games column first. Rank chips: green is the best 8, red the worst 8.</p>` : `<p class="note">Fills in after this season's first games are graded.</p>`}</section>`;
+    app.querySelectorAll("[data-ncat]").forEach((b) => b.addEventListener("click", () => { nDefCat = b.dataset.ncat; nDefSort = null; renderNbaDefense(); }));
+    app.querySelectorAll("th.sort").forEach((th) => th.addEventListener("click", () => { const c = th.dataset.col; nDefSort = { col: c, dir: sort.col === c ? -sort.dir : 1 }; renderNbaDefense(); }));
+  }
   function nCal(R) {
     return R.calibration && R.calibration.length ? calTable(R) : '<p class="note">Builds up as picks are graded.</p>';
   }
@@ -3414,6 +3445,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
                   props: renderProps, "props-players": renderPropsPlayers, "props-mine": renderPropsMine, "props-defense": renderDefense,
                   "props-record": renderPropsRecord, "props-model": renderPropsModel, live: renderLive, "live-model": renderLiveModel,
                   nba: renderNba, "nba-record": renderNbaRecord, "nba-model": renderNbaModel,
+                  "nba-defense": renderNbaDefense, "nba-props-defense": renderNbaDefense,
                   "nba-props": renderNbaProps, "nba-props-record": renderNbaPropsRecord, "nba-props-model": renderNbaModel };
   // The board updates three times a week (the scheduled build, 10:05am Eastern): say which one is next.
   function nextUpdate(now) {

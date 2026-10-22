@@ -248,3 +248,28 @@ class GameTrends:
                     if s:
                         out.append(s.replace(" since", f", {pick['side']}s, since", 1))
         return out[:k]
+
+
+def defense_table(hist: pl.DataFrame, season: int, before: date) -> dict:
+    """The Defenses tab (user, 2026-10-22: this season's games only): per team, what opponents scored per game in
+    points, rebounds, assists and threes, overall and by the scorer's position group (box scores label G, F, C),
+    with ranks among the teams (1 = allowed the least). Small samples early: each row carries its games."""
+    h = hist.filter((pl.col("season") == season) & (pl.col("date") < before) & (pl.col("min") > 0))
+    if not h.height:
+        return {"rows": [], "games": 0}
+    h = h.with_columns(pg=pl.col("pos").map_elements(NP._pos, return_dtype=pl.String))
+    teams = h.select("game_id", "team").unique()
+    opp = (teams.join(teams, on="game_id", suffix="_o").filter(pl.col("team") != pl.col("team_o"))
+           .select("game_id", "team", pl.col("team_o").alias("defense")))
+    g = h.join(opp, on=["game_id", "team"])
+    games = g.group_by("defense").agg(pl.col("game_id").n_unique().alias("g"))
+    games = games.filter(pl.col("g") >= 0.5 * games["g"].max())   # real teams only (not All-Star sides)
+    out = games.join(g.group_by("defense").agg(*[pl.col(m).sum().alias(m) for m in CORE]), on="defense")
+    for grp in ("G", "F", "C"):
+        part = g.filter(pl.col("pg") == grp).group_by("defense").agg(*[pl.col(m).sum().alias(f"{m}_{grp}") for m in CORE])
+        out = out.join(part, on="defense", how="left")
+    cols = [c for c in out.columns if c not in ("defense", "g")]
+    out = out.with_columns(*[(pl.col(c).fill_null(0) / pl.col("g")).round(1).alias(c) for c in cols])
+    out = out.with_columns(*[pl.col(c).rank("min").cast(pl.Int32).alias(f"{c}_rk") for c in cols])
+    return {"rows": out.rename({"defense": "team"}).sort("pts").to_dicts(), "games": int(h["game_id"].n_unique()),
+            "through": str(h["date"].max())}

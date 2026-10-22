@@ -367,6 +367,17 @@ def prop_closes(picks: list[dict], tips: dict, pmap: pl.DataFrame, finished: set
 
 # ---------------------------------------------------------------- page data
 
+def _defense(hist: pl.DataFrame, today: date) -> dict:
+    """The Defenses tab: this season's games only (nba/notes.py defense_table). Decoration: a failure is printed
+    and the tab says it has nothing yet, never stopping the build."""
+    try:
+        from nba.notes import defense_table
+        return defense_table(hist, SEASON, today + timedelta(days=1))
+    except Exception as e:   # noqa: BLE001
+        print(f"defense table skipped: {type(e).__name__}: {e}")
+        return {"rows": [], "games": 0}
+
+
 def _team_meta(sched: pl.DataFrame, finals: dict) -> dict:
     rec: dict[str, list[int]] = {}
     for g in sched.iter_rows(named=True):
@@ -785,6 +796,7 @@ def main() -> None:
                   "record": {"live": ledger.record_props(live_p, p_results), "rows": _rows(live_p, p_results)},
                   "locked": sorted(p_locked_now)},
         "model": {"backtest": _backtest_card(), "angles": _angles_card()},
+        "defense": _defense(hist, today),
     }
     # the page is written on a dry run too (it shows what would lock), only the ledgers are left alone
     OUT.write_text(json.dumps(_clean(data), default=str, separators=(",", ":"), allow_nan=False), encoding="utf-8")
