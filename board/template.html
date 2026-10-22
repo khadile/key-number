@@ -2759,16 +2759,16 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   const nCat = (r) => (r.legs && r.legs.length ? "parlay" : ["pra", "pr", "pa", "ra"].includes(r.market) ? "combo" : r.market);
   const mdShort = (d) => `${+d.slice(5, 7)}/${+d.slice(8, 10)}`;
   function nDayBrowser(rows, which, cats) {
-    const days = [...new Set(rows.map((r) => r.day))].sort().reverse();
+    const days = [...new Set(rows.map((r) => r.day))].sort().slice(-21);   // oldest first, like NFL's weeks; opens on the latest
     if (!days.length) return '<p class="note">Picks show up here as they lock.</p>';
     let cur = which === "lines" ? nRecDay : npRecDay;
-    if (!days.includes(cur)) cur = days[0];
+    if (!days.includes(cur)) cur = days[days.length - 1];
     const rs = rows.filter((r) => r.day === cur).map((r) => ({ ...r, potw: !!r.potd }));
     const sections = cats.map(([k, name]) => {
       const g = rs.filter((r) => nCat(r) === k).sort((a, b) => (b.potw - a.potw) || ((a.risk === 0) - (b.risk === 0)) || ((b.ev || 0) - (a.ev || 0)));
       return g.length ? `<div class="box"><h3>${name} <span class="note">${subtotal(g)}</span></h3>${catTable(g, k === "parlay", { ev: true, final: which === "props", tag: "POTD" })}</div>` : "";
     }).join("");
-    return `<div class="pills" role="tablist" aria-label="Day">${days.slice(0, 21).map((d) => `<button class="pill" data-nday="${which}:${d}" aria-pressed="${d === cur}">${esc(dayShort(d))}</button>`).join("")}</div>
+    return `<div class="pills" role="tablist" aria-label="Day">${days.map((d) => `<button class="pill" data-nday="${which}:${d}" aria-pressed="${d === cur}">${esc(dayShort(d))}</button>`).join("")}</div>
       <p class="note">${esc(dayShort(cur))}: ${subtotal(rs) || "no picks"}.</p>${sections}`;
   }
   function nDayTable(R, cols, extra) {   // extra: [label, key] a second record beside All (the +EV picks, the 2%+ props)
