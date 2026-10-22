@@ -55,3 +55,4 @@
 {"kind": "game", "id": "2026_07_CLE_TEN:ml", "game_id": "2026_07_CLE_TEN", "verdict": "good", "failed": [], "at": "2026-10-20T15:14:07.196215+00:00"}
 {"kind": "game", "id": "2026_07_DEN_ARI:ml", "game_id": "2026_07_DEN_ARI", "verdict": "good", "failed": [], "at": "2026-10-20T15:14:07.196215+00:00"}
 {"kind": "game", "id": "2026_07_LA_LV:total", "game_id": "2026_07_LA_LV", "verdict": "good", "failed": [], "at": "2026-10-20T15:14:07.196215+00:00"}
+{"kind": "prop", "id": "2026_07_NE_CHI:00-0040734:rec_yds", "game_id": "2026_07_NE_CHI", "verdict": "good", "failed": [], "at": "2026-10-22T18:05:14.215003+00:00"}
