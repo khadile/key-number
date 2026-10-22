@@ -291,6 +291,16 @@ Each check was tested on its own market, with the EV at Pinnacle's closing no-vi
   - Game lines: no QB on either team Questionable or Doubtful. Out is settled news the model already uses.
 - **Deliberately not a check:** the model-market gap. In 2022-25 the model side covered 51/52/54/44/51% from a
   gap under 1 point to over 4, so a big gap predicts nothing.
+- **Tested for props and left out (2026-10-22, user asked):** matchup, form and usage, on 8,104 props with a
+  Pinnacle close (SGO 2025 + 2026 weeks 1-6), each prop's over result against the close's no-vig chance, net of
+  its season-and-market average miss. Matchup (the opponent's season-to-date rank allowing that stat to that
+  position, 3+ games): overs vs bottom-5 defenses +2.5 points (SE 1.6), vs top-5 -2.0 (SE 1.6); 2025 only,
+  2026's 72 each showed nothing. A weak lead, not a check. Form (cleared this line 4-5 of the last 5, or 8-10 of
+  10): -1.1 / -0.3, noise (hot streaks if anything slightly overpriced; cold ones +1.6 / +1.0). Usage spike
+  (last game's targets/carries/attempts 30%+ and 3+ (5+) over his average): -1.2, noise. The market prices
+  what everyone can see; the board shows them as facts on the cards, not checks. Pinnacle's 2026 opens moved
+  toward the over by the close 61% of the time for cold players (276 moves) vs 52% for others: openers may
+  overreact to cold form. One season, one look: re-test at season's end before acting.
 - **Price now:** each pick also shows the best DK/FD price and EV as of the last build.
 - **Freezing:** each build appends a verdict line to `ledger/pick_checks.jsonl` (append-only) when a pick's
   verdict changes before kickoff. The record uses the last line before kickoff. Older picks are rebuilt from what
