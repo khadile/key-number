@@ -64,3 +64,5 @@
 {"id": "2026_06_WAS_SF:spread", "result": "W", "units": 0.893, "clv": 0.5, "graded_at": "2026-10-20T15:24:22.426135+00:00"}
 {"id": "2026_06_WAS_SF:total", "result": "L", "units": -1.0, "clv": 1.0, "graded_at": "2026-10-20T15:24:22.426135+00:00"}
 {"id": "2026_06_WAS_SF:ml", "result": "L", "units": -1.0, "clv": null, "graded_at": "2026-10-20T15:24:22.426135+00:00"}
+{"id": "2026_07_NE_CHI:spread", "result": "L", "units": -1.0, "clv": 0.0, "graded_at": "2026-10-24T17:28:29.287168+00:00"}
+{"id": "2026_07_NE_CHI:total", "result": "L", "units": -1.0, "clv": -0.5, "graded_at": "2026-10-24T17:28:29.287168+00:00"}

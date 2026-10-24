@@ -88,3 +88,4 @@
 {"id": "2026_06_WAS_SF:00-0031408:receptions", "result": "W", "units": 0.8799999999999999, "actual": 3.0, "clv": 0.0, "graded_at": "2026-10-20T15:24:34.737967+00:00"}
 {"id": "2026_06:props:golden", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-10-20T15:24:34.737967+00:00"}
 {"id": "2026_06:props:lottery", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-10-20T15:24:34.737967+00:00"}
+{"id": "2026_07_NE_CHI:00-0040734:rec_yds", "result": "L", "units": -1.0, "actual": 14.0, "clv": 0.0, "graded_at": "2026-10-24T17:28:48.557463+00:00"}

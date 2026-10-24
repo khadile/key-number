@@ -56,3 +56,15 @@
 {"kind": "game", "id": "2026_07_DEN_ARI:ml", "game_id": "2026_07_DEN_ARI", "verdict": "good", "failed": [], "at": "2026-10-20T15:14:07.196215+00:00"}
 {"kind": "game", "id": "2026_07_LA_LV:total", "game_id": "2026_07_LA_LV", "verdict": "good", "failed": [], "at": "2026-10-20T15:14:07.196215+00:00"}
 {"kind": "prop", "id": "2026_07_NE_CHI:00-0040734:rec_yds", "game_id": "2026_07_NE_CHI", "verdict": "good", "failed": [], "at": "2026-10-22T18:05:14.215003+00:00"}
+{"kind": "game", "id": "2026_07_TB_CAR:spread", "game_id": "2026_07_TB_CAR", "verdict": "ev", "failed": ["who"], "at": "2026-10-24T17:23:10.513774+00:00"}
+{"kind": "game", "id": "2026_07_TB_CAR:ml", "game_id": "2026_07_TB_CAR", "verdict": "ev", "failed": ["who"], "at": "2026-10-24T17:23:10.513774+00:00"}
+{"kind": "game", "id": "2026_07_DEN_ARI:ml", "game_id": "2026_07_DEN_ARI", "verdict": "ev", "failed": ["who"], "at": "2026-10-24T17:23:10.513774+00:00"}
+{"kind": "prop", "id": "2026_07_CLE_TEN:00-0040584:rec_yds", "game_id": "2026_07_CLE_TEN", "verdict": "good", "failed": [], "at": "2026-10-24T17:23:10.513774+00:00"}
+{"kind": "prop", "id": "2026_07_DEN_ARI:00-0037263:rec_yds", "game_id": "2026_07_DEN_ARI", "verdict": "good", "failed": [], "at": "2026-10-24T17:23:10.513774+00:00"}
+{"kind": "prop", "id": "2026_07_DEN_ARI:00-0037744:rec_yds", "game_id": "2026_07_DEN_ARI", "verdict": "good", "failed": [], "at": "2026-10-24T17:23:10.513774+00:00"}
+{"kind": "prop", "id": "2026_07_DEN_ARI:00-0036158:receptions", "game_id": "2026_07_DEN_ARI", "verdict": "good", "failed": [], "at": "2026-10-24T17:23:10.513774+00:00"}
+{"kind": "prop", "id": "2026_07_KC_SEA:00-0038134:rush_yds", "game_id": "2026_07_KC_SEA", "verdict": "good", "failed": [], "at": "2026-10-24T17:23:10.513774+00:00"}
+{"kind": "prop", "id": "2026_07_MIA_NYJ:00-0040198:rec_yds", "game_id": "2026_07_MIA_NYJ", "verdict": "ev", "failed": ["lean", "who"], "at": "2026-10-24T17:23:10.513774+00:00"}
+{"kind": "prop", "id": "2026_07_PIT_NO:00-0037228:rec_yds", "game_id": "2026_07_PIT_NO", "verdict": "good", "failed": [], "at": "2026-10-24T17:23:10.513774+00:00"}
+{"kind": "prop", "id": "2026_07_SF_ATL:00-0033280:rec_yds", "game_id": "2026_07_SF_ATL", "verdict": "good", "failed": [], "at": "2026-10-24T17:23:10.513774+00:00"}
+{"kind": "prop", "id": "2026_07_TB_CAR:00-0039361:rec_yds", "game_id": "2026_07_TB_CAR", "verdict": "good", "failed": [], "at": "2026-10-24T17:23:10.513774+00:00"}
