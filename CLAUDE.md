@@ -714,6 +714,11 @@ budget with the NFL) comes after the pregame side is stable.
   to test (back-to-backs and rest, a teammate's props when a starter sits,
   referee crews on totals). The decision to pay for more odds data is revisited
   at the first one.
+- Starters (user, 2026-10-24): the tracked five are who started the team's last game this season, minus anyone
+  Out or Doubtful, then ESPN's depth chart (`espn.depth_starters`), then the model's starts share. The model's
+  own pick had been right on 231 of 280 in the first four nights; last-game starters 96%, the depth chart 93%.
+  Players with no minutes in the last two seasons are projected from the season before (a season lost to
+  injury: Haliburton), so history loads three seasons.
 - Props back-test (2026-10-22, user asked; nba/espn_props.py pulls ESPN's public prop lines, nba/prop_backtest.py
   replays the model walk-forward; data in data/nba/, off the repo):
   - Data: ESPN keeps each game's props (open and latest line and price) from 2022-23. Usable: 2022-23 and
