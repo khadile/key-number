@@ -39,3 +39,5 @@
 {"id": "2026_06_DAL_GB:game:total:1792374863", "result": "L", "actual": null, "logged_at": "2026-10-19T03:47:56.913406+00:00"}
 {"id": "2026_06_WAS_SF:00-0037834:pass_yds:1792460444", "result": "L", "actual": 264.0, "logged_at": "2026-10-20T03:22:05.451386+00:00"}
 {"id": "2026_06_WAS_SF:game:spread:1792460538", "result": "W", "actual": null, "logged_at": "2026-10-20T03:22:05.451614+00:00"}
+{"id": "2026_07_NE_CHI:game:total:1792718438", "result": "W", "actual": null, "logged_at": "2026-10-24T05:18:55.405632+00:00"}
+{"id": "2026_07_NE_CHI:00-0038621:rec_yds:1792720236", "result": "L", "actual": 23.0, "logged_at": "2026-10-24T05:18:55.405934+00:00"}
