@@ -42,6 +42,25 @@ def rosters() -> pl.DataFrame:
     return pl.DataFrame(out).unique("athlete_id")
 
 
+POS_ORDER = ("pg", "sg", "sf", "pf", "c")
+
+
+def depth_starters() -> dict[str, list[int]]:
+    """ESPN's depth chart: each team's first name at each position (pg, sg, sf, pf, c). Measured 2026-10-23 against
+    each team's latest starting five: 93% right (who started the team's last game: 96%)."""
+    out = {}
+    for t in teams().iter_rows(named=True):
+        try:
+            d = _get(f"teams/{t['team_id']}/depthcharts")
+        except Exception:   # noqa: BLE001  (one team's chart missing never stops the build)
+            continue
+        pos = ((d.get("depthchart") or [{}])[0]).get("positions", {})
+        ids = [int(pos[p]["athletes"][0]["id"]) for p in POS_ORDER if (pos.get(p) or {}).get("athletes")]
+        out[t["team"]] = list(dict.fromkeys(ids))
+        time.sleep(0.2)
+    return out
+
+
 def scoreboard(day: str) -> list[dict]:
     """A day's games (day: YYYYMMDD, Eastern): game_id, tip (UTC ISO), state (pre / in / post), home, away, scores."""
     out = []

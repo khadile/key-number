@@ -94,7 +94,12 @@ def profiles(bx: pl.DataFrame, before: date, season: int) -> pl.DataFrame:
     `last_age`, the league game days since he last played; his latest return from an absence (`back_short`, the
     minutes it cost his first game back, and `back_n`, his games since) and `season_days`, this season's game
     days so far."""
-    h = game_day_age(bx.filter((pl.col("date") < before) & (pl.col("season") >= season - 1) & (pl.col("min") > 0)))
+    recent = bx.filter((pl.col("date") < before) & (pl.col("season") >= season - 1) & (pl.col("min") > 0))
+    # a player with no minutes in the last two seasons (a season lost to injury) keeps the one before: without it
+    # he could not be projected at all (2026-27: Haliburton, back from missing 2025-26, went untracked)
+    older = bx.filter((pl.col("date") < before) & (pl.col("season") == season - 2) & (pl.col("min") > 0)
+                      & ~pl.col("athlete_id").is_in(recent["athlete_id"].unique().to_list()))
+    h = game_day_age(pl.concat([recent, older], how="vertical_relaxed"))
     h = h.with_columns(w=0.5 ** (pl.col("age") / HALF_LIFE) * pl.when(pl.col("season") < season).then(PREV_W).otherwise(1.0),
                        pg=pl.col("pos").map_elements(_pos, return_dtype=pl.String))
     # returns: a game after 8+ league game days without one, or his first of a season (its days missed are the
@@ -141,15 +146,27 @@ def minutes_short(p: dict) -> float:
     return float(p["back_short"]) * BACK_RAMP[k] if p.get("back_short") and k is not None and k < len(BACK_RAMP) else 0.0
 
 
-def tracked(prof: pl.DataFrame, roster: pl.DataFrame, out_ids: set[int]) -> pl.DataFrame:
-    """Each team's five starters and sixth man among players on its roster now and not ruled out: starters by
-    how often they started lately (then minutes), the sixth man the most-used of the rest."""
+def tracked(prof: pl.DataFrame, roster: pl.DataFrame, out_ids: set[int], last_five: dict | None = None,
+            depth: dict | None = None) -> pl.DataFrame:
+    """Each team's five starters and sixth man among players on its roster now and not ruled out. Starters (user,
+    2026-10-24: the model's own pick was right on 231 of 280 in the first four nights, missing players back from
+    injury, on new teams and rookies): who started the team's last game this season (96% right), then ESPN's
+    depth chart (93%), then how often they started lately and minutes. The sixth man: the most-used of the rest."""
     r = roster.select("athlete_id", pl.col("team").alias("now_team"), pl.col("position").alias("now_pos"), pl.col("name").alias("now_name"))
     p = (r.join(prof, on="athlete_id", how="left")
           .filter(~pl.col("athlete_id").is_in(list(out_ids)))
           .with_columns(exp_min=pl.col("exp_min").fill_null(12.0), starts=pl.col("starts").fill_null(0.0)))
-    p = p.sort(["now_team", "starts", "exp_min"], descending=[False, True, True]).with_columns(
-        rank=pl.int_range(1, pl.len() + 1).over("now_team"))
+    # a priority per player: last game's five first, then the depth chart's, then everyone by starts share
+    pri = {}
+    for team in p["now_team"].unique().to_list():
+        k = 0
+        for a in (last_five or {}).get(team, []) + (depth or {}).get(team, []):
+            if (a, team) not in pri:
+                pri[(a, team)] = k
+                k += 1
+    p = p.with_columns(pri=pl.struct("athlete_id", "now_team").map_elements(lambda s: pri.get((s["athlete_id"], s["now_team"]), 99), return_dtype=pl.Int64))
+    p = p.sort(["now_team", "pri", "starts", "exp_min"], descending=[False, False, True, True]).with_columns(
+        rank=pl.int_range(1, pl.len() + 1).over("now_team")).drop("pri")
     starters = p.filter(pl.col("rank") <= 5).with_columns(role=pl.lit("Starter"))
     bench = (p.filter(pl.col("rank") > 5).sort(["now_team", "exp_min"], descending=[False, True])
                .group_by("now_team", maintain_order=True).head(1).with_columns(role=pl.lit("Sixth man")))
@@ -214,8 +231,9 @@ def espn_frame(season: int, positions: dict[int, str]) -> pl.DataFrame:
 
 
 def history(season: int, positions: dict[int, str]) -> pl.DataFrame:
-    """hoopR player games for last season and this one, plus ESPN's for this season's games hoopR lacks."""
-    bx = box(range(season - 1, season + 1))
+    """hoopR player games for the last two seasons and this one, plus ESPN's for this season's games hoopR lacks
+    (the season two back serves only players who missed all of last season: profiles)."""
+    bx = box(range(season - 2, season + 1))
     es = espn_frame(season, positions)
     if es.height:
         es = es.join(bx.select("game_id").unique(), on="game_id", how="anti")
@@ -250,7 +268,8 @@ def expected_minutes(prof: pl.DataFrame, roster: pl.DataFrame, team: str, out_id
     return m
 
 
-def slate(games: list[dict], prof: pl.DataFrame, roster: pl.DataFrame, injuries: pl.DataFrame, before: date) -> pl.DataFrame:
+def slate(games: list[dict], prof: pl.DataFrame, roster: pl.DataFrame, injuries: pl.DataFrame, before: date,
+          last_five: dict | None = None, depth: dict | None = None) -> pl.DataFrame:
     """Tracked players for the given games: starters and sixth man, expected minutes, minutes spread, rates.
     `games`: game_id, home, away, spread (expected home margin, market), pace_factor."""
     status = dict(zip(injuries["athlete_id"].to_list(), injuries["status"].to_list())) if injuries.height else {}
@@ -258,7 +277,7 @@ def slate(games: list[dict], prof: pl.DataFrame, roster: pl.DataFrame, injuries:
     rows = []
     for g in games:
         for team, opp, sign in ((g["home"], g["away"], 1), (g["away"], g["home"], -1)):
-            tr = tracked(prof, roster.filter(pl.col("team") == team), out_ids)
+            tr = tracked(prof, roster.filter(pl.col("team") == team), out_ids, last_five, depth)
             mins = expected_minutes(prof, roster, team, out_ids, before)
             spread = abs(g.get("spread") or 0.0)
             for p in tr.iter_rows(named=True):

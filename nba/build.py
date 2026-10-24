@@ -548,7 +548,16 @@ def main() -> None:
     games_for_props = [{"game_id": g["game_id"], "home": g["home"], "away": g["away"],
                         "spread": fair_now[g["game_id"]].get("margin", (models.get(g["game_id"]) or {}).get("margin")),
                         "pace_factor": (models.get(g["game_id"]) or {}).get("pace_factor", 1.0)} for g in day_games]
-    x = NP.slate(games_for_props, prof, roster, inj, today) if day_games else pl.DataFrame()
+    # starters: who started each team's last game this season, then ESPN's depth chart (nba/props.py tracked)
+    cur = hist.filter((pl.col("season") == SEASON) & (pl.col("date") < today))
+    last_game = cur.group_by("team").agg(pl.col("date").max().alias("date"))
+    last_five = {t: g["athlete_id"].to_list() for (t,), g in cur.join(last_game, on=["team", "date"]).filter(pl.col("starter")).group_by("team")}
+    try:
+        depth = espn.depth_starters()
+    except Exception as e:   # noqa: BLE001
+        print(f"depth charts skipped: {type(e).__name__}: {e}")
+        depth = {}
+    x = NP.slate(games_for_props, prof, roster, inj, today, last_five, depth) if day_games else pl.DataFrame()
     MX = mixes_of(x) if x.height else {}
     P = load_props(sorted(day_ids), pmap) if day_ids else pl.DataFrame()
     now_b = _books(main_lines(P, pl.lit(now))) if P.height else {}
