@@ -167,3 +167,16 @@
 {"id": "2026_07_CIN_BAL:game:spread:1792953828", "clv_units": -1.0, "logged_at": "2026-10-25T18:48:50.469679+00:00"}
 {"id": "2026_07_DEN_ARI:game:total:1792959426", "fill": "filled", "fill_dec": 1.7692307692307692, "fill_line": 43.5, "logged_at": "2026-10-25T20:17:43.049028+00:00"}
 {"id": "2026_07_DEN_ARI:game:total:1792959426", "expired": "time", "logged_at": "2026-10-25T20:20:37.950388+00:00"}
+{"id": "2026_07_DEN_ARI:game:total:1792959426", "clv_units": 0.0, "logged_at": "2026-10-25T20:22:11.442782+00:00"}
+{"id": "2026_07_GB_DET:game:total:1792961716", "fill": "filled", "fill_dec": 1.9009, "fill_line": 58.5, "logged_at": "2026-10-25T20:55:52.234567+00:00"}
+{"id": "2026_07_GB_DET:game:total:1792961716", "expired": "time", "logged_at": "2026-10-25T20:58:17.535161+00:00"}
+{"id": "2026_07_GB_DET:game:total:1792961716", "clv_units": 2.0, "logged_at": "2026-10-25T21:00:20.066749+00:00"}
+{"id": "2026_07_LA_LV:game:spread:1792962171", "fill": "filled", "fill_dec": 1.9433962264150944, "fill_line": 6.5, "logged_at": "2026-10-25T21:03:31.418199+00:00"}
+{"id": "2026_07_LA_LV:game:spread:1792962171", "expired": "time", "logged_at": "2026-10-25T21:06:25.738763+00:00"}
+{"id": "2026_07_LA_LV:game:spread:1792962171", "clv_units": 0.0, "logged_at": "2026-10-25T21:07:52.205763+00:00"}
+{"id": "2026_07_DEN_ARI:00-0038559:rec_yds:1792964405", "expired": "line moved to 39.5", "logged_at": "2026-10-25T21:40:44.336950+00:00"}
+{"id": "2026_07_DEN_ARI:00-0038559:rec_yds:1792964405", "fill": "missed", "fill_dec": null, "fill_line": null, "logged_at": "2026-10-25T21:40:44.337290+00:00"}
+{"id": "2026_07_DEN_ARI:00-0038559:rec_yds:1792964405", "clv_units": 1.0, "logged_at": "2026-10-25T21:45:09.964381+00:00"}
+{"id": "2026_07_GB_DET:00-0039065:receptions:1792964988", "fill": "filled", "fill_dec": 1.5882, "fill_line": 2.5, "logged_at": "2026-10-25T21:50:24.808033+00:00"}
+{"id": "2026_07_GB_DET:00-0039065:receptions:1792964988", "clv_units": 0.0, "logged_at": "2026-10-25T21:55:14.083919+00:00"}
+{"id": "2026_07_GB_DET:00-0039065:receptions:1792964988", "expired": "time", "logged_at": "2026-10-25T21:55:50.211867+00:00"}
