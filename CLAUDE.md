@@ -714,6 +714,16 @@ budget with the NFL) comes after the pregame side is stable.
   to test (back-to-backs and rest, a teammate's props when a starter sits,
   referee crews on totals). The decision to pay for more odds data is revisited
   at the first one.
+- Over shading (user, 2026-10-25: props ROI bad, threes worst): through five nights NBA props went 48-56;
+  threes 2-14 (-12.3u; 11 of 16 were overs, 12 plus money), plus-money sides of every stat 7-27 (said 47%, won
+  21%, -19.1u) against minus-money 41-29 (+6.2u). Pinnacle's NBA threes rarely moved, so "EV at the close"
+  equalled the EV at the lock and could not flag it. History (2022-24, five books): the even vig split
+  overstates the over, most in threes (plus-money overs at 1.5 / 2.5 / 3.5: said 41.7 / 43.2 / 43.8%, won 39.7 /
+  40.1 / 39.6%). Fix: `props.OVER_SHADE`, the logit shift fitted on 2022-23 per stat (about -2 to -3 points near
+  even; assists ~0), applied to the anchor's no-vig over chance (`unshade`), in picks, cards and EV at the close.
+  On the live picks it would have dropped 36 (97% overs, 14-22, -8.8u). Plus-money unders it keeps still went
+  5-14: not explained by the shading and not seen in history (US-book shopping made +2.1% on plus money in
+  2023-24); watched, not acted on.
 - Starters (user, 2026-10-24): the tracked five are who started the team's last game this season, minus anyone
   Out or Doubtful, then ESPN's depth chart (`espn.depth_starters`), then the model's starts share. The model's
   own pick had been right on 231 of 280 in the first four nights; last-game starters 96%, the depth chart 93%.

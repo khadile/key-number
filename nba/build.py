@@ -218,7 +218,7 @@ def prop_picks(x: pl.DataFrame, mixes: dict, books: dict, pricer: NP.PropPricerN
             key = (r["game_id"], r["athlete_id"], m)
             if key not in mixes or key not in books:
                 continue
-            pk = pricer.price(mixes[key], books[key])
+            pk = pricer.price(mixes[key], books[key], m)
             if pk and pk["ev"] >= PROP_EV_MIN and (best is None or kelly(pk) > kelly(best)):
                 best = {**pk, "market": m}
         if not best:
@@ -356,7 +356,7 @@ def prop_closes(picks: list[dict], tips: dict, pmap: pl.DataFrame, finished: set
         if p.get("mix"):
             mx = p["mix"]
             mix = NP.Mix(NP.minute_draws(mx["exp_min"], mx["sd_min"]), mx["rate"], mx["disp"])
-            lam, _ = pr.anchor(mix, bk)
+            lam, _ = pr.anchor(mix, bk, p["market"])
             if lam is not None:
                 over, push, under = mix.probs(p["line"], lam)
                 pw = over if p["side"] == "over" else under
@@ -748,7 +748,7 @@ def main() -> None:
                 if mix is None:
                     continue
                 bk = now_b.get(key) or {}
-                priced = pp.price(mix, bk) if bk else None
+                priced = pp.price(mix, bk, m) if bk else None
                 q = mix.quantiles()
                 # the model's own chance of the under at the main bettable line (tagged at 55%+ for rebounds: the one
                 # model edge that held against the close in 2023-24, 2024-25 and 2025-26, CLAUDE.md 9)

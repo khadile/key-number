@@ -381,6 +381,22 @@ class Mix:
         return float(lam * self.rate * self.mins.mean())
 
 
+# Books shade overs (user, 2026-10-25, after the first five nights' threes went 2-14, overs at plus money): splitting
+# the vig evenly overstates the over. Measured on 2022-23 (ESPN's prop history, five books, ~100k props a stat; the
+# other books' even-split chance against the result), the over's true chance is this much lower, in logit; 2023-24
+# confirmed the shift (threes overs as the plus-money side: 1.5 41.7% said, 39.7% won; 2.5 43.2%, 40.1%). Applied
+# to the anchor's no-vig chance of the over. Combos take their main stat's. About -2 to -3 points near even.
+OVER_SHADE = {"pts": -0.088, "reb": -0.122, "ast": -0.026, "fg3": -0.128, "pra": -0.088, "pr": -0.088, "pa": -0.088, "ra": -0.122}
+
+
+def unshade(p_over: float, market: str | None) -> float:
+    """A book's even-split chance of the over, corrected for the books' over shading (OVER_SHADE)."""
+    if not market or market not in OVER_SHADE:
+        return p_over
+    p = min(max(p_over, 1e-6), 1 - 1e-6)
+    return float(1 / (1 + np.exp(-(np.log(p / (1 - p)) + OVER_SHADE[market]))))
+
+
 @dataclass
 class PropPricerNba:
     """props/pricing.py's rule on counts: the market's level from Pinnacle's no-vig price (else DraftKings and
@@ -392,18 +408,18 @@ class PropPricerNba:
     and the two of them set the level. One book off a line the other two share is the shopping edge."""
     k: float = 0.0
 
-    def anchor(self, mix: Mix, books: dict[str, dict]) -> tuple[float | None, str | None]:
+    def anchor(self, mix: Mix, books: dict[str, dict], market: str | None = None) -> tuple[float | None, str | None]:
         shop = [b for b in ("draftkings", "fanduel") if b in books]
         if "pinnacle" in books:
             pin = books["pinnacle"]["line"]
             off = [np.sign(books[b]["line"] - pin) for b in shop]
             if not (len(off) == 2 and off[0] == off[1] != 0):
-                return mix.solve(pin, books["pinnacle"]["p_over"]), "pinnacle"
-        ls = [mix.solve(books[b]["line"], books[b]["p_over"]) for b in shop]
+                return mix.solve(pin, unshade(books["pinnacle"]["p_over"], market)), "pinnacle"
+        ls = [mix.solve(books[b]["line"], unshade(books[b]["p_over"], market)) for b in shop]
         return (float(np.exp(np.mean(np.log(ls)))), "dk/fd" if "pinnacle" not in books else "dk/fd, pinnacle behind") if ls else (None, None)
 
-    def price(self, mix: Mix, books: dict[str, dict]) -> dict | None:
-        lam_m, src = self.anchor(mix, books)
+    def price(self, mix: Mix, books: dict[str, dict], market: str | None = None) -> dict | None:
+        lam_m, src = self.anchor(mix, books, market)
         if lam_m is None:
             return None
         lam = float(np.exp((1 - self.k) * np.log(lam_m)))
