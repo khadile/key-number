@@ -129,3 +129,39 @@
 {"id": "2026_07_PIT_NO:00-0036040:rec_yds:1792940733", "fill": "filled", "fill_dec": 1.8771929824561404, "fill_line": 15.5, "logged_at": "2026-10-25T15:06:02.901511+00:00"}
 {"id": "2026_07_PIT_NO:00-0036040:rec_yds:1792940733", "clv_units": 0.0, "logged_at": "2026-10-25T15:10:59.431670+00:00"}
 {"id": "2026_07_PIT_NO:00-0036040:rec_yds:1792940733", "expired": "time", "logged_at": "2026-10-25T15:11:35.703174+00:00"}
+{"id": "2026_07_IND_MIN:game:spread:1792950193", "fill": "filled", "fill_dec": 1.8333, "fill_line": -2.5, "logged_at": "2026-10-25T17:43:49.788782+00:00"}
+{"id": "2026_07_IND_MIN:game:spread:1792950193", "expired": "time", "logged_at": "2026-10-25T17:46:14.901788+00:00"}
+{"id": "2026_07_IND_MIN:game:spread:1792950193", "clv_units": 0.0, "logged_at": "2026-10-25T17:48:16.823459+00:00"}
+{"id": "2026_07_SF_ATL:game:total:1792950914", "fill": "filled", "fill_dec": 1.9433962264150944, "fill_line": 57.5, "logged_at": "2026-10-25T17:55:50.413619+00:00"}
+{"id": "2026_07_SF_ATL:game:total:1792950914", "expired": "line moved to 56.5", "logged_at": "2026-10-25T17:57:40.380905+00:00"}
+{"id": "2026_07_SF_ATL:game:total:1792950914", "clv_units": -1.0, "logged_at": "2026-10-25T18:00:18.583531+00:00"}
+{"id": "2026_07_MIA_NYJ:00-0030565:rush_yds:1792952464", "fill": "filled", "fill_dec": 1.819672131147541, "fill_line": 3.5, "logged_at": "2026-10-25T18:21:40.936297+00:00"}
+{"id": "2026_07_MIA_NYJ:game:total:1792952558", "fill": "filled", "fill_dec": 1.847457627118644, "fill_line": 48.5, "logged_at": "2026-10-25T18:23:16.144951+00:00"}
+{"id": "2026_07_IND_MIN:00-0033293:rush_yds:1792952599", "fill": "filled", "fill_dec": 1.9090909090909092, "fill_line": 22.5, "logged_at": "2026-10-25T18:23:55.740469+00:00"}
+{"id": "2026_07_IND_MIN:00-0033293:rush_yds:1792952599", "expired": "line moved to 21.5", "logged_at": "2026-10-25T18:24:34.344658+00:00"}
+{"id": "2026_07_SF_ATL:00-0037238:rec_yds:1792952677", "fill": "filled", "fill_dec": 1.8771929824561404, "fill_line": 54.5, "logged_at": "2026-10-25T18:25:13.258348+00:00"}
+{"id": "2026_07_CIN_BAL:00-0032764:rec_yds:1792952679", "fill": "filled", "fill_dec": 3.1, "fill_line": 4.5, "logged_at": "2026-10-25T18:25:15.939167+00:00"}
+{"id": "2026_07_TB_CAR:game:spread:1792952726", "fill": "filled", "fill_dec": 1.9090909090909092, "fill_line": 21.5, "logged_at": "2026-10-25T18:26:02.900310+00:00"}
+{"id": "2026_07_MIA_NYJ:00-0030565:rush_yds:1792952464", "clv_units": 0.0, "logged_at": "2026-10-25T18:26:10.318460+00:00"}
+{"id": "2026_07_MIA_NYJ:00-0030565:rush_yds:1792952464", "expired": "time", "logged_at": "2026-10-25T18:27:22.636024+00:00"}
+{"id": "2026_07_TB_CAR:game:spread:1792952726", "expired": "price now -122", "logged_at": "2026-10-25T18:27:37.579043+00:00"}
+{"id": "2026_07_MIA_NYJ:game:total:1792952558", "clv_units": 0.0, "logged_at": "2026-10-25T18:27:58.756535+00:00"}
+{"id": "2026_07_IND_MIN:00-0033293:rush_yds:1792952599", "clv_units": 0.0, "logged_at": "2026-10-25T18:28:24.275594+00:00"}
+{"id": "2026_07_MIA_NYJ:game:total:1792952558", "expired": "time", "logged_at": "2026-10-25T18:29:11.165230+00:00"}
+{"id": "2026_07_CIN_BAL:00-0032764:rec_yds:1792952679", "clv_units": 0.0, "logged_at": "2026-10-25T18:30:01.244057+00:00"}
+{"id": "2026_07_SF_ATL:00-0037238:rec_yds:1792952677", "clv_units": 0.0, "logged_at": "2026-10-25T18:30:03.146573+00:00"}
+{"id": "2026_07_TB_CAR:game:spread:1792952726", "clv_units": 0.0, "logged_at": "2026-10-25T18:30:30.463333+00:00"}
+{"id": "2026_07_SF_ATL:00-0037238:rec_yds:1792952677", "expired": "time", "logged_at": "2026-10-25T18:30:39.262241+00:00"}
+{"id": "2026_07_CIN_BAL:00-0032764:rec_yds:1792952679", "expired": "time", "logged_at": "2026-10-25T18:30:52.279908+00:00"}
+{"id": "2026_07_NYG_HOU:game:spread:1792953586", "fill": "filled", "fill_dec": 1.7692, "fill_line": 3.5, "logged_at": "2026-10-25T18:40:24.487548+00:00"}
+{"id": "2026_07_CLE_TEN:00-0040784:rec_yds:1792953617", "fill": "filled", "fill_dec": 1.847457627118644, "fill_line": 1.5, "logged_at": "2026-10-25T18:40:53.420497+00:00"}
+{"id": "2026_07_NYG_HOU:00-0036554:rec_yds:1792953646", "fill": "filled", "fill_dec": 1.847457627118644, "fill_line": 30.5, "logged_at": "2026-10-25T18:41:22.464186+00:00"}
+{"id": "2026_07_CIN_BAL:game:spread:1792953828", "expired": "line moved to 2.5", "logged_at": "2026-10-25T18:44:24.843801+00:00"}
+{"id": "2026_07_CIN_BAL:game:spread:1792953828", "fill": "missed", "fill_dec": null, "fill_line": null, "logged_at": "2026-10-25T18:44:24.844067+00:00"}
+{"id": "2026_07_NYG_HOU:game:spread:1792953586", "clv_units": 0.0, "logged_at": "2026-10-25T18:44:53.781004+00:00"}
+{"id": "2026_07_CLE_TEN:00-0040784:rec_yds:1792953617", "clv_units": 0.0, "logged_at": "2026-10-25T18:45:36.135448+00:00"}
+{"id": "2026_07_NYG_HOU:game:spread:1792953586", "expired": "time", "logged_at": "2026-10-25T18:46:00.520717+00:00"}
+{"id": "2026_07_NYG_HOU:00-0036554:rec_yds:1792953646", "clv_units": 0.0, "logged_at": "2026-10-25T18:46:00.520948+00:00"}
+{"id": "2026_07_CLE_TEN:00-0040784:rec_yds:1792953617", "expired": "time", "logged_at": "2026-10-25T18:46:34.079653+00:00"}
+{"id": "2026_07_NYG_HOU:00-0036554:rec_yds:1792953646", "expired": "time", "logged_at": "2026-10-25T18:47:20.485913+00:00"}
+{"id": "2026_07_CIN_BAL:game:spread:1792953828", "clv_units": -1.0, "logged_at": "2026-10-25T18:48:50.469679+00:00"}
