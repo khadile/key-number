@@ -52,3 +52,5 @@
 {"id": "2026_07_CLE_TEN:00-0040784:rec_yds:1792953617", "result": "W", "actual": 8.0, "logged_at": "2026-10-25T20:08:36.955141+00:00"}
 {"id": "2026_07_SF_ATL:game:total:1792950914", "result": "L", "actual": null, "logged_at": "2026-10-25T20:10:19.782175+00:00"}
 {"id": "2026_07_SF_ATL:00-0037238:rec_yds:1792952677", "result": "L", "actual": 66.0, "logged_at": "2026-10-25T20:10:19.782578+00:00"}
+{"id": "2026_07_NYG_HOU:game:spread:1792953586", "result": "W", "actual": null, "logged_at": "2026-10-25T20:21:55.573763+00:00"}
+{"id": "2026_07_NYG_HOU:00-0036554:rec_yds:1792953646", "result": "W", "actual": 6.0, "logged_at": "2026-10-25T20:21:55.574117+00:00"}

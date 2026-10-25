@@ -165,3 +165,5 @@
 {"id": "2026_07_CLE_TEN:00-0040784:rec_yds:1792953617", "expired": "time", "logged_at": "2026-10-25T18:46:34.079653+00:00"}
 {"id": "2026_07_NYG_HOU:00-0036554:rec_yds:1792953646", "expired": "time", "logged_at": "2026-10-25T18:47:20.485913+00:00"}
 {"id": "2026_07_CIN_BAL:game:spread:1792953828", "clv_units": -1.0, "logged_at": "2026-10-25T18:48:50.469679+00:00"}
+{"id": "2026_07_DEN_ARI:game:total:1792959426", "fill": "filled", "fill_dec": 1.7692307692307692, "fill_line": 43.5, "logged_at": "2026-10-25T20:17:43.049028+00:00"}
+{"id": "2026_07_DEN_ARI:game:total:1792959426", "expired": "time", "logged_at": "2026-10-25T20:20:37.950388+00:00"}
