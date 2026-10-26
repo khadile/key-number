@@ -89,3 +89,14 @@
 {"id": "2026_06:props:golden", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-10-20T15:24:34.737967+00:00"}
 {"id": "2026_06:props:lottery", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-10-20T15:24:34.737967+00:00"}
 {"id": "2026_07_NE_CHI:00-0040734:rec_yds", "result": "L", "units": -1.0, "actual": 14.0, "clv": 0.0, "graded_at": "2026-10-24T17:28:48.557463+00:00"}
+{"id": "2026_07_CLE_TEN:00-0040584:rec_yds", "result": "L", "units": -1.0, "actual": 24.0, "clv": 3.0, "graded_at": "2026-10-26T21:15:24.991769+00:00"}
+{"id": "2026_07_DEN_ARI:00-0037263:rec_yds", "result": "L", "units": -1.0, "actual": 30.0, "clv": 1.0, "graded_at": "2026-10-26T21:15:24.991769+00:00"}
+{"id": "2026_07_DEN_ARI:00-0037744:rec_yds", "result": "L", "units": -1.0, "actual": 111.0, "clv": 1.0, "graded_at": "2026-10-26T21:15:24.991769+00:00"}
+{"id": "2026_07_DEN_ARI:00-0036158:receptions", "result": "L", "units": -1.0, "actual": 0.0, "clv": 0.0, "graded_at": "2026-10-26T21:15:24.991769+00:00"}
+{"id": "2026_07_KC_SEA:00-0038134:rush_yds", "result": "W", "units": 0.909, "actual": 36.0, "clv": 6.0, "graded_at": "2026-10-26T21:15:24.991769+00:00"}
+{"id": "2026_07_MIA_NYJ:00-0040198:rec_yds", "result": "L", "units": -1.0, "actual": 0.0, "clv": 0.0, "graded_at": "2026-10-26T21:15:24.991769+00:00"}
+{"id": "2026_07_PIT_NO:00-0037228:rec_yds", "result": "L", "units": -1.0, "actual": 36.0, "clv": -1.0, "graded_at": "2026-10-26T21:15:24.991769+00:00"}
+{"id": "2026_07_SF_ATL:00-0033280:rec_yds", "result": "L", "units": -1.0, "actual": 61.0, "clv": 0.0, "graded_at": "2026-10-26T21:15:24.991769+00:00"}
+{"id": "2026_07_TB_CAR:00-0039361:rec_yds", "result": "W", "units": 0.8620000000000001, "actual": 4.0, "clv": 0.0, "graded_at": "2026-10-26T21:15:24.991769+00:00"}
+{"id": "2026_07:props:golden", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-10-26T21:15:24.991769+00:00"}
+{"id": "2026_07:props:lottery", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-10-26T21:15:24.991769+00:00"}
