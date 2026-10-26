@@ -59,3 +59,5 @@
 {"id": "2026_07_GB_DET:game:total:1792961716", "result": "L", "actual": null, "logged_at": "2026-10-25T23:31:01.421596+00:00"}
 {"id": "2026_07_GB_DET:00-0039065:receptions:1792964988", "result": "W", "actual": 1.0, "logged_at": "2026-10-25T23:31:01.421878+00:00"}
 {"id": "2026_07_LA_LV:game:spread:1792962171", "result": "L", "actual": null, "logged_at": "2026-10-25T23:36:20.365239+00:00"}
+{"id": "2026_07_KC_SEA:game:total:1792978138", "result": "L", "actual": null, "logged_at": "2026-10-26T03:16:52.142977+00:00"}
+{"id": "2026_07_KC_SEA:00-0033873:rush_yds:1792979178", "result": "L", "actual": 14.0, "logged_at": "2026-10-26T03:16:52.143263+00:00"}

@@ -180,3 +180,9 @@
 {"id": "2026_07_GB_DET:00-0039065:receptions:1792964988", "fill": "filled", "fill_dec": 1.5882, "fill_line": 2.5, "logged_at": "2026-10-25T21:50:24.808033+00:00"}
 {"id": "2026_07_GB_DET:00-0039065:receptions:1792964988", "clv_units": 0.0, "logged_at": "2026-10-25T21:55:14.083919+00:00"}
 {"id": "2026_07_GB_DET:00-0039065:receptions:1792964988", "expired": "time", "logged_at": "2026-10-25T21:55:50.211867+00:00"}
+{"id": "2026_07_KC_SEA:game:total:1792978138", "fill": "filled", "fill_dec": 1.9090909090909092, "fill_line": 33.5, "logged_at": "2026-10-26T01:29:34.909252+00:00"}
+{"id": "2026_07_KC_SEA:game:total:1792978138", "expired": "line moved to 32.5", "logged_at": "2026-10-26T01:32:28.607806+00:00"}
+{"id": "2026_07_KC_SEA:game:total:1792978138", "clv_units": -1.0, "logged_at": "2026-10-26T01:34:02.628678+00:00"}
+{"id": "2026_07_KC_SEA:00-0033873:rush_yds:1792979178", "expired": "line moved to 7.5", "logged_at": "2026-10-26T01:46:56.910431+00:00"}
+{"id": "2026_07_KC_SEA:00-0033873:rush_yds:1792979178", "fill": "missed", "fill_dec": null, "fill_line": null, "logged_at": "2026-10-26T01:46:56.910782+00:00"}
+{"id": "2026_07_KC_SEA:00-0033873:rush_yds:1792979178", "clv_units": 1.0, "logged_at": "2026-10-26T01:51:23.276334+00:00"}
