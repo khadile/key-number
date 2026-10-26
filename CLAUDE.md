@@ -361,6 +361,13 @@ the closing line, the board says so.
 
 ## 6b. Player props (props/)
 
+- Monday night's props lock Monday 10am ET (user, 2026-10-26), from a Monday build (board.yml, slot.py and the
+  laptop catch-up now include Monday). Before, they locked Saturday with the weekend and the week 7 game found
+  nothing two days out; it was relocked at the user's request Monday 5pm (still no pick: three edges the old
+  rule would have taken, off the books). Monday games before 2026-10-26 keep their Saturday lock
+  (`pricing.MONDAY_LOCK_FROM`), so the replay and the record are unchanged. Picks of the Week and the parlays
+  still lock Saturday, from the Saturday and Sunday games.
+
 - Tracked roles only: QB1, RB1, WR1, WR2, TE1, RB2 in a real timeshare
   (projected run share >= 30%). Roles come from projected usage among players
   not ruled Out/Doubtful, so an injury promotes the next man up (tagged

@@ -15,7 +15,7 @@ FanDuel's own line and price. Most of the edge, when there is any, comes from
 one of those two books hanging a number off Pinnacle's.
 """
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -77,18 +77,21 @@ class PropPricer:
         return best
 
 
-# The board updates Tuesday, Thursday and Saturday at 10am ET (the scheduled build). Picks lock
-# at the last update before their game; Tuesday's update grades last week (user's rule, 2026-10-09).
-UPDATE_DAYS_BACK = {5: 0, 6: 1, 0: 2, 1: 0, 2: 1, 3: 0, 4: 1}   # kickoff weekday (Mon=0) -> days back to Sat/Tue/Thu
+# The board updates Tuesday, Thursday and Saturday at 10am ET (the scheduled build), and Monday at 10am ET for
+# Monday night (user, 2026-10-26: Monday's props had locked Saturday, two days before the game, and found
+# nothing). Picks lock at the last update before their game; Tuesday's update grades last week (2026-10-09).
+UPDATE_DAYS_BACK = {5: 0, 6: 1, 0: 0, 1: 0, 2: 1, 3: 0, 4: 1}   # kickoff weekday (Mon=0) -> days back to Mon/Sat/Tue/Thu
+# Monday games before this date locked Saturday, as their picks did: the replay and the record keep that lock
+MONDAY_LOCK_FROM = date(2026, 10, 26)
 
 
 def lock_time(kickoff: datetime) -> datetime:
     """When a game's picks lock: 10am ET at the last board update before it. Thursday games
-    lock that Thursday morning; Saturday, Sunday and Monday games lock Saturday morning, after
-    Friday's final injury reports and with Thursday night's results in."""
+    lock that Thursday morning; Saturday and Sunday games lock Saturday morning, after Friday's
+    final injury reports and with Thursday night's results in; Monday games lock Monday morning."""
     et = kickoff.astimezone(ET)
-    t = (et.replace(hour=10, minute=0, second=0, microsecond=0)
-         - timedelta(days=UPDATE_DAYS_BACK[et.weekday()])).astimezone(kickoff.tzinfo)
+    back = 2 if et.weekday() == 0 and et.date() < MONDAY_LOCK_FROM else UPDATE_DAYS_BACK[et.weekday()]
+    t = (et.replace(hour=10, minute=0, second=0, microsecond=0) - timedelta(days=back)).astimezone(kickoff.tzinfo)
     return t if t < kickoff else kickoff - timedelta(hours=3)
 
 

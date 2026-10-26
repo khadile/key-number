@@ -25,7 +25,7 @@ HOME = Path.home() / "key-number-catchup"
 GRACE = timedelta(minutes=15)       # user, 2026-10-22 (was 30)
 RETRY = timedelta(minutes=40)
 NBA_SLOTS = (("evening", time(17, 30)), ("morning", time(10, 30)))   # latest first, as nba/slot.py
-NFL_DAYS, NFL_AT = (1, 3, 5), time(10, 0)                            # Tue, Thu, Sat (board/slot.py)
+NFL_DAYS, NFL_AT = (0, 1, 3, 5), time(10, 0)                         # Mon, Tue, Thu, Sat (board/slot.py)
 
 
 def gh(*args: str) -> str:

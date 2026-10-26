@@ -439,7 +439,7 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
         have = {r["type"] for r in existing if r.get("kind") == "parlay" and r["season"] == season and r["week"] == week}
         if any(r.get("kind") == "potw" and r.get("season") == season and r.get("week") == week for r in existing):
             have.add("potw")   # Picks of the Week records have no "type"; without this every build re-locked them
-        weekend = [g for g in upcoming["game_id"].to_list() if kick[g].astimezone(ET).weekday() in (5, 6, 0)]  # Sat-Mon, Eastern
+        weekend = [g for g in upcoming["game_id"].to_list() if kick[g].astimezone(ET).weekday() in (5, 6)]  # Sat-Sun, Eastern (Monday locks Monday)
         if weekend and all(_lock_at(kick[g], now, lock_now) <= now for g in weekend):
             pool = [r for r in existing + new_locks if r.get("kind") == "prop" and r["season"] == season
                     and r["week"] == week and kick[r["game_id"]] > now]
@@ -616,7 +616,7 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
         bt = {"holdout": saved.get("holdout"), "pit": saved.get("pit")}
 
     return {
-        "meta": {"live_start": PROPS_LIVE_START, "rule_week": RULE_WEEK, "lock_note": "Saturday 10am ET (Thursday games: Thursday 10am ET)",
+        "meta": {"live_start": PROPS_LIVE_START, "rule_week": RULE_WEEK, "lock_note": "Saturday 10am ET (Thursday games: Thursday 10am ET; Monday games: Monday 10am ET)",
                  "k": kstudy, "tracked": len(players)},
         "locks": {g: lock_time(kick[g]).isoformat() for g in season_games.filter(pl.col("week") == week)["game_id"].to_list()},
         "record": {"live": live, "pre": pre, "all": ledger.record(sim_picks + live_picks, sim_results + live_results),

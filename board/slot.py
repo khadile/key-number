@@ -1,7 +1,7 @@
 """Is a scheduled board build due? Used by the GitHub workflow (.github/workflows/board.yml).
 
 GitHub's scheduler is best-effort and drops many firings, so the workflow fires every half
-hour from 10am to about 1:30pm ET on Tuesday, Thursday and Saturday, and the first firing
+hour from 10am to about 1:30pm ET on Monday, Tuesday, Thursday and Saturday, and the first firing
 that lands builds. board/last_build.json records the Eastern date of the last scheduled
 build; later firings that day skip.
 
@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 
 ET = ZoneInfo("America/New_York")
 STATE = Path(__file__).with_name("last_build.json")
-BUILD_DAYS = (1, 3, 5)   # Tuesday, Thursday, Saturday (Monday = 0)
+BUILD_DAYS = (0, 1, 3, 5)   # Monday (Monday night's props, user 2026-10-26), Tuesday, Thursday, Saturday
 
 
 def due(now: datetime) -> bool:

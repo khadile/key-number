@@ -1,6 +1,6 @@
 name: board
 
-# The Key Number board's NFL side, rebuilt Tuesday, Thursday and Saturday from 10am ET and published
+# The Key Number board's NFL side, rebuilt Monday, Tuesday, Thursday and Saturday from 10am ET and published
 # to GitHub Pages with the NBA side (.github/workflows/nba.yml). Same build as the laptop's
 # (python -m board.build): grades, locks picks that are due, archives OddsPapi lines, writes
 # board/nfl_data.json.
@@ -15,7 +15,7 @@ name: board
 
 on:
   schedule:
-    - cron: "7,37 14-17 * * 2,4,6"
+    - cron: "7,37 14-17 * * 1,2,4,6"
   workflow_dispatch:
     inputs:
       force:
