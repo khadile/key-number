@@ -82,11 +82,49 @@ def _stake(p: dict) -> dict:
             "kelly_u": k if k is not None else kelly_units(p.get("p_win"), p["dec"], p.get("p_push") or 0.0)}
 
 
-def _pick_rows(picks: list[dict], results: list[dict], verdict_by: dict | None = None) -> list[dict]:
+def _fair_center(dist, line: float, pa: float | None, pb: float | None) -> float:
+    """The center at which `dist` gives the over (home cover) side of `line` the no-vig share of prices pa / pb.
+    Without prices the line itself is the center (a coin flip apart from pushes)."""
+    if not pa or not pb:
+        return line
+    target = (1 / pa) / (1 / pa + 1 / pb)
+    lo, hi = line - 4.0, line + 4.0
+    for _ in range(18):
+        mid = (lo + hi) / 2
+        o, _, u = dist.side_probs(mid, line)
+        lo, hi = (mid, hi) if o / max(o + u, 1e-9) < target else (lo, mid)
+    return (lo + hi) / 2
+
+
+def ev_close(p: dict, close: dict | None, pricer: "Pricer") -> float | None:
+    """A straight pick's expected value at Pinnacle's closing number (k = 0: the close is the fair line, its margin
+    taken out), the yardstick the NBA and props records already use. None without a close for the market."""
+    if not close or p.get("kind") == "parlay":
+        return None
+    if p["market"] == "spread" and close.get("spread") is not None:
+        s = close["spread"]
+        mu = _fair_center(pricer.mdist, s, close.get("spread_price_a"), close.get("spread_price_b"))
+        o, push, u = pricer.mdist.side_probs(mu, -p["line"] if p["side"] == "home" else p["line"])
+        pw = o if p["side"] == "home" else u
+    elif p["market"] == "total" and close.get("total") is not None:
+        t = close["total"]
+        mu = _fair_center(pricer.tdist, t, close.get("total_price_a"), close.get("total_price_b"))
+        o, push, u = pricer.tdist.side_probs(mu, p["line"])
+        pw = o if p["side"] == "over" else u
+    elif p["market"] == "ml" and close.get("ml_home") and close.get("ml_away"):
+        ih, ia = 1 / close["ml_home"], 1 / close["ml_away"]
+        pw, push = (ih if p["side"] == "home" else ia) / (ih + ia), 0.0
+    else:
+        return None
+    return round(pw * (p["dec"] - 1) - (1 - pw - push), 4)
+
+
+def _pick_rows(picks: list[dict], results: list[dict], verdict_by: dict | None = None, evc: dict | None = None) -> list[dict]:
     """Every pick, graded or still pending, for the record page's week browser.
-    `market` is spread / total / ml, or golden / lottery for the two parlays."""
+    `market` is spread / total / ml, or golden / lottery for the two parlays. `evc`: EV at the close by pick id."""
     res = {r["id"]: r for r in results}
     vb = verdict_by or {}
+    evc = evc or {}
     by_id = {p["id"]: p for p in picks}
     out = []
     for p in picks:
@@ -108,7 +146,7 @@ def _pick_rows(picks: list[dict], results: list[dict], verdict_by: dict | None =
                     # straight picks at 1u in the record, leans included (board/ledger.record)
                     "units": (None if "result" not in r else round(r["units"], 2) if p.get("kind") == "parlay"
                               else round(ledger.units_for(r["result"], p["dec"], STRAIGHT_RISK), 2)),
-                    "clv": r.get("clv")})
+                    "clv": r.get("clv"), "ev_close": evc.get(p["id"]) if "result" in r else None})
     return out
 
 
@@ -578,6 +616,9 @@ def main() -> None:
                 "side": pk["side"], "line": pk["line"], "label": pk["label"], "american": pk["american"]}
 
     et_days = [g["kickoff_utc"].astimezone(ET) for g in week_games.iter_rows(named=True)]
+    # EV at Pinnacle's close for every finished straight pick, replayed and live (the record's by-category table)
+    evc = {p["id"]: ev_close(p, closes.get(p["game_id"]), pricer) for p in sim + live_picks
+           if p.get("kind") != "parlay" and p["game_id"] in finals}
     data = {
         "meta": {"season": season, "week": week, "generated": now.isoformat(),
                  "range": f"{et_days[0]:%b} {et_days[0].day} - {et_days[-1]:%b} {et_days[-1].day}",
@@ -586,8 +627,8 @@ def main() -> None:
         "teams": meta,
         "record": {"live": live, "pre": pre,
                    "all": ledger.record(sim + live_picks, sim_results + live_results),
-                   "live_rows": (lr := _pick_rows(live_picks, live_results, verdict_by)),
-                   "pre_rows": (pr := _pick_rows(sim, sim_results, verdict_by)),
+                   "live_rows": (lr := _pick_rows(live_picks, live_results, verdict_by, evc)),
+                   "pre_rows": (pr := _pick_rows(sim, sim_results, verdict_by, evc)),
                    "verdicts": {"all": C.tally(pr + lr), "since": C.tally(lr, C.SINCE_WEEK)}},
         "games": cards,
         "parlays": parlays,

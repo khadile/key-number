@@ -359,6 +359,29 @@ and CLV. Show sample sizes. Calibration (stated probability vs actual hit
 rate) matters more than win rate. If the backtest says the model only tracks
 the closing line, the board says so.
 
+**By category (user, 2026-10-26).** Every record page (NFL lines, NFL props,
+NBA lines, NBA props) has a "By category" table under Season to date: each
+market, side, Picks of the Week/Day, good picks, +EV picks, leans, EV tiers
+and parlays, with record, units, line value and EV at Pinnacle's close
+(`closeByCat` in the template; NFL lines' `ev_close` from `board/build.py
+ev_close`, NFL props' from `props/section._ev_close`, NBA from the ledgers).
+"Read" says beating / losing to the close only past 2 standard errors on 20+
+picks. The user picks a subset of the board to bet; this is the table that
+should drive that choice, not recent wins and losses.
+
+Walk-forward test behind it (2026-10-26, scratchpad walk_nba.py / walk2.py):
+- **Fading a cold category is ruinous**: on the NBA props backtest, betting the
+  other side of categories with a losing last 3-30 days returned -15% to -18%
+  (two vigs). Never suggest fading the model's own picks by recent results.
+- **Hot-category carry**: NBA props, a category's long-run level predicts the
+  next day (coef ~0.5); its last-3-days streak beyond that adds a little
+  (0.13, se 0.04), gone by 14 days. NFL closing lines: nothing either way.
+- **Top of the day**: the day's 5 biggest NBA edges returned +9.6% vs +5.0%
+  for the rest (both seasons the same way): Picks of the Day being the best
+  subset is expected, not luck.
+- Recent results are noise next to EV at the close: NBA threes went 7-20 with
+  21 of 27 still +EV at the close (+2.1%).
+
 ## 6b. Player props (props/)
 
 - Monday night's props lock Monday 10am ET (user, 2026-10-26), from a Monday build (board.yml, slot.py and the

@@ -263,7 +263,8 @@ def _stat_lines(hist: pl.DataFrame) -> dict[tuple[str, str], dict]:
             for r in hist.select("game_id", "gsis_id", *STAT_COL.values()).iter_rows(named=True)}
 
 
-def _rows(picks: list[dict], results: list[dict], verdict_by: dict | None = None) -> list[dict]:
+def _rows(picks: list[dict], results: list[dict], verdict_by: dict | None = None, ev_at_close=None) -> list[dict]:
+    """`ev_at_close(pick)`: its EV at Pinnacle's close (_ev_close), for graded props that played."""
     res = {r["id"]: r for r in results}
     vb = verdict_by or {}
     by_id = {p["id"]: p for p in picks}
@@ -282,7 +283,9 @@ def _rows(picks: list[dict], results: list[dict], verdict_by: dict | None = None
                         "promoted": p.get("promoted", False), "p_win": p["p_win"], "ev": p["ev"],
                         "kelly_u": kelly_of(p), **vb.get(p["id"], {}),
                         "result": r.get("result"), "actual": r.get("actual"),
-                        "units": round(r["units"], 2) if "units" in r else None, "clv": r.get("clv")})
+                        "units": round(r["units"], 2) if "units" in r else None, "clv": r.get("clv"),
+                        "ev_close": (round(e, 4) if ev_at_close and r.get("result") not in (None, "V")
+                                     and (e := ev_at_close(p)) is not None else None)})
     return out
 
 
@@ -615,12 +618,13 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
         saved = json.loads(pp.read_text())
         bt = {"holdout": saved.get("holdout"), "pit": saved.get("pit")}
 
+    evq = lambda q: _ev_close(q, s_done, close_b)   # noqa: E731
     return {
         "meta": {"live_start": PROPS_LIVE_START, "rule_week": RULE_WEEK, "lock_note": "Saturday 10am ET (Thursday games: Thursday 10am ET; Monday games: Monday 10am ET)",
                  "k": kstudy, "tracked": len(players)},
         "locks": {g: lock_time(kick[g]).isoformat() for g in season_games.filter(pl.col("week") == week)["game_id"].to_list()},
         "record": {"live": live, "pre": pre, "all": ledger.record(sim_picks + live_picks, sim_results + live_results),
-                   "live_rows": (lr := _rows(live_picks, live_results, verdict_by)), "pre_rows": (pr := _rows(sim_picks, sim_results, verdict_by)),
+                   "live_rows": (lr := _rows(live_picks, live_results, verdict_by, evq)), "pre_rows": (pr := _rows(sim_picks, sim_results, verdict_by, evq)),
                    "verdicts": {"all": C.tally(pr + lr), "since": C.tally(lr, C.SINCE_WEEK)}, "rule": rule},
         "players": players, "games": games_out, "logs": logs, "parlays": parlays,
         "model": {"backtest": bt, "study": study, "sgo": sgo, "edge": edge},

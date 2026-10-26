@@ -1777,6 +1777,31 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     return [g.length ? `${t.w}-${t.l}${t.p ? "-" + t.p : ""} · <span class="${cls(t.units)}">${units(t.units)}</span>` : "",
       nl ? `${nl} lean${nl > 1 ? "s" : ""} included` : "", pend ? `${pend} pending` : ""].filter(Boolean).join(" · ");
   }
+  // By category (user, 2026-10-26): every category's record beside its closing-line value, which settles at kickoff
+  // instead of over months. cats: [name, row filter]. "Read" needs 20+ picks with a close and two standard errors.
+  const isPar = (r) => !!(r.legs && r.legs.length);
+  const sideOf = (r) => r.side || (/\bUnder\b/.test(r.label || "") ? "under" : /\bOver\b/.test(r.label || "") ? "over" : null);
+  function closeByCat(rows, cats, top = "week") {
+    const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+    const body = cats.map(([name, f]) => {
+      const g = rows.filter((r) => r.result && r.result !== "V" && f(r));
+      if (!g.length) return "";
+      const t = { w: 0, l: 0, p: 0, n: g.length };
+      let u = 0, st = 0;
+      for (const r of g) { const k = { W: "w", L: "l", P: "p" }[r.result]; if (k) t[k]++; u += r.units || 0; st += isPar(r) ? (r.risk || 0.5) : 1; }
+      const lv = g.map((r) => r.clv).filter((x) => x != null), ec = g.map((r) => r.ev_close).filter((x) => x != null);
+      const m = ec.length ? mean(ec) : null;
+      const se = ec.length > 1 ? Math.sqrt(ec.reduce((s, x) => s + (x - m) ** 2, 0) / (ec.length - 1) / ec.length) : null;
+      const [read, rc] = !ec.length ? ["–", ""] : ec.length < 20 ? ["Too few yet", ""] : m - 2 * se > 0 ? ["Beating the close", "pos"]
+        : m + 2 * se < 0 ? ["Losing to the close", "neg"] : ["No clear edge yet", ""];
+      return `<tr><td>${esc(name)}</td><td class="num">${g.length}</td><td class="num">${rec(t)}</td><td class="num ${cls(u)}">${units(u)}</td><td class="num ${cls(u)}">${pct(st ? u / st : null, 1)}</td>
+        <td class="num">${lv.length ? signed(mean(lv), 2) : "–"}</td><td class="num ${cls(m)}">${m == null ? "–" : evPct(m)}${se != null && ec.length >= 20 ? ` <span class="note">±${(200 * se).toFixed(1)}</span>` : ""}</td>
+        <td class="num">${ec.length ? pct(ec.filter((x) => x > 0).length / ec.length) + ` <span class="note">of ${ec.length}</span>` : "–"}</td><td class="${rc}">${read}</td></tr>`;
+    }).join("");
+    if (!body) return '<p class="note">Fills in as picks are graded.</p>';
+    return `<div class="scroll"><table class="t"><thead><tr><th>Category</th><th class="num">Graded</th><th class="num">Record</th><th class="num">Units</th><th class="num">ROI</th><th class="num">${term("clv", "Line value")}</th><th class="num">${term("evclose", "EV at the close")}</th><th class="num">Beat the close</th><th>Read</th></tr></thead><tbody>${body}</tbody></table></div>
+      <p class="note">Wins and losses take months to tell skill from luck; ${term("evclose", "EV at the close")} grades every pick at kickoff. <b>Read</b>: beating (or losing to) the close when a category's average is more than two standard errors (the ± figure) from zero over 20+ picks; otherwise no clear edge yet. Beat the close is the share of picks still worth it at Pinnacle's closing price. Parlays have no closing value. Categories overlap: a pick of the ${top} is also in its market's row.</p>`;
+  }
   function catTable(rows, isParlay, o = {}) {   // o: {ev: EV and EV at the close, final: the stat line, tag: "POTD"}
     return `<div class="scroll"><table class="t"><thead><tr><th>Pick</th><th>${isParlay ? "Legs" : "Game"}</th><th class="num">Price</th><th class="num">Win chance</th>${o.ev ? '<th class="num">EV</th>' : ""}${isParlay ? "" : `<th class="num">${term("kelly", "Quarter Kelly")}</th>`}${o.final && !isParlay ? '<th class="num">Final</th>' : ""}<th>Result</th><th class="num">Units</th>${isParlay ? "" : '<th class="num">Line value</th>'}${o.ev ? `<th class="num">${term("evclose", "EV at the close")}</th>` : ""}</tr></thead><tbody>
       ${rows.map((h) => `<tr><td><b>${label(h.label)}</b>${h.potw ? ` <span class="tag">${o.tag || "POTW"}</span>` : ""}${h.risk === 0 ? ' <span class="tag lean">Lean</span>' : ""}${h.verdict ? " " + vdTag(h.verdict, h.failed) : ""}</td>
@@ -1810,6 +1835,10 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <section class="sec"><header><h2>Season to date</h2></header>${strip(A)}
         <p class="note">Weeks 1–${D.meta.live_start - 1} were replayed before launch at Tuesday lines with only Tuesday information; picks are live from week ${D.meta.live_start}. Every pick counts at 1u here, ${term("lean", "leans")} included, so this is the model's full record; the board gives leans no stake because their price is against them. The Quarter Kelly section below is the +EV picks only.</p>
         ${leansNote(A)}</section>
+      <section class="sec"><header><h2>By category <em>closing line value</em></h2></header>${closeByCat([...(D.record.pre_rows || []), ...(D.record.live_rows || [])], [
+        ["Spread", (r) => r.market === "spread"], ["Over/under", (r) => r.market === "total"], ["Moneyline", (r) => r.market === "ml"],
+        ["Picks of the week", (r) => r.potw], ["Good picks", (r) => r.verdict === "good"], ["+EV picks", (r) => !isPar(r) && r.ev > 0],
+        ["Leans", (r) => r.risk === 0], ["Parlays", isPar]])}</section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${unitsChart(A) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
       ${verdictSection(D.record.verdicts, "pick")}
       ${kellySection(A.kelly, D.meta.live_start, "picks", `<div class="strip three">${kTile(term("ats", "ATS"), A.kelly.ats)}${kTile("Over/under", A.kelly.ou)}${kTile("Moneyline", A.kelly.ml)}</div>`)}
@@ -2334,6 +2363,10 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <section class="hello"><h1>Props record</h1><p class="lede">Every prop pick, graded at the line it locked at. Line value is how many yards (or catches) better our number was than the same book's closing line. A player who did not play is a void: no units either way.</p></section>
       <section class="sec"><header><h2>Season to date</h2></header>${pStrip(A)}
         <p class="note">Weeks 1–${PR.meta.live_start - 1} were replayed before launch at Saturday-morning lines; picks are live from week ${PR.meta.live_start}. Promoted players (moved up because a teammate is out): ${rec(A.promoted)} (${units(A.promoted.units)}).</p></section>
+      <section class="sec"><header><h2>By category <em>closing line value</em></h2></header>${closeByCat([...(PR.record.pre_rows || []), ...(PR.record.live_rows || [])], [
+        ...PCATS.filter(([k]) => k !== "parlay").map(([k, n]) => [n, (r) => r.market === k]),
+        ["Overs", (r) => !isPar(r) && sideOf(r) === "over"], ["Unders", (r) => !isPar(r) && sideOf(r) === "under"],
+        ["Picks of the week", (r) => r.potw], ["Good picks", (r) => r.verdict === "good"], ["Parlays", isPar]])}</section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${unitsChart(A) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
       ${ruleSec}
       ${verdictSection(PR.record.verdicts, "prop")}
@@ -2857,6 +2890,9 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
         ${leansNote(R)}
         <p class="note">Picks on the model's side went ${t(W.with)}; picks against it (the price alone) went ${t(W.against)}. The first checkup reads this to see whether the model's early-season lean is worth anything.</p>
         ${nKelly(R.kelly, "picks")}</section>
+      <section class="sec"><header><h2>By category <em>closing line value</em></h2></header>${closeByCat(N.record.rows || [], [
+        ["Spread", (r) => r.market === "spread"], ["Over/under", (r) => r.market === "total"], ["Moneyline", (r) => r.market === "ml"],
+        ["Picks of the day", (r) => r.potd], ["+EV picks", (r) => !isPar(r) && r.ev > 0], ["Leans", (r) => r.risk === 0], ["Parlays", isPar]], "day")}</section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${nUnitsChart(R, ["+EV picks", "pos"]) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
       <section class="sec"><header><h2>Picks by day</h2></header>${nDayBrowser(N.record.rows, "lines", NCATS)}</section>
       <section class="sec"><header><h2>Day by day</h2></header>${nDayTable(R, [["ats", "ATS"], ["ou", "O/U"], ["ml", "Moneyline"]], ["+EV picks", "pos"])}</section>
@@ -2974,6 +3010,10 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <section class="sec"><header><h2>Season to date</h2></header>${npStrip(R)}
         ${R.split && (R.split.big.n + R.split.small.n) ? `<p class="note">Of these, props at 2%+ expected value went ${rec(R.split.big)}, <span class="${cls(R.split.big.units)}">${units(R.split.big.units)}</span> (${term("evclose", "EV at the close")} ${evPct(R.split.big.ev_close)}); props at 1–2% went ${rec(R.split.small)}, <span class="${cls(R.split.small.units)}">${units(R.split.small.units)}</span> (${evPct(R.split.small.ev_close)}). NFL props now need 2%+; the Nov 2 checkup asks the same of these.</p>` : ""}
         ${nKelly(R.kelly, "props")}</section>
+      <section class="sec"><header><h2>By category <em>closing line value</em></h2></header>${closeByCat(N.props.record.rows || [], [
+        ...NPCATS.filter(([k]) => k !== "parlay").map(([k, n]) => [n, (r) => !isPar(r) && nCat(r) === k]),
+        ["Overs", (r) => !isPar(r) && r.side === "over"], ["Unders", (r) => !isPar(r) && r.side === "under"],
+        ["Picks of the day", (r) => r.potd], ["2%+ EV", (r) => !isPar(r) && r.ev >= 0.02], ["1–2% EV", (r) => !isPar(r) && r.ev < 0.02], ["Parlays", isPar]], "day")}</section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${nUnitsChart(R, ["Props at 2%+ EV", "big"]) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
       <section class="sec"><header><h2>By market</h2></header><div class="scroll"><table class="t"><thead><tr><th>Market</th><th class="num">Record</th><th class="num">Units</th><th class="num">ROI</th><th class="num">EV at lock</th><th class="num">EV at close</th></tr></thead><tbody>
         ${[...mk, ["Overs", R.over], ["Unders", R.under]].map(([k, r]) => `<tr><td>${k}</td><td class="num">${rec(r)}</td><td class="num ${cls(r && r.units)}">${r && r.n ? units(r.units) : "–"}</td><td class="num">${r && r.n ? pct(r.roi, 1) : "–"}</td><td class="num">${r && r.n ? evPct(r.ev) : "–"}</td><td class="num">${r && r.n ? evPct(r.ev_close) : "–"}</td></tr>`).join("")}
