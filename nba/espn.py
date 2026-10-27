@@ -17,7 +17,7 @@ def _get(path: str, tries: int = 4) -> dict:
             req = urllib.request.Request(f"{BASE}/{path}", headers={"User-Agent": "nfl_model"})
             with urllib.request.urlopen(req, timeout=30) as r:
                 return json.loads(r.read())
-        except OSError:
+        except (OSError, ValueError):   # ValueError: an empty or truncated body (seen 2026-10-27)
             time.sleep(2 ** i)
     raise RuntimeError(f"ESPN request failed: {path}")
 
