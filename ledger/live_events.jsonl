@@ -186,3 +186,6 @@
 {"id": "2026_07_KC_SEA:00-0033873:rush_yds:1792979178", "expired": "line moved to 7.5", "logged_at": "2026-10-26T01:46:56.910431+00:00"}
 {"id": "2026_07_KC_SEA:00-0033873:rush_yds:1792979178", "fill": "missed", "fill_dec": null, "fill_line": null, "logged_at": "2026-10-26T01:46:56.910782+00:00"}
 {"id": "2026_07_KC_SEA:00-0033873:rush_yds:1792979178", "clv_units": 1.0, "logged_at": "2026-10-26T01:51:23.276334+00:00"}
+{"id": "2026_07_DAL_PHI:00-0034351:receptions:1793065882", "fill": "filled", "fill_dec": 2.3, "fill_line": 3.5, "logged_at": "2026-10-27T01:51:58.776833+00:00"}
+{"id": "2026_07_DAL_PHI:00-0034351:receptions:1793065882", "expired": "line moved to 4.5", "logged_at": "2026-10-27T01:54:09.263926+00:00"}
+{"id": "2026_07_DAL_PHI:00-0034351:receptions:1793065882", "clv_units": 0.0, "logged_at": "2026-10-27T01:56:26.824876+00:00"}
