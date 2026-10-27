@@ -249,11 +249,16 @@ def expected_minutes(prof: pl.DataFrame, roster: pl.DataFrame, team: str, out_id
     everyone's recent averages; the summer does not count, so a starter hurt since the spring hands his minutes
     on at the start of the season), capped at 40; the top ten scaled down if they add up to more than 245."""
     r = (roster.filter(pl.col("team") == team).select("athlete_id")
-         .join(prof.select("athlete_id", "exp_min", "last_age"), on="athlete_id", how="left")
-         .with_columns(pl.col("exp_min").fill_null(4.0)))
+         .join(prof.select("athlete_id", "exp_min", "last_age", "games_now"), on="athlete_id", how="left")
+         .with_columns(pl.col("exp_min").fill_null(4.0), pl.col("games_now").fill_null(0)))
     out = r.filter(pl.col("athlete_id").is_in(list(out_ids)))
     avail = r.filter(~pl.col("athlete_id").is_in(list(out_ids)))
-    recent = out.filter((pl.col("exp_min") >= 12) & pl.col("last_age").is_not_null() & (pl.col("last_age") <= 21))
+    # once the team has played this season, a player who has played none of it is already missing from everyone's
+    # this-season minutes, which carry most of the weight (2026-10-27: SAC handed on Raynaud's and Cardwell's
+    # minutes after three games without them; LaVine, Sabonis and Acuff hit the 40 cap and were scaled to 25.6)
+    played = (avail["games_now"].max() or 0) > 0
+    recent = out.filter((pl.col("exp_min") >= 12) & pl.col("last_age").is_not_null() & (pl.col("last_age") <= 21)
+                        & ((pl.col("games_now") > 0) | (not played)))
     lost = float(recent["exp_min"].sum())
     m = dict(zip(avail["athlete_id"].to_list(), avail["exp_min"].to_list()))
     rot = {a: v for a, v in m.items() if v >= 12}
