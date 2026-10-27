@@ -108,3 +108,26 @@
 {"id": "401909862:alt:total:under:239.5:fanduel", "result": "L", "units": -1.0, "graded_at": "2026-10-26T14:52:11.995644+00:00"}
 {"id": "401909866:alt:spread:home:17.5:draftkings", "result": "W", "units": 0.1120000000000001, "graded_at": "2026-10-26T14:52:11.995644+00:00"}
 {"id": "2026-10-25:golden", "result": "L", "units": -0.5, "graded_at": "2026-10-26T14:52:11.995644+00:00"}
+{"id": "401909868:spread", "result": "L", "units": -1.0, "clv": -0.5, "ev_close": -0.1069, "p_close": 0.4776, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909868:total", "result": "L", "units": -1.0, "clv": -1.5, "ev_close": -0.1211, "p_close": 0.4604, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909869:spread", "result": "W", "units": 0.9099999999999999, "clv": 1.0, "ev_close": 0.0257, "p_close": 0.537, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909869:total", "result": "L", "units": -1.0, "clv": -0.5, "ev_close": -0.0585, "p_close": 0.4888, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909870:spread", "result": "L", "units": -1.0, "clv": 0.0, "ev_close": -0.0476, "p_close": 0.5093, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909870:total", "result": "W", "units": 0.893, "clv": 1.5, "ev_close": 0.019, "p_close": 0.5383, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909871:spread", "result": "W", "units": 0.8700000000000001, "clv": 1.0, "ev_close": -0.0149, "p_close": 0.5268, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909871:total", "result": "W", "units": 0.9099999999999999, "clv": 0.0, "ev_close": -0.0406, "p_close": 0.5023, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909872:spread", "result": "W", "units": 0.9299999999999999, "clv": 1.0, "ev_close": 0.0275, "p_close": 0.5324, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909872:total", "result": "W", "units": 0.9099999999999999, "clv": -1.0, "ev_close": -0.0776, "p_close": 0.4829, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909873:spread", "result": "L", "units": -1.0, "clv": 2.5, "ev_close": 0.1053, "p_close": 0.579, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909873:total", "result": "W", "units": 0.893, "clv": 1.5, "ev_close": 0.0007, "p_close": 0.5286, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909874:spread", "result": "L", "units": -1.0, "clv": 0.0, "ev_close": -0.0377, "p_close": 0.493, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909874:total", "result": "W", "units": 0.8700000000000001, "clv": 1.5, "ev_close": 0.0054, "p_close": 0.5376, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909875:spread", "result": "L", "units": -1.0, "clv": 0.0, "ev_close": -0.0836, "p_close": 0.5, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909875:total", "result": "L", "units": -1.0, "clv": -0.5, "ev_close": -0.059, "p_close": 0.4929, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909876:spread", "result": "W", "units": 0.9299999999999999, "clv": 0.5, "ev_close": -0.0123, "p_close": 0.5118, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909876:total", "result": "L", "units": -1.0, "clv": 1.5, "ev_close": -0.0024, "p_close": 0.5306, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909869:alt:total:over:219.5:fanduel", "result": "W", "units": 0.28, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909872:alt:spread:home:16.5:draftkings", "result": "W", "units": 0.20100000000000007, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909875:alt:total:over:225.5:draftkings", "result": "L", "units": -1.0, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "2026-10-26:lottery", "result": "L", "units": -0.5, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "2026-10-26:golden", "result": "L", "units": -0.5, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
