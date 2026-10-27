@@ -1340,7 +1340,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   }
   // public betting splits (Action Network, user 2026-10-26): the side most tickets are on in each market, with its
   // share of tickets and of money. Context only: fading the public did not hold up 2023-26.
-  function pubRow(pub, home, away, nk) {
+  function pubRow(pub, home, away, nk, at) {
     if (!pub) return "";
     const parts = [["spread", "home", "away"], ["total", "over", "under"], ["ml", "home", "away"]].map(([mk, a, b]) => {
       const s = pub[mk];
@@ -1352,7 +1352,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       const big = x.tickets >= 70;
       return `<span${big ? ' class="pub-big"' : ""}>${big ? "<b>" : ""}${esc(who)} ${x.tickets}%${big ? "</b>" : ""}<span class="note"> / ${x.money}% $</span></span>`;
     }).filter(Boolean);
-    return parts.length ? `<div><dt data-tip="Action Network's consensus: the side most bettors are on in each market, the share of tickets on it, then the share of money (/ $). Bold: 70%+ of tickets. Context, not a signal: fading the public did not hold up 2023-26." tabindex="0">Public</dt><dd>${parts.join(" · ")}</dd></div>` : "";
+    return parts.length ? `<div><dt data-tip="Action Network's consensus: the side most bettors are on in each market, the share of tickets on it, then the share of money (/ $). Bold: 70%+ of tickets. Context, not a signal: fading the public did not hold up 2023-26. Refreshed at every board update." tabindex="0">Public</dt><dd>${parts.join(" · ")}${at ? `<span class="note"> · as of ${esc(new Date(at).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" }))} ET</span>` : ""}</dd></div>` : "";
   }
   function card(g) {
     const fin = g.status === "final", live = g.status === "live";
@@ -1369,7 +1369,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <dl class="lines">
         <div><dt>Market</dt><dd>${fav(g.home, g.away, g.market.spread)} · ${g.market.total == null ? "–" : half(g.market.total)}</dd></div>
         <div><dt>Model</dt><dd>${g.model ? fav(g.home, g.away, g.model.spread, 1) + " · " + num(g.model.total, 1) : "–"}</dd></div>
-        ${pubRow(g.public, g.home, g.away, nick)}
+        ${pubRow(g.public, g.home, g.away, nick, D.meta.generated)}
       </dl>
       <div class="chips">${picks || '<span class="note">No lines yet.</span>'}${!P.ml ? mlPass(g) : ""}</div>
       ${ctxBlock([P.spread, P.total])}
@@ -1827,6 +1827,10 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
     const body = cats.map(([name, f]) => {
       const g = rows.filter((r) => r.result && r.result !== "V" && f(r));
+      if (!g.length && name === "Bet list") {   // always shown, so it can be found before its first grade
+        const pend = rows.filter((r) => !r.result && f(r)).length;
+        return `<tr><td><b>${esc(name)}</b></td><td class="num">0</td><td colspan="7" class="note">${pend ? `${pend} pending: the first bet-list picks grade after their games` : "The first list locks with the next picks (started 2026-10-26)"}</td></tr>`;
+      }
       if (!g.length) return "";
       const t = { w: 0, l: 0, p: 0, n: g.length };
       let u = 0, st = 0;
@@ -1836,7 +1840,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       const se = ec.length > 1 ? Math.sqrt(ec.reduce((s, x) => s + (x - m) ** 2, 0) / (ec.length - 1) / ec.length) : null;
       const [read, rc] = !ec.length ? ["–", ""] : ec.length < 20 ? ["Too few yet", ""] : m - 2 * se > 0 ? ["Beating the close", "pos"]
         : m + 2 * se < 0 ? ["Losing to the close", "neg"] : ["No clear edge yet", ""];
-      return `<tr><td>${esc(name)}</td><td class="num">${g.length}</td><td class="num">${rec(t)}</td><td class="num ${cls(u)}">${units(u)}</td><td class="num ${cls(u)}">${pct(st ? u / st : null, 1)}</td>
+      return `<tr><td>${name === "Bet list" ? "<b>Bet list</b>" : esc(name)}</td><td class="num">${g.length}</td><td class="num">${rec(t)}</td><td class="num ${cls(u)}">${units(u)}</td><td class="num ${cls(u)}">${pct(st ? u / st : null, 1)}</td>
         <td class="num">${lv.length ? signed(mean(lv), 2) : "–"}</td><td class="num ${cls(m)}">${m == null ? "–" : evPct(m)}${se != null && ec.length >= 20 ? ` <span class="note">±${(200 * se).toFixed(1)}</span>` : ""}</td>
         <td class="num">${ec.length ? pct(ec.filter((x) => x > 0).length / ec.length) + ` <span class="note">of ${ec.length}</span>` : "–"}</td><td class="${rc}">${read}</td></tr>`;
     }).join("");
@@ -2825,7 +2829,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <dl class="lines">
         <div><dt>${term("novig", "Market, no-vig")}</dt><dd>${g.fair.margin == null ? "–" : fav(g.home, g.away, g.fair.margin, 1)} · ${num(g.fair.total, 1)}</dd></div>
         <div><dt>Model</dt><dd>${g.model ? fav(g.home, g.away, g.model.margin, 1) + " · " + num(g.model.total, 1) : "–"}</dd></div>
-        ${pubRow(g.public, g.home, g.away, nnick)}
+        ${pubRow(g.public, g.home, g.away, nnick, N.meta.generated)}
       </dl>
       <div class="chips">${chips || wait || '<span class="note">No DraftKings or FanDuel lines yet.</span>'}</div>
       ${ctxBlock([P.spread, P.total])}
