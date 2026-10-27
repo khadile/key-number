@@ -754,6 +754,18 @@ budget with the NFL) comes after the pregame side is stable.
   On the live picks it would have dropped 36 (97% overs, 14-22, -8.8u). Plus-money unders it keeps still went
   5-14: not explained by the shading and not seen in history (US-book shopping made +2.1% on plus money in
   2023-24); watched, not acted on.
+- Situational sides model (user, 2026-10-27: "depending on the pick, player, team, situation, would an over or
+  under be good here", after the board went 163 unders to 1 over once the blanket over correction was on;
+  `nba/sides.py`, research only). A per-stat logistic on the market's price: the props model's disagreement,
+  form against the line, minutes trend, starter, home, rest, spread, total, opponent defense by position,
+  missing rotation teammates, price shape. At the US books' open in 2022-24 it beats the market both ways
+  (10%+ EV +15.2% and +4.5%). This season it does not: worse than Pinnacle near tip-off (log loss 0.6863 ->
+  0.6884, 7 nights) and its morning DK/FD picks were worth -5.3% (+-0.5) at Pinnacle's close, a random bet's
+  value. The situation is in the price by now. Also measured (8 nights, every tracked prop at the last pre-tip
+  build, graded): overs hit 1.3-2.0 points under their even-split price at all three books, but in assists
+  (-7 to -10) and threes, not points or rebounds (~+0.7), the reverse of `OVER_SHADE`'s per-stat split; the
+  correction fitted on US books 2022-24 had no Pinnacle data. With it, 672 unders vs 7 overs qualified at 1%+
+  over 8 nights; on Pinnacle's raw price, 70 vs 61.
 - Starters (user, 2026-10-24): the tracked five are who started the team's last game this season, minus anyone
   Out or Doubtful, then ESPN's depth chart (`espn.depth_starters`), then the model's starts share. The model's
   own pick had been right on 231 of 280 in the first four nights; last-game starters 96%, the depth chart 93%.
