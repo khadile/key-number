@@ -68,3 +68,11 @@
 {"kind": "prop", "id": "2026_07_PIT_NO:00-0037228:rec_yds", "game_id": "2026_07_PIT_NO", "verdict": "good", "failed": [], "at": "2026-10-24T17:23:10.513774+00:00"}
 {"kind": "prop", "id": "2026_07_SF_ATL:00-0033280:rec_yds", "game_id": "2026_07_SF_ATL", "verdict": "good", "failed": [], "at": "2026-10-24T17:23:10.513774+00:00"}
 {"kind": "prop", "id": "2026_07_TB_CAR:00-0039361:rec_yds", "game_id": "2026_07_TB_CAR", "verdict": "good", "failed": [], "at": "2026-10-24T17:23:10.513774+00:00"}
+{"kind": "game", "id": "2026_08_BAL_BUF:ml", "game_id": "2026_08_BAL_BUF", "verdict": "good", "failed": [], "at": "2026-10-27T19:19:40.929358+00:00"}
+{"kind": "game", "id": "2026_08_ARI_DAL:ml", "game_id": "2026_08_ARI_DAL", "verdict": "good", "failed": [], "at": "2026-10-27T19:19:40.929358+00:00"}
+{"kind": "game", "id": "2026_08_IND_JAX:ml", "game_id": "2026_08_IND_JAX", "verdict": "good", "failed": [], "at": "2026-10-27T19:19:40.929358+00:00"}
+{"kind": "game", "id": "2026_08_ATL_TB:ml", "game_id": "2026_08_ATL_TB", "verdict": "good", "failed": [], "at": "2026-10-27T19:19:40.929358+00:00"}
+{"kind": "game", "id": "2026_08_NE_MIA:ml", "game_id": "2026_08_NE_MIA", "verdict": "good", "failed": [], "at": "2026-10-27T19:19:40.929358+00:00"}
+{"kind": "game", "id": "2026_08_PHI_WAS:ml", "game_id": "2026_08_PHI_WAS", "verdict": "good", "failed": [], "at": "2026-10-27T19:19:40.929358+00:00"}
+{"kind": "game", "id": "2026_08_CHI_SEA:spread", "game_id": "2026_08_CHI_SEA", "verdict": "good", "failed": [], "at": "2026-10-27T19:19:40.929358+00:00"}
+{"kind": "game", "id": "2026_08_CHI_SEA:ml", "game_id": "2026_08_CHI_SEA", "verdict": "good", "failed": [], "at": "2026-10-27T19:19:40.929358+00:00"}
