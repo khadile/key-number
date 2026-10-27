@@ -785,6 +785,78 @@ budget with the NFL) comes after the pregame side is stable.
     edge that held in all three seasons: REBOUND UNDERS at 55%+ (+7.6%, +5.7%, +7.2%; 11,150 bets). Assists
     faded (+5.3, -0.9, -1.9). The close is near the board's 5:30pm lock, so this is the timing that counts.
 
+## 10. Short-lived edges, the bet list, public money (user, 2026-10-26)
+
+**The user's view, which shapes everything below.** Edges that last two-plus years in a market this big are
+calibration failures someone richer already took. Real edges are found early and used before they close: an
+adapting system, not one that assumes multi-year history predicts outcomes. Books profit from recreational
+psychology (boosts, deposit matches, lines shaded toward the popular side), so look for edges in that. The user
+does not bet the whole board (limited resources); they pick a subset, and the system's job is to become very good
+at that filtering. Brainstorm ideas are seeds: generalize across sports, markets and stats.
+
+**How we reconcile that with not fooling ourselves (agreed in conversation):**
+- Judge new ideas by closing-line value (EV at Pinnacle's close), which settles every bet at kickoff, not by wins
+  and losses, which need months. A 5-week, 60-bet sample has a win-rate error of about 6.5 points.
+- Don't wait for proof at zero stake: probe stakes early, scale with closing-line evidence, cut fast. Be
+  conservative on size, aggressive on timing. An edge that lasts 3 weeks can't be proven in 3 weeks; bet the
+  reasoning small and let the close decide.
+- Never fade the model's own picks because a category ran cold: fading pays the vig twice (walk-forward: -15 to
+  -18% ROI, section 6). A category down units while beating the close is usually bad luck (NBA threes 7-20 at
+  +2.1% EV at the close, 21 of 27 still +EV).
+
+**Fade the public (tested 2026-10-26, from two Slim Sports reels; Action Network archive, 2023 wk5 to 2026 wk7,
+~950 NFL games, graded at the consensus close):** the reels' 2026 numbers reproduced exactly (spreads 55%+ 33-23-3,
+70%+ 16-5-2, totals 80%+ 10-3, ML 80%+ 15-34 +1.7u), but across seasons: spreads 70%+ 138-111-4 (+14.3u, z 1.7)
+lost in 2023 and 2024 and won in 2025-26; totals coin-flip until 80%+ (+9.4u, mostly 2026); moneyline fades lose
+at every threshold (80%+: 132-342, -28.5u). "Follow the money" (money % 15+ ahead of tickets) on totals +14.9u,
+z 1.7. Verdict: not a standing edge; the public lost in 2025-26 specifically. Scripts: session scratchpad `fade/`.
+
+**The bet list (model/betlist.py; on Best bets, record row "Bet list", "How the list is choosing" under each
+record's By category).** The picks worth a stake, chosen at the lock and never redone (a `betlist` marker in the
+picks ledger: `{day}:betlist` / `{day}:props:betlist` for NBA, `{season}_{week}:betlist` for NFL lines,
+`{season}_{week}:props:betlist:{Thu|Sat|Mon}` per NFL props lock).
+- Cells: category (NBA props: stat and side, combos pooled; lines: spread/ML favorite or underdog, total over or
+  under; NFL props: market and side) x EV tier at the lock (1-2%, 2-4%, 4%+).
+- Each cell's true edge is a precision-weighted blend of: a prior from its tier pooled across categories (the tier
+  from N(0, 3%)), recency-weighted EV at the close (allowance CLOSE_BIAS 3%: the close can misjudge a category,
+  e.g. NFL receiving yards +5.3% at the close but -11% ROI on 165), and recency-weighted units at 1u (variance
+  ~1 per pick, so units count at volume and can overrule the close in a category with a couple hundred picks).
+  Half-life 10 days (NBA), 3 weeks (NFL).
+- On the list: estimate +1%+ and 65%+ sure it is above zero; a cell with fewer than 3 graded picks goes by its
+  tier; at most 2 picks per cell per lock; caps NBA lines 4/day, NBA props 6/day, NFL lines 6/week, NFL props 4
+  per lock. Ranked by cell estimate, then EV.
+- User asked for maximum flexibility (e.g. "if 2%+ props are up units a few days running, add them, or only 4%+");
+  the tiers and recency do that, at the speed the evidence allows. A few days of units alone moves a cell little;
+  units plus closing value moves it fast. If the user wants units to count more, lower CLOSE_BIAS's counterweight
+  by raising CLOSE_BIAS (more distrust of the close), not by special-casing.
+- First lists (dry run, 2026-10-26): NBA props all 4%+ unders (threes, points, combos), 1-2% tier out (-0.9% at
+  the close vs 2-4% +1.7%, 4%+ +5.3%); NBA game lines none (losing to the close); NFL lines ML underdogs 4%+ and
+  spread underdogs 2-4%; NFL props 4%+ cells.
+- **Calibrate at every checkup:** bet list vs all picks, by units AND EV at the close. If the list does not beat
+  the full board at the close over 4+ weeks, revisit the constants (PRIOR_SD, CELL_SD, CLOSE_BIAS, half-lives,
+  MIN_EDGE/MIN_PROB) on the replay, not on a few days. Never re-pick past lists.
+
+**By category tables (section 6) and the walk-forward test** are what the bet list stands on: hot-category carry
+is real but small in NBA props (3-day streak coef 0.13), none in NFL lines; the day's top-5 EV beats the rest.
+
+**Public money (pipeline/action_network.py).** Action Network's public API: ticket % and money % per side for the
+main spread, total and moneyline (NFL by season/week, NBA by date; `bookIds=15` consensus; history from 2023 wk5).
+Every NFL and NBA build pulls it (online only), saves the raw JSON to `data/actionnetwork/nfl` and
+`data/nba/actionnetwork` (Actions caches, gitignored), shows "Public" on each game card (most-bet side, tickets %,
+money %, bold at 70%+), and stamps each game-line pick at lock with `public: {tickets, money}` on its side.
+Context only, never a pricing input.
+- Public-tax test (2026 wk1-7, 74 games, best DK/FD price vs Pinnacle no-vig on the same number; scratchpad
+  `public_tax.py`): spreads and totals none (DK/FD shade both sides ~-4%, however lopsided); moneylines a hint:
+  the 70%+ side -3.9% vs the other side -1.9%, 28% of unpopular-side prices +EV against Pinnacle. Confounded with
+  favorites (the public ML side is nearly always the favorite). Re-run at checkups with the build snapshots
+  (lock vs close) and control for favorite/underdog before it becomes a tag or a probe.
+
+**Psychology angles queued to test the same way (closing-line value, probe stakes):** star and prime-time overs;
+overreaction to last week's blowout or viral game; non-QB injury line moves and backups' props lagging news;
+reverse line movement (tickets one way, line the other) and its timing; boosts that are +EV by arithmetic and
+same-game-parlay correlation pricing. Also pending: NBA props at 1-2% EV to leans (Nov 2 checkup; at the close
+-0.9% +-1.2 vs 2%+ +2.8% +-1.0); a per-category stake (full / 0.25u probe / 0) once the bet list has a few weeks.
+
 ## Layout
 
 ```

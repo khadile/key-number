@@ -1338,6 +1338,22 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     return `<span class="chip pass" title="The model's side is ${esc(v.team)}. Its fair price is ${am(v.fair)}; the best available is ${am(v.best)}${v.book ? " at " + esc(v.book) : ""}, which is not enough value to bet.">
       <span class="m">Moneyline</span><b>No play</b><span class="pr">${esc(v.team)} fair ${am(v.fair)} · best ${am(v.best)}</span></span>`;
   }
+  // public betting splits (Action Network, user 2026-10-26): the side most tickets are on in each market, with its
+  // share of tickets and of money. Context only: fading the public did not hold up 2023-26.
+  function pubRow(pub, home, away, nk) {
+    if (!pub) return "";
+    const parts = [["spread", "home", "away"], ["total", "over", "under"], ["ml", "home", "away"]].map(([mk, a, b]) => {
+      const s = pub[mk];
+      if (!s || !s[a] || !s[b]) return "";
+      const side = (s[a].tickets || 0) >= (s[b].tickets || 0) ? a : b, x = s[side];
+      const ln = (v) => signed(v, 1).replace(/\.0$/, "");
+      const who = mk === "total" ? `${side === "over" ? "Over" : "Under"} ${num(x.line, 1).replace(/\.0$/, "")}`
+        : `${nk(side === "home" ? home : away)}${mk === "spread" ? " " + ln(x.line) : " ML"}`;
+      const big = x.tickets >= 70;
+      return `<span${big ? ' class="pub-big"' : ""}>${big ? "<b>" : ""}${esc(who)} ${x.tickets}%${big ? "</b>" : ""}<span class="note"> / ${x.money}% $</span></span>`;
+    }).filter(Boolean);
+    return parts.length ? `<div><dt data-tip="Action Network's consensus: the side most bettors are on in each market, the share of tickets on it, then the share of money (/ $). Bold: 70%+ of tickets. Context, not a signal: fading the public did not hold up 2023-26." tabindex="0">Public</dt><dd>${parts.join(" · ")}</dd></div>` : "";
+  }
   function card(g) {
     const fin = g.status === "final", live = g.status === "live";
     const wx = g.dome ? "Indoors" : g.weather ? `${g.weather.temp}°F · wind ${g.weather.wind} mph` : "Outdoors";
@@ -1353,6 +1369,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <dl class="lines">
         <div><dt>Market</dt><dd>${fav(g.home, g.away, g.market.spread)} · ${g.market.total == null ? "–" : half(g.market.total)}</dd></div>
         <div><dt>Model</dt><dd>${g.model ? fav(g.home, g.away, g.model.spread, 1) + " · " + num(g.model.total, 1) : "–"}</dd></div>
+        ${pubRow(g.public, g.home, g.away, nick)}
       </dl>
       <div class="chips">${picks || '<span class="note">No lines yet.</span>'}${!P.ml ? mlPass(g) : ""}</div>
       ${ctxBlock([P.spread, P.total])}
@@ -1781,6 +1798,31 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   // instead of over months. cats: [name, row filter]. "Read" needs 20+ picks with a close and two standard errors.
   const isPar = (r) => !!(r.legs && r.legs.length);
   const sideOf = (r) => r.side || (/\bUnder\b/.test(r.label || "") ? "under" : /\bOver\b/.test(r.label || "") ? "over" : null);
+  // ---------- the bet list (model/betlist.py, user 2026-10-26)
+  const BLM = { fg3: "3-pointers", pts: "Points", reb: "Rebounds", ast: "Assists", combo: "Combos", pass_yds: "Passing yds", rush_yds: "Rushing yds",
+                rec_yds: "Receiving yds", receptions: "Receptions", spread: "Spread", total: "Total", ml: "Moneyline" };
+  const BLS = { fav: "favorite", dog: "underdog", over: "over", under: "under" };
+  const blCat = (c) => (c === "*" ? "Every category" : c.split(" ").map((w, i) => (i ? BLS[w] || w : BLM[w] || w)).join(" "));
+  function blPicks(v, unit) {
+    if (!v) return '<p class="note">The first list locks with the next picks.</p>';
+    if (!v.picks.length) return `<p class="note">Nothing made the list for ${esc(unit)}: no pick sat in a category and EV tier that has been earning lately. Zero is a valid answer.</p>`;
+    return `<div class="scroll"><table class="t"><thead><tr><th>Pick</th><th>Game</th><th class="num">Price</th><th class="num">${term("ev", "EV")}</th><th>Why it made the list</th><th>Result</th><th class="num">Units</th></tr></thead><tbody>
+      ${v.picks.map((p) => `<tr><td><b>${label(p.label)}</b></td><td>${esc(p.game)}</td><td class="num">${am(p.american)}${p.book ? " " + esc(p.book) : ""}</td><td class="num">${evPct(p.ev)}</td>
+        <td><span class="note">${esc(blCat(p.cat))}, ${esc(p.tier)} EV: lately worth ${evPct(p.edge)} a pick (${pct(p.p_pos, 0)} sure it is above zero)</span></td>
+        <td>${p.result ? resChip(p.result) : '<span class="res P">PENDING</span>'}</td><td class="num ${cls(p.units)}">${p.units == null ? "–" : units(p.units)}</td></tr>`).join("")}</tbody></table></div>`;
+  }
+  function blCells(v) {
+    if (!v || !v.cells) return "";
+    return `<details class="nmore"><summary>How the list is choosing right now</summary><div class="nmore-in"><div class="scroll"><table class="t"><thead><tr><th>Category</th><th>EV tier</th><th class="num">Graded</th><th class="num">EV at the close</th><th class="num">Units</th><th class="num">Worth per pick</th><th class="num">Sure it is &gt; 0</th><th>On the list</th></tr></thead><tbody>
+      ${v.cells.map((c) => `<tr><td>${c.cat === "*" ? "<b>Every category</b>" : esc(blCat(c.cat))}</td><td>${esc(c.tier)}</td><td class="num">${c.n}</td><td class="num ${cls(c.close)}">${c.close == null ? "–" : evPct(c.close)}</td><td class="num ${cls(c.units)}">${units(c.units)}</td>
+        <td class="num ${cls(c.edge)}">${evPct(c.edge)} <span class="note">±${(100 * c.sd).toFixed(1)}</span></td><td class="num">${pct(c.p_pos, 0)}</td><td class="${c.in ? "pos" : ""}">${c.in ? "Yes" : "No"}</td></tr>`).join("")}</tbody></table></div>
+      <p class="note">Each pick sits in a cell: its category and its EV at the lock. A cell's worth per pick blends three things, each weighted by how much it can be trusted: its picks' EV at Pinnacle's close (settles at kickoff, so it counts within days), their units (a pick swings about a unit either way, so units count once there are dozens of them, and can overrule the close when there are), and how its EV tier has done across every category. Recent picks count more: half the weight is gone after ${esc(v.half || "a few days")}. A cell is on the list at +1% or more and 65%+ sure it is above zero; one with fewer than 3 graded picks goes by its tier. At most two picks from one cell, so six of the same bet are not six bets. Picks are chosen when they lock and never redone.</p></div></details>`;
+  }
+  function betListSec(lists) {   // lists: [[title, view, unit, half-life]]
+    return `<section class="sec"><header><h2>Bet list <em>the picks worth a stake right now</em></h2></header>
+      ${lists.map(([t, v, unit, half]) => `<div class="box"><h3>${esc(t)}${v && (v.day || v.week) ? ` <span class="note">${v.day ? esc(dayShort(v.day)) : "week " + v.week}</span>` : ""}</h3>${blPicks(v, unit)}${blCells(v && { ...v, half })}</div>`).join("")}
+      <p class="note">Not every pick on the board is worth a stake. The bet list is the subset whose kind of pick (category and EV tier) has been earning lately, judged mostly on value at the closing line and, as they pile up, units. It adapts as results come in: a tier can join, a category can drop out. Its record is on the Record pages as "Bet list".</p></section>`;
+  }
   function closeByCat(rows, cats, top = "week") {
     const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
     const body = cats.map(([name, f]) => {
@@ -1836,9 +1878,9 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
         <p class="note">Weeks 1–${D.meta.live_start - 1} were replayed before launch at Tuesday lines with only Tuesday information; picks are live from week ${D.meta.live_start}. Every pick counts at 1u here, ${term("lean", "leans")} included, so this is the model's full record; the board gives leans no stake because their price is against them. The Quarter Kelly section below is the +EV picks only.</p>
         ${leansNote(A)}</section>
       <section class="sec"><header><h2>By category <em>closing line value</em></h2></header>${closeByCat([...(D.record.pre_rows || []), ...(D.record.live_rows || [])], [
-        ["Spread", (r) => r.market === "spread"], ["Over/under", (r) => r.market === "total"], ["Moneyline", (r) => r.market === "ml"],
+        ["Bet list", (r) => r.bet], ["Spread", (r) => r.market === "spread"], ["Over/under", (r) => r.market === "total"], ["Moneyline", (r) => r.market === "ml"],
         ["Picks of the week", (r) => r.potw], ["Good picks", (r) => r.verdict === "good"], ["+EV picks", (r) => !isPar(r) && r.ev > 0],
-        ["Leans", (r) => r.risk === 0], ["Parlays", isPar]])}</section>
+        ["Leans", (r) => r.risk === 0], ["Parlays", isPar]])}${blCells(D.betlist && { ...D.betlist, half: "3 weeks" })}</section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${unitsChart(A) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
       ${verdictSection(D.record.verdicts, "pick")}
       ${kellySection(A.kelly, D.meta.live_start, "picks", `<div class="strip three">${kTile(term("ats", "ATS"), A.kelly.ats)}${kTile("Over/under", A.kelly.ou)}${kTile("Moneyline", A.kelly.ml)}</div>`)}
@@ -2364,9 +2406,9 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <section class="sec"><header><h2>Season to date</h2></header>${pStrip(A)}
         <p class="note">Weeks 1–${PR.meta.live_start - 1} were replayed before launch at Saturday-morning lines; picks are live from week ${PR.meta.live_start}. Promoted players (moved up because a teammate is out): ${rec(A.promoted)} (${units(A.promoted.units)}).</p></section>
       <section class="sec"><header><h2>By category <em>closing line value</em></h2></header>${closeByCat([...(PR.record.pre_rows || []), ...(PR.record.live_rows || [])], [
-        ...PCATS.filter(([k]) => k !== "parlay").map(([k, n]) => [n, (r) => r.market === k]),
+        ["Bet list", (r) => r.bet], ...PCATS.filter(([k]) => k !== "parlay").map(([k, n]) => [n, (r) => r.market === k]),
         ["Overs", (r) => !isPar(r) && sideOf(r) === "over"], ["Unders", (r) => !isPar(r) && sideOf(r) === "under"],
-        ["Picks of the week", (r) => r.potw], ["Good picks", (r) => r.verdict === "good"], ["Parlays", isPar]])}</section>
+        ["Picks of the week", (r) => r.potw], ["Good picks", (r) => r.verdict === "good"], ["Parlays", isPar]])}${blCells(PR.betlist && { ...PR.betlist, half: "3 weeks" })}</section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${unitsChart(A) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
       ${ruleSec}
       ${verdictSection(PR.record.verdicts, "prop")}
@@ -2783,6 +2825,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <dl class="lines">
         <div><dt>${term("novig", "Market, no-vig")}</dt><dd>${g.fair.margin == null ? "–" : fav(g.home, g.away, g.fair.margin, 1)} · ${num(g.fair.total, 1)}</dd></div>
         <div><dt>Model</dt><dd>${g.model ? fav(g.home, g.away, g.model.margin, 1) + " · " + num(g.model.total, 1) : "–"}</dd></div>
+        ${pubRow(g.public, g.home, g.away, nnick)}
       </dl>
       <div class="chips">${chips || wait || '<span class="note">No DraftKings or FanDuel lines yet.</span>'}</div>
       ${ctxBlock([P.spread, P.total])}
@@ -2891,8 +2934,8 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
         <p class="note">Picks on the model's side went ${t(W.with)}; picks against it (the price alone) went ${t(W.against)}. The first checkup reads this to see whether the model's early-season lean is worth anything.</p>
         ${nKelly(R.kelly, "picks")}</section>
       <section class="sec"><header><h2>By category <em>closing line value</em></h2></header>${closeByCat(N.record.rows || [], [
-        ["Spread", (r) => r.market === "spread"], ["Over/under", (r) => r.market === "total"], ["Moneyline", (r) => r.market === "ml"],
-        ["Picks of the day", (r) => r.potd], ["+EV picks", (r) => !isPar(r) && r.ev > 0], ["Leans", (r) => r.risk === 0], ["Parlays", isPar]], "day")}</section>
+        ["Bet list", (r) => r.bet], ["Spread", (r) => r.market === "spread"], ["Over/under", (r) => r.market === "total"], ["Moneyline", (r) => r.market === "ml"],
+        ["Picks of the day", (r) => r.potd], ["+EV picks", (r) => !isPar(r) && r.ev > 0], ["Leans", (r) => r.risk === 0], ["Parlays", isPar]], "day")}${blCells(N.betlist && N.betlist.lines && { ...N.betlist.lines, half: "10 days" })}</section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${nUnitsChart(R, ["+EV picks", "pos"]) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
       <section class="sec"><header><h2>Picks by day</h2></header>${nDayBrowser(N.record.rows, "lines", NCATS)}</section>
       <section class="sec"><header><h2>Day by day</h2></header>${nDayTable(R, [["ats", "ATS"], ["ou", "O/U"], ["ml", "Moneyline"]], ["+EV picks", "pos"])}</section>
@@ -3011,9 +3054,9 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
         ${R.split && (R.split.big.n + R.split.small.n) ? `<p class="note">Of these, props at 2%+ expected value went ${rec(R.split.big)}, <span class="${cls(R.split.big.units)}">${units(R.split.big.units)}</span> (${term("evclose", "EV at the close")} ${evPct(R.split.big.ev_close)}); props at 1–2% went ${rec(R.split.small)}, <span class="${cls(R.split.small.units)}">${units(R.split.small.units)}</span> (${evPct(R.split.small.ev_close)}). NFL props now need 2%+; the Nov 2 checkup asks the same of these.</p>` : ""}
         ${nKelly(R.kelly, "props")}</section>
       <section class="sec"><header><h2>By category <em>closing line value</em></h2></header>${closeByCat(N.props.record.rows || [], [
-        ...NPCATS.filter(([k]) => k !== "parlay").map(([k, n]) => [n, (r) => !isPar(r) && nCat(r) === k]),
+        ["Bet list", (r) => r.bet], ...NPCATS.filter(([k]) => k !== "parlay").map(([k, n]) => [n, (r) => !isPar(r) && nCat(r) === k]),
         ["Overs", (r) => !isPar(r) && r.side === "over"], ["Unders", (r) => !isPar(r) && r.side === "under"],
-        ["Picks of the day", (r) => r.potd], ["2%+ EV", (r) => !isPar(r) && r.ev >= 0.02], ["1–2% EV", (r) => !isPar(r) && r.ev < 0.02], ["Parlays", isPar]], "day")}</section>
+        ["Picks of the day", (r) => r.potd], ["2%+ EV", (r) => !isPar(r) && r.ev >= 0.02], ["1–2% EV", (r) => !isPar(r) && r.ev < 0.02], ["Parlays", isPar]], "day")}${blCells(N.betlist && N.betlist.props && { ...N.betlist.props, half: "10 days" })}</section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${nUnitsChart(R, ["Props at 2%+ EV", "big"]) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
       <section class="sec"><header><h2>By market</h2></header><div class="scroll"><table class="t"><thead><tr><th>Market</th><th class="num">Record</th><th class="num">Units</th><th class="num">ROI</th><th class="num">EV at lock</th><th class="num">EV at close</th></tr></thead><tbody>
         ${[...mk, ["Overs", R.over], ["Unders", R.under]].map(([k, r]) => `<tr><td>${k}</td><td class="num">${rec(r)}</td><td class="num ${cls(r && r.units)}">${r && r.n ? units(r.units) : "–"}</td><td class="num">${r && r.n ? pct(r.roi, 1) : "–"}</td><td class="num">${r && r.n ? evPct(r.ev) : "–"}</td><td class="num">${r && r.n ? evPct(r.ev_close) : "–"}</td></tr>`).join("")}
@@ -3346,6 +3389,8 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     const upd = new Date((nba ? N : D).meta.generated).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" }) + " ET";
     app.innerHTML = `
       <section class="hello"><h1>Best bets<span class="h1s">${nba ? "NBA · " + esc(N.meta.day_label) : `NFL · Week ${D.meta.week}`}</span></h1><p class="finding">${finding}</p></section>
+      ${nba ? betListSec([["Game lines", N.betlist && N.betlist.lines, "today", "10 days"], ["Props", N.betlist && N.betlist.props, "today", "10 days"]])
+            : betListSec([["Game lines", D.betlist, "this week", "3 weeks"], ...(PR ? [["Props", PR.betlist, "this lock", "3 weeks"]] : [])])}
       ${pzCards(sport)}
       <section class="sec"><header><h2>Every pick <em id="eb-n"></em></h2></header>
         <div class="eb-ctl">${bbCtl()}</div><ol class="eb" id="eb"></ol>

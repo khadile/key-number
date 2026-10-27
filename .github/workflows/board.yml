@@ -72,6 +72,7 @@ jobs:
             data/oddspapi/props
             data/oddspapi/request_log.jsonl
             data/oddspapi/open_close.parquet
+            data/actionnetwork
           key: oddspapi-${{ github.run_id }}
           restore-keys: oddspapi-
 

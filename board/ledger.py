@@ -47,7 +47,7 @@ def read_picks() -> list[dict]:
     stakes = {r["id"]: r["risk"] for r in rows if r.get("kind") == "stake"}
     out = []
     for r in rows:
-        if r.get("kind") in ("parlay_type", "stake"):
+        if r.get("kind") in ("parlay_type", "stake", "betlist"):   # betlist: board/build.py marks its picks
             continue
         if r.get("kind") == "parlay":
             r = {**r, "type": types.get(r["id"], r.get("type", "golden"))}

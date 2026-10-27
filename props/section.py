@@ -22,6 +22,7 @@ import polars as pl
 
 from board.market import american, build_parlays, kelly
 from config import PARLAY_RISK, RAW, REPORTS
+from model import betlist as BL
 from model import checks as C
 from model.staking import flat_risk, kelly_of, kelly_units
 from props import ledger
@@ -49,6 +50,29 @@ EV_FLOOR, EV_FLOOR_PRICE = 0.02, 0.04
 # the line over-adjusts), so a rushing tag agrees with the under against a soft run defense (the board flips it).
 TAG_MARKETS = {"pass_yds": ("QB",), "rush_yds": ("QB", "RB"), "rec_yds": ("RB", "WR", "TE"), "receptions": ("RB", "WR", "TE")}
 POTW_N = 5
+BET_BOARD = BL.Board(half_life=3, cap=4)   # the bet list (model/betlist.py): three-week half-life, four per lock
+
+
+def bet_cat(q: dict) -> str:
+    return f"{q['market']} {q['side']}"
+
+
+def betlist_view(raw: list[dict], picks: list[dict], results: list[dict]) -> dict | None:
+    """This week's bet lists (one per lock: Thursday, Saturday, Monday) for the page, picks filled in."""
+    ms = [r for r in raw if r.get("kind") == "betlist"]
+    if not ms:
+        return None
+    wk = max((r["season"], r["week"]) for r in ms)
+    by_id, res = {p["id"]: p for p in picks}, {r["id"]: r for r in results}
+    out, cells = [], None
+    for m in sorted((r for r in ms if (r["season"], r["week"]) == wk), key=lambda r: r["at"]):
+        cells = m["cells"]
+        for i in m["picks"]:
+            if (p := by_id.get(i)):
+                r = res.get(i, {})
+                out.append({"label": p["label"], "game": f"{p['team']} vs {p['opp']}", "american": p["american"], "book": p["book_name"],
+                            "ev": p["ev"], **m["why"][i], "result": r.get("result"), "units": round(r["units"], 2) if "units" in r else None})
+    return {"week": wk[1], "picks": out, "cells": cells}
 BOOK_NAMES = {"draftkings": "DraftKings", "fanduel": "FanDuel", "pinnacle": "Pinnacle"}
 ROLE_ORDER = {"QB1": 0, "RB1": 1, "RB2": 2, "WR1": 3, "WR2": 4, "TE1": 5}
 
@@ -279,7 +303,7 @@ def _rows(picks: list[dict], results: list[dict], verdict_by: dict | None = None
                         "units": round(r["units"], 2) if "units" in r else None, "clv": None})
         else:
             out.append({"week": p["week"], "market": p["market"], "label": p["label"], "game": f"{p['team']} vs {p['opp']}",
-                        "legs": [], "american": p["american"], "book": p["book_name"], "potw": p.get("potw", False),
+                        "legs": [], "american": p["american"], "book": p["book_name"], "potw": p.get("potw", False), "bet": p.get("bet", False),
                         "promoted": p.get("promoted", False), "p_win": p["p_win"], "ev": p["ev"],
                         "kelly_u": kelly_of(p), **vb.get(p["id"], {}),
                         "result": r.get("result"), "actual": r.get("actual"),
@@ -426,7 +450,7 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
     existing = ledger.read(ledger.PICKS)
     # a game is locked once it has picks, or picks passed on: under the 2%/4% rule a game can lock with none
     locked_games = {r["game_id"] for r in existing + ledger.read(ledger.SHADOW) if r.get("kind") == "prop"}
-    new_locks, new_parlays, new_shadow = [], [], []
+    new_locks, new_parlays, new_shadow, new_bl = [], [], [], []
     if week >= PROPS_LIVE_START and xw.height:
         due = [g for g in upcoming["game_id"].to_list() if _lock_at(kick[g], now, lock_now) <= now < kick[g] and g not in locked_games]
         if due:
@@ -459,7 +483,17 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
             missing = tuple(t for t in ("golden", "lottery") if t not in have)
             if missing:
                 new_parlays += week_parlays(pool, season, week, now.isoformat(), want=missing)
-        writes = new_locks + new_parlays
+        # this lock's bet list (model/betlist.py), judged on every graded prop of the season, replayed weeks included
+        if new_locks:
+            bl_graded = {r["id"]: r for r in sim_results + ledger.read(ledger.RESULTS) if r.get("result") in ("W", "L", "P")}
+            bl_hist = [{"cat": bet_cat(q), "tier": BL.tier_of(q["ev"], BET_BOARD), "age": week - q["week"], "units": bl_graded[q["id"]]["units"],
+                     "ev_close": _ev_close(q, s_done, close_b)}
+                    for q in sim_picks + existing if q.get("kind") == "prop" and q["season"] == season and q["id"] in bl_graded]
+            bl_cells = BL.estimate(bl_hist, BET_BOARD)
+            bl_cands = [{"id": q["id"], "cat": bet_cat(q), "tier": BL.tier_of(q["ev"], BET_BOARD), "ev": q["ev"]} for q in new_locks if q["ev"] > 0]
+            new_bl = [BL.marker(f"{season}_{week:02d}:props:betlist:{now.astimezone(ET):%a}", BL.choose(bl_cands, bl_cells, BET_BOARD), bl_cells,
+                                {"season": season, "week": week, "at": now.isoformat()})]
+        writes = new_locks + new_parlays + new_bl
         if writes:
             if dry_run:
                 print(f"props dry run: would lock {len(new_locks)} picks and {len(new_parlays)} weekly items")
@@ -474,7 +508,7 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
                 print(f"props: {len(new_shadow)} picks the old rule would have added, kept off the books")
 
     # --- live record: grade, then apply Picks-of-the-Week markers
-    all_rows = existing + (new_locks + new_parlays if dry_run else [])
+    all_rows = existing + (new_locks + new_parlays + new_bl if dry_run else [])
     if not dry_run:
         g = ledger.grade_ledger(stats, graded_ids, closes)
         if g:
@@ -486,7 +520,8 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
         done_ids = {r["id"] for r in live_results}
         live_results += [r for r in ledger.grade_all(all_rows, stats, graded_ids, closes) if r["id"] not in done_ids]
     potw_ids = {i for r in all_rows if r.get("kind") == "potw" for i in r["picks"]}
-    live_picks = [{**r, "potw": r["id"] in potw_ids} if r.get("kind") == "prop" else r
+    bet_ids = {i for r in all_rows if r.get("kind") == "betlist" for i in r["picks"]}
+    live_picks = [{**r, "potw": r["id"] in potw_ids, "bet": r["id"] in bet_ids} if r.get("kind") == "prop" else r
                   for r in all_rows if r.get("kind") in ("prop", "parlay") and r["season"] == season]
     live = ledger.record(live_picks, live_results)
 
@@ -627,6 +662,7 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
                    "live_rows": (lr := _rows(live_picks, live_results, verdict_by, evq)), "pre_rows": (pr := _rows(sim_picks, sim_results, verdict_by, evq)),
                    "verdicts": {"all": C.tally(pr + lr), "since": C.tally(lr, C.SINCE_WEEK)}, "rule": rule},
         "players": players, "games": games_out, "logs": logs, "parlays": parlays,
+        "betlist": betlist_view(all_rows, live_picks, live_results),
         "model": {"backtest": bt, "study": study, "sgo": sgo, "edge": edge},
         "mypicks": {"lines": pickable, "results": results},
     }

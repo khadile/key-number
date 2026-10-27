@@ -20,15 +20,43 @@ from board.market import (BOOK_NAMES, Lines, Pricer, american, build_parlays, fi
                           picks_of_the_week, reference)
 from board.weather import STADIUMS, forecast
 from config import PARLAY_RISK, RAW, REPORTS, ROOT, STRAIGHT_RISK
+from model import betlist as BL
 from model import checks as C
 from model import features, project
 from model.probs import MARGIN_RANGE, TOTAL_RANGE, KeyDist, WinCurve
 from model.ratings import load_inputs
 from model.staking import flat_risk, kelly_units
+from pipeline import action_network as AN
 from pipeline.odds_history import SHOP_BOOKS, archive, publish_time
 from props.pricing import lock_time
 
 LIVE_START_WEEK = 5  # first week whose picks were locked live; earlier 2026 weeks are simulated
+BET_BOARD = BL.Board(half_life=3, cap=6)   # the bet list (model/betlist.py): three-week half-life, six a week
+
+
+def bet_cat(p: dict) -> str:
+    """A game-line pick's bet-list category: favorite or underdog (spread, moneyline), over or under."""
+    if p["market"] == "total":
+        return f"total {p['side']}"
+    fav = p["line"] < 0 if p["market"] == "spread" else p["dec"] < 2.0
+    return f"{p['market']} {'fav' if fav else 'dog'}"
+
+
+def betlist_view(raw: list[dict], picks: list[dict], results: list[dict]) -> dict | None:
+    """The latest bet list for the page, its picks filled in."""
+    m = max((r for r in raw if r.get("kind") == "betlist"), key=lambda r: (r["season"], r["week"]), default=None)
+    if m is None:
+        return None
+    by_id, res = {p["id"]: p for p in picks}, {r["id"]: r for r in results}
+    out = []
+    for i in m["picks"]:
+        if (p := by_id.get(i)):
+            r = res.get(i, {})
+            _, _, away, home = p["game_id"].split("_")
+            out.append({"label": p["label"], "game": f"{away} at {home}", "american": p["american"], "book": p.get("book_name"),
+                        "ev": p["ev"], **m["why"][i], "result": r.get("result"),
+                        "units": None if r.get("result") is None else round(ledger.units_for(r["result"], p["dec"], STRAIGHT_RISK), 2)})
+    return {"week": m["week"], "picks": out, "cells": m["cells"]}
 TEMPLATE = ROOT / "board" / "template.html"
 OUT = ROOT / "board" / "nfl_board.html"
 ET = ZoneInfo("America/New_York")
@@ -139,7 +167,7 @@ def _pick_rows(picks: list[dict], results: list[dict], verdict_by: dict | None =
             _, _, away, home = p["game_id"].split("_")
             game = f"{away} at {home}"
         out.append({"week": p["week"], "market": market, "label": label, "game": game, "legs": legs,
-                    "american": p.get("american"), "book": p.get("book_name"), "potw": bool(p.get("potw")),
+                    "american": p.get("american"), "book": p.get("book_name"), "potw": bool(p.get("potw")), "bet": bool(p.get("bet")),
                     **_stake(p), **vb.get(p["id"], {}),
                     "p_win": p.get("p_win") if p.get("kind") != "parlay" else p.get("p"),
                     "ev": p.get("ev"), "result": r.get("result"),
@@ -362,6 +390,17 @@ def main() -> None:
     sim_results = ledger.grade_all(sim, finals, closes)
     pre = ledger.record(sim, sim_results)
 
+    # --- public betting splits (pipeline/action_network.py, user 2026-10-26): context on the cards and on each pick as
+    # it locks, never a pricing input. Saved raw at every build (Actions cache) for the public-tax study.
+    nick = dict(pl.read_parquet(RAW / "teams.parquet").select("team_abbr", "team_nick").iter_rows())
+    sp_raw = {} if args.offline else AN.by_nick(AN.safe(AN.splits, "nfl", season=season, week=week,
+                                                        snapshot_dir=ROOT / "data" / "actionnetwork" / "nfl"))
+    public = {}
+    for gid in season_games.filter(pl.col("week") == week)["game_id"].to_list():
+        _, _, aw, hm = gid.split("_")
+        if (s := sp_raw.get((nick.get(hm), nick.get(aw)))):
+            public[gid] = s
+
     # --- live: lock this week's picks (games not yet started), then its parlays, then grade.
     # A dry run computes the same picks and grades but writes nothing to the ledger.
     existing = ledger.read_picks()
@@ -390,7 +429,24 @@ def main() -> None:
         missing = tuple(t for t in ("golden", "lottery") if t not in have)
         new_parlays = week_parlays(week_picks, season, week, want=missing,
                                    locked_at=now.isoformat() if week_locked else None) if missing else []
-        writes = migrations + new_locks + new_parlays
+        for p in new_locks:   # the public's share on the pick's side when it locked
+            p["public"] = AN.side_split(public.get(p["game_id"]), p["market"], p["side"])
+        # the week's bet list, locked with its picks (model/betlist.py): every earlier graded pick of the season,
+        # replayed weeks included, judged by EV at Pinnacle's close and units at 1u
+        new_bl = []
+        bl_id = f"{season}_{week:02d}:betlist"
+        if new_locks and not any(r.get("id") == bl_id for r in ledger.read(ledger.PICKS)):
+            bl_graded = {r["id"]: r for r in sim_results + ledger.read(ledger.RESULTS)}
+            bl_hist = [{"cat": bet_cat(p), "tier": BL.tier_of(p["ev"], BET_BOARD), "age": week - p["week"],
+                     "units": ledger.units_for(bl_graded[p["id"]]["result"], p["dec"], STRAIGHT_RISK),
+                     "ev_close": ev_close(p, closes.get(p["game_id"]), pricer)}
+                    for p in sim + existing if p.get("kind") == "pick" and p["season"] == season and p["id"] in bl_graded]
+            bl_cells = BL.estimate(bl_hist, BET_BOARD)
+            bl_cands = [{"id": p["id"], "cat": bet_cat(p), "tier": BL.tier_of(p["ev"], BET_BOARD), "ev": p["ev"]}
+                     for p in new_locks if p["ev"] > 0 and p.get("risk", STRAIGHT_RISK) > 0]
+            new_bl = [BL.marker(bl_id, BL.choose(bl_cands, bl_cells, BET_BOARD), bl_cells,
+                                {"season": season, "week": week, "at": now.isoformat()})]
+        writes = migrations + new_locks + new_parlays + new_bl
         if writes:
             if args.dry_run:
                 print(f"dry run: would write {len(writes)} ledger lines for week {week}: "
@@ -400,7 +456,7 @@ def main() -> None:
                 print(f"week {week}: locked {len(new_locks)} picks, parlays {[p['type'] for p in new_parlays]}, "
                       f"reclassified {len(migrations)}")
     else:
-        migrations, new_parlays = [], []
+        migrations, new_parlays, new_bl = [], [], []
     if args.dry_run:
         mig = {m["id"] for m in migrations}
         all_picks = [{**p, "type": "lottery"} if p["id"] in mig else p for p in existing] + new_locks + new_parlays
@@ -413,7 +469,9 @@ def main() -> None:
             print(f"graded {len(graded)} picks")
         all_picks = ledger.read_picks()
         live_results = ledger.read(ledger.RESULTS)
-    live_picks = [p for p in all_picks if p["season"] == season]
+    raw_rows = ledger.read(ledger.PICKS) + (new_bl if args.dry_run else [])
+    bets = {i for r in raw_rows if r.get("kind") == "betlist" for i in r["picks"]}
+    live_picks = [{**p, "bet": p["id"] in bets} if p.get("kind") == "pick" else p for p in all_picks if p["season"] == season]
     live = ledger.record(live_picks, live_results)
 
     # --- game cards and breakdowns for this week
@@ -510,7 +568,7 @@ def main() -> None:
                        "book": BOOK_NAMES.get(best[1], best[1]) if best else None}
         is_final = g["result"] is not None
         cards.append({
-            "id": gid, "week": week, "kickoff": _kick(g["kickoff_utc"]),
+            "id": gid, "week": week, "kickoff": _kick(g["kickoff_utc"]), "public": public.get(gid),
             "home": home, "away": away, "venue": stadium.get(gid), "dome": bool(g["dome"]),
             "neutral": bool(g["neutral_site"]), "weather": wx.get(gid),
             "status": "final" if is_final else ("live" if g["kickoff_utc"] <= now else "upcoming"),
@@ -630,6 +688,7 @@ def main() -> None:
                    "live_rows": (lr := _pick_rows(live_picks, live_results, verdict_by, evc)),
                    "pre_rows": (pr := _pick_rows(sim, sim_results, verdict_by, evc)),
                    "verdicts": {"all": C.tally(pr + lr), "since": C.tally(lr, C.SINCE_WEEK)}},
+        "betlist": betlist_view(raw_rows, live_picks, live_results),
         "games": cards,
         "parlays": parlays,
         "defense": {"rows": def_rows, "league": def_league, "roles": roles},

@@ -4,6 +4,7 @@ __pycache__/
 data/raw/
 data/clean/
 data/snapshots/
+data/actionnetwork/
 # data/lines/ is kept: it is our only record of line history
 board/preview.html
 # live engine demo replays are throwaway; real engine logs (data/live/<game>/) are kept

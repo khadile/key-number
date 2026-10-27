@@ -28,6 +28,7 @@ import polars as pl
 from board.ledger import append, read
 from board.market import BOOK_NAMES, american, build_parlays, kelly
 from config import PARLAY_RISK, REPORTS, ROOT
+from model import betlist as BL
 from model.staking import flat_risk, kelly_units
 from nba import espn, ledger
 from nba import props as NP
@@ -35,6 +36,7 @@ from nba.data import CURRENT, load
 from nba import longshots as LS
 from nba.ladders import best_ladder, ladder_legs
 from nba.lines import GamePricer, fit as fit_lines
+from pipeline import action_network as AN
 from nba.odds import NbaLines, fixture_index, load_milestones, load_props, main_lines, player_map, rungs_at
 
 ET = ZoneInfo("America/New_York")
@@ -46,6 +48,8 @@ SHOP = ["draftkings", "fanduel"]
 B2B_MARGIN = -2.2      # points of home margin per back-to-back (home minus away), 2020-21 to 2025-26
 PROPS_K = 0.0          # how far prop lines move toward the model between lock and close: measured once there is data
 POTD_N = 5
+# the bet list (model/betlist.py, user 2026-10-26): what lately has been worth staking; ten-day half-life
+LINES_BOARD, PROPS_BOARD = BL.Board(half_life=10, cap=4), BL.Board(half_life=10, cap=6)
 PARLAY_POOL = 16
 # A prop is a pick at 1% expected value or more. Below that the edge is inside the error of the no-vig estimate
 # (splitting the vig evenly or by the odds moves a -110 side's chance by more): opening night had picks at +0.03%.
@@ -252,6 +256,29 @@ def potd(picks: list[dict], n: int = POTD_N) -> list[str]:
     return top
 
 
+def bet_cat(p: dict) -> str:
+    """A pick's bet-list category: the stat and side for props (combos pooled), favorite or underdog for spreads and
+    moneylines, over or under for totals."""
+    if p.get("kind") == "prop":
+        return ("combo" if p["market"] in NP.COMBOS else p["market"]) + " " + p["side"]
+    if p["market"] == "total":
+        return f"total {p['side']}"
+    fav = p["line"] < 0 if p["market"] == "spread" else p["dec"] < 2.0
+    return f"{p['market']} {'fav' if fav else 'dog'}"
+
+
+def bet_list(rows: list[dict], results: list[dict], pool: list[dict], board: BL.Board, day: date, now: datetime, mid: str) -> dict:
+    """The day's bet list from the pool, judged on every earlier graded pick (model/betlist.py)."""
+    res = {r["id"]: r for r in results}
+    hist = [{"cat": bet_cat(p), "tier": BL.tier_of(p["ev"], board), "age": (day - date.fromisoformat(p["day"])).days,
+             "units": ledger.units_for(res[p["id"]]["result"], p["dec"], 1.0), "ev_close": res[p["id"]].get("ev_close")}
+            for p in rows if p.get("kind") in ("pick", "prop") and res.get(p["id"], {}).get("result") in ("W", "L", "P")]
+    cells = BL.estimate(hist, board)
+    cands = [{"id": p["id"], "cat": bet_cat(p), "tier": BL.tier_of(p["ev"], board), "ev": p["ev"]}
+             for p in pool if p["ev"] > 0 and p.get("risk", 1.0) > 0]
+    return BL.marker(mid, BL.choose(cands, cells, board), cells, {"day": day.isoformat(), "at": now.isoformat()})
+
+
 def parlays(picks: list[dict], day: date, prefix: str, now: datetime, want=("golden", "lottery")) -> list[dict]:
     pool = sorted((p for p in picks if p["ev"] > 0), key=lambda p: -kelly(p))[:PARLAY_POOL]
     out = []
@@ -304,7 +331,27 @@ def ladder_rows(legs: list[dict], games_by: dict, fair_now: dict, day: date, now
 
 def with_potd(rows: list[dict]) -> list[dict]:
     ids = {i for r in rows if r.get("kind") == "potd" for i in r["picks"]}
-    return [{**r, "potd": r["id"] in ids} if r.get("kind") in ("pick", "prop") else r for r in rows if r.get("kind") != "potd"]
+    bets = {i for r in rows if r.get("kind") == "betlist" for i in r["picks"]}
+    return [{**r, "potd": r["id"] in ids, "bet": r["id"] in bets} if r.get("kind") in ("pick", "prop") else r
+            for r in rows if r.get("kind") not in ("potd", "betlist")]
+
+
+def betlist_view(rows: list[dict], results: list[dict]) -> dict | None:
+    """The latest bet list for the page, its picks filled in."""
+    m = max((r for r in rows if r.get("kind") == "betlist"), key=lambda r: r["day"], default=None)
+    if m is None:
+        return None
+    by_id, res = {p["id"]: p for p in rows}, {r["id"]: r for r in results}
+    picks = []
+    for i in m["picks"]:
+        p = by_id.get(i)
+        if p:
+            r = res.get(i, {})
+            picks.append({"label": p["label"],
+                          "game": f"{p['away']} at {p['home']}" if p.get("kind") == "pick" else f"{p['team']} vs {p['opp']}",
+                          "american": p["american"], "book": p.get("book_name"), "ev": p["ev"], **m["why"][i],
+                          "result": r.get("result"), "units": None if r.get("result") is None else round(ledger.units_for(r["result"], p["dec"], 1.0), 2)})
+    return {"day": m["day"], "picks": picks, "cells": m["cells"]}
 
 
 # ---------------------------------------------------------------- closes (grading)
@@ -407,7 +454,7 @@ def _rows(picks: list[dict], results: list[dict]) -> list[dict]:
             continue
         r = res.get(p["id"], {})
         base = {"day": p["day"], "result": r.get("result"), "ev": p.get("ev"), "ev_close": r.get("ev_close"), "clv": r.get("clv"),
-                "american": p.get("american"), "potd": bool(p.get("potd"))}
+                "american": p.get("american"), "potd": bool(p.get("potd")), "bet": bool(p.get("bet"))}
         if p.get("kind") == "parlay":
             legs = [by_id[l]["label"] for l in p["legs"] if l in by_id]
             out.append({**base, "market": p["type"], "label": {"golden": "Golden Parlay", "ladder": "Ladder"}.get(p["type"], "+EV Lottery"),
@@ -500,6 +547,13 @@ def main() -> None:
         lines_now[g["game_id"]] = L.all_at(now, BOOKS)
         fair_now[g["game_id"]] = pricer.fair(lines_now[g["game_id"]])
 
+    # --- public betting splits (pipeline/action_network.py, user 2026-10-26): context on the cards and on each pick as
+    # it locks, never a pricing input; saved raw at every build (data/nba, Actions cache) for the public-tax study
+    tmeta = _team_meta(sched, finals)
+    sp_raw = {} if a.offline else AN.by_nick(AN.safe(AN.splits, "nba", day=today, snapshot_dir=ROOT / "data" / "nba" / "actionnetwork"))
+    public = {g["game_id"]: s for g in day_games
+              if (s := sp_raw.get(((tmeta.get(g["home"]) or {}).get("nick"), (tmeta.get(g["away"]) or {}).get("nick"))))}
+
     # --- game lines: lock what is due (today's games past their lock time and not started)
     existing = read(ledger.PICKS)
     locked = {p["game_id"] for p in existing if p.get("kind") == "pick"}
@@ -511,7 +565,8 @@ def main() -> None:
         if not any(b in books for b in SHOP):
             print(f"no DraftKings/FanDuel lines yet: {g['away']} at {g['home']}")
             continue
-        writes += game_picks(g, books, fair_now[g["game_id"]], models.get(g["game_id"]), pricer, now)
+        writes += [{**p, "public": AN.side_split(public.get(g["game_id"]), p["market"], p["side"])} if p.get("kind") == "pick" else p
+                   for p in game_picks(g, books, fair_now[g["game_id"]], models.get(g["game_id"]), pricer, now)]
     # the day's Picks of the Day and parlays, once every game of the day has locked or started, from games not started
     day_ids = {g["game_id"] for g in day_games}
     locked_now = {p["game_id"] for p in existing + writes if p.get("kind") == "pick"}
@@ -520,6 +575,8 @@ def main() -> None:
         pool = [p for p in existing + writes if p.get("kind") == "pick" and p["game_id"] in day_ids and tips[p["game_id"]] > now]
         if f"{today}:potd" not in have:
             writes.append({"kind": "potd", "id": f"{today}:potd", "day": today.isoformat(), "picks": potd(pool), "at": now.isoformat()})
+        if f"{today}:betlist" not in have:
+            writes.append(bet_list(existing, read(ledger.RESULTS), pool, LINES_BOARD, today, now, f"{today}:betlist"))
         if f"{today}:lottery" not in have:
             writes += parlays(pool, today, "", now, ("lottery",))
         # the Golden Parlay (user, 2026-10-20): the 2-3 likely legs with value, main or alternate lines, most likely to
@@ -582,6 +639,8 @@ def main() -> None:
         pool = [p for p in p_existing + p_writes if p.get("kind") == "prop" and p["game_id"] in day_ids and tips[p["game_id"]] > now]
         if f"{today}:props:potd" not in p_have:
             p_writes.append({"kind": "potd", "id": f"{today}:props:potd", "day": today.isoformat(), "picks": potd(pool), "at": now.isoformat()})
+        if f"{today}:props:betlist" not in p_have:
+            p_writes.append(bet_list(p_existing, read(ledger.PROPS_RESULTS), pool, PROPS_BOARD, today, now, f"{today}:props:betlist"))
         if f"{today}:props:lottery" not in p_have:
             p_writes += parlays(pool, today, "props:", now, ("lottery",))
         # the props Golden Parlay: the +EV props most likely to cash together, +100 to +300, different games
@@ -615,6 +674,7 @@ def main() -> None:
     ls_rows = ls_existing + ls_writes
 
     # --- grade
+    raw_g, raw_p = game_rows, prop_rows
     game_rows, prop_rows = with_potd(game_rows), with_potd([r for r in prop_rows if r.get("kind") != "props_locked"])
     g_done = {r["id"] for r in read(ledger.RESULTS)}
     p_done = {r["id"] for r in read(ledger.PROPS_RESULTS)}
@@ -660,7 +720,7 @@ def main() -> None:
         st = status.get(gid, {})
         fin = gid in finals
         cards.append({
-            "id": gid, "tip": _tip(g["tip"]), "home": g["home"], "away": g["away"],
+            "id": gid, "tip": _tip(g["tip"]), "home": g["home"], "away": g["away"], "public": public.get(gid),
             "status": "final" if fin else ("live" if st.get("state") == "in" or g["tip"] <= now else "upcoming"),
             "detail": st.get("detail"),
             "score": {"home": finals[gid][0], "away": finals[gid][1]} if fin else (
@@ -810,7 +870,7 @@ def main() -> None:
                  "books": [BOOK_NAMES[b] for b in SHOP], "games_today": len(day_games),
                  "slots": {"morning": "10:30am ET", "evening": "5:30pm ET"}, "props_k": PROPS_K,
                  "checkup_first": "2026-11-02", "dist": dinfo},
-        "teams": _team_meta(sched, finals),
+        "teams": tmeta,
         "games": cards,
         "parlays": daily(game_rows, g_results, ""),
         "record": {"live": ledger.record_games(live_g, g_results), "rows": _rows(live_g, g_results)},
@@ -821,6 +881,7 @@ def main() -> None:
         "props": {"players": players, "parlays": daily(prop_rows, p_results, "props:"),
                   "record": {"live": ledger.record_props(live_p, p_results), "rows": _rows(live_p, p_results)},
                   "locked": sorted(p_locked_now)},
+        "betlist": {"lines": betlist_view(raw_g, g_results), "props": betlist_view(raw_p, p_results)},
         "model": {"backtest": _backtest_card(), "angles": _angles_card()},
         "defense": _defense(hist, today),
     }
