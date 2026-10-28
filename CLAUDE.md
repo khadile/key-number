@@ -831,6 +831,10 @@ budget with the NFL) comes after the pregame side is stable.
   outright. On 2026-10-28's 98 picks the zero start would have kept 56 (assists unders 39) and dropped 42 (threes
   12, rebounds 12, R+A 14, P+R 2, two small points unders). Overs stay rare anyway: of the 22 picks that beat
   Pinnacle's raw price that night, 20 were unders, since DraftKings and FanDuel charge more for overs.
+  At the user's request 2026-10-28's props were locked again before tip (6:21pm ET; the 5:45pm lock, its Picks of
+  the Day, bet list and parlays moved to nba_props_withdrawn.jsonl, as on 2026-10-21): 64 picks, 15 overs (6 beat
+  Pinnacle's raw price; 9 small points overs, points' learned shift now +0.04) and 49 unders (assists 37). A
+  props lock prices a game's long shots once a day (`longshots.priced_games`), so re-locks never add long shots.
 - Re-test of the first week (user, 2026-10-27, walk-forward replay of every lock from the committed board):
   balanced price-gap picks with no correction 63-75 (-11.8%; overs 26-36, threes overs 2-12), the fixed
   correction 195-181 (-0.6%), the learned one 187-172 (-1.1%); actual 115-114 (-4.0%, overs 15-24). The
