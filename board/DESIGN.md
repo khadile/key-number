@@ -34,6 +34,9 @@ app-screen rules. Where those conflict with the user's brief, the brief wins (Im
 - **Team marks**: logos from ESPN's image service (`logo`/`color2` in both payloads' `teams`, `img` headshots on
   props players). Any image that fails falls back to the colored abbreviation or initials, so a host that
   blocks outside images still reads.
+- **Public betting** (game cards, both sports): per market a split bar for the share of bets and a thinner one for
+  the share of money, away (or over) on the left and home (or under) on the right, in the teams' colors; the side
+  with 70%+ of bets in bold. Context only, so it sits inside the lines panel, never beside the picks.
 - **Team colors on data** (win-chance bars, chart bars, the line chart): a color that would not read on the
   theme's surface is lightened or swapped for the team's second color when that has real color; two teams that
   would read as one fall back to the board's own pair.

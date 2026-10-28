@@ -31,6 +31,8 @@
   --bad: oklch(0.54 0.17 25);
   --bad-fill: oklch(0.63 0.18 25);
   --bad-soft: oklch(0.95 0.028 25);
+  --pub-over: oklch(0.55 0.1 255);
+  --pub-under: oklch(0.7 0.02 262);
   --gold: oklch(0.52 0.1 70);
   --gold-fill: oklch(0.79 0.14 80);
   --gold-line: oklch(0.79 0.12 80);
@@ -69,7 +71,7 @@
     --primary: oklch(0.965 0.003 262); --primary-ink: oklch(0.17 0.004 262);
     --accent: oklch(0.74 0.12 250); --accent-ink: oklch(0.17 0.004 262); --accent-soft: oklch(0.29 0.04 255); --band: oklch(0.38 0.06 255);
     --good: oklch(0.78 0.15 152); --good-fill: oklch(0.7 0.16 152); --good-soft: oklch(0.29 0.055 152);
-    --bad: oklch(0.74 0.15 25); --bad-fill: oklch(0.66 0.17 25); --bad-soft: oklch(0.3 0.06 25);
+    --bad: oklch(0.74 0.15 25); --bad-fill: oklch(0.66 0.17 25); --bad-soft: oklch(0.3 0.06 25); --pub-over: oklch(0.7 0.11 250); --pub-under: oklch(0.48 0.015 262);
     --gold: oklch(0.84 0.12 85); --gold-fill: oklch(0.8 0.14 82); --gold-line: oklch(0.62 0.1 80); --gold-soft: oklch(0.3 0.05 85);
     --you: oklch(0.78 0.12 350); --you-soft: oklch(0.31 0.06 350);
     --s-home: oklch(0.7 0.13 250); --s-away: oklch(0.74 0.15 50);
@@ -85,7 +87,7 @@
   --primary: oklch(0.965 0.003 262); --primary-ink: oklch(0.17 0.004 262);
   --accent: oklch(0.74 0.12 250); --accent-ink: oklch(0.17 0.004 262); --accent-soft: oklch(0.29 0.04 255); --band: oklch(0.38 0.06 255);
   --good: oklch(0.78 0.15 152); --good-fill: oklch(0.7 0.16 152); --good-soft: oklch(0.29 0.055 152);
-  --bad: oklch(0.74 0.15 25); --bad-fill: oklch(0.66 0.17 25); --bad-soft: oklch(0.3 0.06 25);
+  --bad: oklch(0.74 0.15 25); --bad-fill: oklch(0.66 0.17 25); --bad-soft: oklch(0.3 0.06 25); --pub-over: oklch(0.7 0.11 250); --pub-under: oklch(0.48 0.015 262);
   --gold: oklch(0.84 0.12 85); --gold-fill: oklch(0.8 0.14 82); --gold-line: oklch(0.62 0.1 80); --gold-soft: oklch(0.3 0.05 85);
   --you: oklch(0.78 0.12 350); --you-soft: oklch(0.31 0.06 350);
   --s-home: oklch(0.7 0.13 250); --s-away: oklch(0.74 0.15 50);
@@ -248,6 +250,22 @@ main { padding-block: 26px 96px; display: grid; grid-template-columns: minmax(0,
 .lines { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; padding: 12px 14px; border-radius: var(--r-in); background: var(--surface-2); }
 .lines div { display: grid; gap: 1px; }
 .lines dt { font-size: 12px; font-weight: 500; color: var(--muted); }
+.lines .pub { grid-column: 1 / -1; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.lines .pub dt { display: flex; justify-content: space-between; gap: 8px; }
+.lines .pub dd { display: grid; gap: 10px; margin: 0; }
+.lines .pm { display: grid; gap: 4px; }
+.lines .pm-h { display: flex; align-items: baseline; gap: 10px; font-size: 12px; }
+.lines .pm-k { flex: none; color: var(--ink-2); font-weight: 600; }
+.lines .pm-s { display: flex; justify-content: space-between; gap: 8px; color: var(--ink-2); font-family: var(--f-mono); font-size: 12px; flex: 1; min-width: 0; }
+.lines .pm-s .big { color: var(--ink); font-weight: 700; }
+.lines .pm-r { display: grid; grid-template-columns: 44px 34px 1fr 34px; align-items: center; gap: 6px; font-size: 12px; }
+.lines .pm-r em { font-style: normal; color: var(--muted); }
+.lines .pm-r b { font-weight: 500; color: var(--muted); text-align: right; }
+.lines .pm-r b:last-child { text-align: left; }
+.lines .pm-r b.on { color: var(--ink); font-weight: 700; }
+.lines .pm-r .bar { display: flex; gap: 2px; height: 8px; border-radius: 999px; overflow: hidden; background: var(--surface); }
+.lines .pm-r.m .bar { height: 5px; opacity: 0.6; }
+.lines .pm-r .bar i { display: block; height: 100%; }
 .lines dd { margin: 0; font-family: var(--f-mono); font-size: 14px; font-weight: 500; }
 
 /* ---------- a game's page */
@@ -1340,19 +1358,31 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   }
   // public betting splits (Action Network, user 2026-10-26): the side most tickets are on in each market, with its
   // share of tickets and of money. Context only: fading the public did not hold up 2023-26.
-  function pubRow(pub, home, away, nk, at) {
+  function pubRow(pub, home, away, nk, at, mA, mH) {
     if (!pub) return "";
-    const parts = [["spread", "home", "away"], ["total", "over", "under"], ["ml", "home", "away"]].map(([mk, a, b]) => {
+    const [ca, ch] = pairColors(mA, mH);
+    const ln = (v) => signed(v, 1).replace(/\.0$/, "");
+    const tot = (v) => num(v, 1).replace(/\.0$/, "");
+    // away (or over) on the left, home (or under) on the right, as in the win-chance bar
+    const rows = [["spread", "Spread", "away", "home"], ["total", "Total", "over", "under"], ["ml", "Moneyline", "away", "home"]].map(([mk, name, a, b]) => {
       const s = pub[mk];
       if (!s || !s[a] || !s[b]) return "";
-      const side = (s[a].tickets || 0) >= (s[b].tickets || 0) ? a : b, x = s[side];
-      const ln = (v) => signed(v, 1).replace(/\.0$/, "");
-      const who = mk === "total" ? `${side === "over" ? "Over" : "Under"} ${num(x.line, 1).replace(/\.0$/, "")}`
-        : `${nk(side === "home" ? home : away)}${mk === "spread" ? " " + ln(x.line) : " ML"}`;
-      const big = x.tickets >= 70;
-      return `<span${big ? ' class="pub-big"' : ""}>${big ? "<b>" : ""}${esc(who)} ${x.tickets}%${big ? "</b>" : ""}<span class="note"> / ${x.money}% $</span></span>`;
+      const lab = (side) => (mk === "total" ? `${side === "over" ? "Over" : "Under"} ${tot(s[side].line)}`
+        : `${nk(side === "home" ? home : away)}${mk === "spread" ? " " + ln(s[side].line) : ""}`);
+      const [cl, cr] = mk === "total" ? ["var(--pub-over)", "var(--pub-under)"] : [ca, ch];
+      const bar = (k, kind) => {
+        const x = s[a][k] || 0, y = s[b][k] || 0, n = x + y;
+        if (!n) return "";
+        const l = (100 * x) / n;
+        return `<div class="pm-r ${kind}"><em>${kind === "t" ? "Bets" : "Money"}</em><b${x > y ? ' class="on"' : ""}>${Math.round(x)}%</b>
+          <div class="bar"><i style="width:${l.toFixed(1)}%;background:${cl}"></i><i style="width:${(100 - l).toFixed(1)}%;background:${cr}"></i></div><b${y > x ? ' class="on"' : ""}>${Math.round(y)}%</b></div>`;
+      };
+      const big = Math.max(s[a].tickets || 0, s[b].tickets || 0) >= 70 ? ((s[a].tickets || 0) >= (s[b].tickets || 0) ? a : b) : null;
+      return `<div class="pm"><div class="pm-h"><span class="pm-k">${name}</span><span class="pm-s"><span${big === a ? ' class="big"' : ""}>${esc(lab(a))}</span><span${big === b ? ' class="big"' : ""}>${esc(lab(b))}</span></span></div>${bar("tickets", "t")}${bar("money", "m")}</div>`;
     }).filter(Boolean);
-    return parts.length ? `<div><dt data-tip="Action Network's consensus: the side most bettors are on in each market, the share of tickets on it, then the share of money (/ $). Bold: 70%+ of tickets. Context, not a signal: fading the public did not hold up 2023-26. Refreshed at every board update." tabindex="0">Public</dt><dd>${parts.join(" · ")}${at ? `<span class="note"> · as of ${esc(new Date(at).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" }))} ET</span>` : ""}</dd></div>` : "";
+    if (!rows.length) return "";
+    const asOf = at ? `<span class="note">as of ${esc(new Date(at).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" }))} ET</span>` : "";
+    return `<div class="pub"><dt><span data-tip="Action Network's consensus: the share of bets (tickets) and of money on each side of the main spread, total and moneyline. Bold side: 70%+ of bets. Context, not a signal: fading the public did not hold up 2023-26. Refreshed at every board update." tabindex="0">Public betting</span>${asOf}</dt><dd>${rows.join("")}</dd></div>`;
   }
   function card(g) {
     const fin = g.status === "final", live = g.status === "live";
@@ -1369,7 +1399,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <dl class="lines">
         <div><dt>Market</dt><dd>${fav(g.home, g.away, g.market.spread)} · ${g.market.total == null ? "–" : half(g.market.total)}</dd></div>
         <div><dt>Model</dt><dd>${g.model ? fav(g.home, g.away, g.model.spread, 1) + " · " + num(g.model.total, 1) : "–"}</dd></div>
-        ${pubRow(g.public, g.home, g.away, nick, D.meta.generated)}
+        ${pubRow(g.public, g.home, g.away, nick, D.meta.generated, T[g.away], T[g.home])}
       </dl>
       <div class="chips">${picks || '<span class="note">No lines yet.</span>'}${!P.ml ? mlPass(g) : ""}</div>
       ${ctxBlock([P.spread, P.total])}
@@ -2839,7 +2869,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <dl class="lines">
         <div><dt>${term("novig", "Market, no-vig")}</dt><dd>${g.fair.margin == null ? "–" : fav(g.home, g.away, g.fair.margin, 1)} · ${num(g.fair.total, 1)}</dd></div>
         <div><dt>Model</dt><dd>${g.model ? fav(g.home, g.away, g.model.margin, 1) + " · " + num(g.model.total, 1) : "–"}</dd></div>
-        ${pubRow(g.public, g.home, g.away, nnick, N.meta.generated)}
+        ${pubRow(g.public, g.home, g.away, nnick, N.meta.generated, NT[g.away], NT[g.home])}
       </dl>
       <div class="chips">${chips || wait || '<span class="note">No DraftKings or FanDuel lines yet.</span>'}</div>
       ${ctxBlock([P.spread, P.total])}
