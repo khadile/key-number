@@ -469,6 +469,15 @@ Walk-forward test behind it (2026-10-26, scratchpad walk_nba.py / walk2.py):
   the rule passes on is worth about nothing at the close, the rule holds; if it
   closes clearly +EV, the rule is costing value (split the shadow into its
   under-2% and 2-4% price-only parts before changing anything).
+- Over premium, measured each build (user, 2026-10-27, from the NBA's learned correction; props/shade.py, the
+  props Record page). A report beside the lean rule, not a price input: per market, the logit shift between
+  Pinnacle's no-vig close and over hits on tracked props, MAP with a prior from 2025's Pinnacle closes (pass
+  +0.5 pts at even money, rush -1.8, rec yds -3.4, receptions -5.0; sd 0.10 logit) and a 4-week half-life,
+  plus weeks 7+ alone (the lean rule's out-of-sample test), and what an over clearing its bar (5% lean, 2%
+  floor) is worth at -110 once the premium is counted. First look (weeks 1-6): raw gaps pass +4.3 (+-3.7),
+  rush -6.4 (+-2.7), rec yds -2.4 (+-1.9), receptions -1.4 (+-1.9); learned rush -3.6, rec yds -3.0,
+  receptions -3.4, so an over at the 5% bar is worth about -1% to -2%. Read it at checkups; any change to the
+  lean bar is the user's call, judged at the close.
 
 ## 6c. Live engine (live/)
 

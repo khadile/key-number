@@ -26,6 +26,7 @@ from model import betlist as BL
 from model import checks as C
 from model.staking import flat_risk, kelly_of, kelly_units
 from props import ledger
+from props import shade as SH
 from props.backtest import ROLE_MARKETS, assign_roles, baselines, load
 from props.checks import Teams, prop_checks, prop_doubts
 from props.data import PLAYER_GAMES
@@ -430,6 +431,9 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
     print(f"props: k {kstudy['k']} from {kstudy['n']} lines ({kstudy['toward']} of {kstudy['moved']} moved toward the model)")
 
     stats = _stat_lines(hist.filter(pl.col("season") == season))
+    # how much Pinnacle's close overrates overs this season, by market (props/shade.py; a report beside the lean rule)
+    shade = SH.report(SH.rows(close_b, stats, s_done, dict(zip(season_games["game_id"], season_games["week"]))), week,
+                      {m: C.OVER_MIN_EV for m in C.OVER_LEAN}, EV_FLOOR)
     sim_picks: list[dict] = []
     for wk in sorted(done.filter(pl.col("week") < PROPS_LIVE_START)["week"].unique().to_list()):
         xw = done.filter(pl.col("week") == wk)
@@ -663,7 +667,7 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
                    "verdicts": {"all": C.tally(pr + lr), "since": C.tally(lr, C.SINCE_WEEK)}, "rule": rule},
         "players": players, "games": games_out, "logs": logs, "parlays": parlays,
         "betlist": betlist_view(all_rows, live_picks, live_results),
-        "model": {"backtest": bt, "study": study, "sgo": sgo, "edge": edge},
+        "model": {"backtest": bt, "study": study, "sgo": sgo, "edge": edge, "shade": shade},
         "mypicks": {"lines": pickable, "results": results},
     }
 

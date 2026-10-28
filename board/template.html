@@ -2405,6 +2405,15 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <p class="note">From week ${RU.week} a prop is a pick at ${pct(RU.floor, 0)} expected value or more, ${pct(RU.floor_price, 0)} when the edge is the price alone. The picks the old rule (any positive EV) would have added are kept off the books and graded here: if the rule is right, they are worth about nothing at the close.</p>
       <div class="scroll"><table class="t"><thead><tr><th>From week ${RU.week}</th><th class="num">Locked</th><th class="num">Record</th><th class="num">Units</th><th class="num">EV at lock</th><th class="num">${term("evclose", "EV at the close")}</th><th class="num">Still +EV</th></tr></thead><tbody>
         ${ruRow("Picks", RU.picks)}${ruRow("Passed on, off the books", RU.passed)}</tbody></table></div></section>` : "";
+    // how much Pinnacle's close overrates overs, by market, re-measured every build (props/shade.py): a report beside the lean rule
+    const SHD = (PR.model || {}).shade;
+    const shPts = (s) => `${signed(100 * (1 / (1 + Math.exp(-s)) - 0.5), 1)}`;
+    const shGap = (r) => (r && r.n ? `${signed(100 * r.gap, 1)} <span class="note">±${(100 * r.gap_se).toFixed(1)}</span>` : "–");
+    const shadeSec = SHD && SHD.markets ? `<section class="sec"><header><h2>Over premium <em>measured each week</em></h2></header>
+      <div class="scroll"><table class="t"><thead><tr><th>Market</th><th class="num">Props graded</th><th class="num">Pinnacle said over</th><th class="num">Over hit</th><th class="num">Gap, pts</th><th class="num">Weeks ${SHD.test_week}+ gap</th><th class="num">Learned, pts at even money</th><th class="num">2025</th><th class="num">Overs need</th><th class="num">An over at that bar is worth</th></tr></thead><tbody>
+      ${PMK_ORDER.filter((m) => SHD.markets[m]).map((m) => { const r = SHD.markets[m]; return `<tr><td>${PMK[m]}</td><td class="num">${num(r.n || 0, 0)}</td><td class="num">${r.n ? pct(r.said, 1) : "–"}</td><td class="num">${r.n ? pct(r.hit, 1) : "–"}</td><td class="num">${shGap(r)}</td><td class="num">${shGap(r.test)}${r.test && r.test.n ? ` <span class="note">(${r.test.n})</span>` : ""}</td><td class="num">${shPts(r.shift)} <span class="note">±${(100 * r.se / 4).toFixed(1)}</span></td><td class="num">${shPts(r.prior)}</td><td class="num">${pct(r.bar, 0)}${r.lean ? ' <span class="note">(lean)</span>' : ""}</td><td class="num ${cls(r.worth)}">${evPct(r.worth)}</td></tr>`; }).join("")}
+      </tbody></table></div>
+      <p class="note">Every tracked prop of the season with Pinnacle's close and a result (pushes left out): how often the over hit against the chance Pinnacle's no-vig price gave it. The learned premium starts from 2025's closes and follows this season's, recent weeks counting most (${SHD.half_life}-week half-life). The board prices at Pinnacle's number without it; the lean rule asks overs on receiving yards, rushing yards and receptions for 5%+ instead. The last column is what an over clearing its bar is worth at −110 once the premium is counted. Weeks 1–${SHD.test_week - 1} helped set the lean rule; weeks ${SHD.test_week}+ are its test. A report, not a rule: nothing here changes a pick.</p></section>` : "";
     app.innerHTML = `
       <section class="hello"><h1>Props record</h1><p class="lede">Every prop pick, graded at the line it locked at. Line value is how many yards (or catches) better our number was than the same book's closing line. A player who did not play is a void: no units either way.</p></section>
       <section class="sec"><header><h2>Season to date</h2></header>${pStrip(A)}
@@ -2415,6 +2424,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
         ["Picks of the week", (r) => r.potw], ["Good picks", (r) => r.verdict === "good"], ["Parlays", isPar]])}${blCells(PR.betlist && { ...PR.betlist, half: "3 weeks" })}</section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${unitsChart(A) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
       ${ruleSec}
+      ${shadeSec}
       ${verdictSection(PR.record.verdicts, "prop")}
       ${kellySection(A.kelly, PR.meta.live_start, "props")}
       <section class="sec"><header><h2>Picks by week</h2></header>${weeks.length ? `<div class="pills" role="tablist" aria-label="Week">${weeks.map((w) => `<button class="pill" data-pwk="${w.key}" aria-pressed="${w.key === pRecWeek}">Week ${w.week}</button>`).join("")}</div>
