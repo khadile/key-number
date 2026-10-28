@@ -392,8 +392,9 @@ class Mix:
 # confirmed the shift (threes overs as the plus-money side: 1.5 41.7% said, 39.7% won; 2.5 43.2%, 40.1%). Applied
 # to the anchor's no-vig chance of the over. Combos take their main stat's. About -2 to -3 points near even.
 OVER_SHADE = {"pts": -0.088, "reb": -0.122, "ast": -0.026, "fg3": -0.128, "pra": -0.088, "pr": -0.088, "pa": -0.088, "ra": -0.122}
-# Since 2026-10-27 OVER_SHADE is only the starting point: each build learns the shift per market from this season's
-# graded props at Pinnacle's price (nba/shade.py estimate) and sets SHADE before pricing.
+# Since 2026-10-27 each build learns the shift per market from this season's graded props at Pinnacle's price
+# (nba/shade.py estimate) and sets SHADE before pricing; since 2026-10-29 it starts from zero, not from OVER_SHADE
+# (kept here as the 2022-23 measurement and the default before a build sets SHADE).
 SHADE: dict[str, float] = dict(OVER_SHADE)
 
 

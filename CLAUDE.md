@@ -819,6 +819,18 @@ budget with the NFL) comes after the pregame side is stable.
   ("reb under (correction)"). Results carry `ev_close_raw` (Pinnacle's raw close, the judge that does not
   assume the correction); the props Record page shows it by set, the learned correction, and the situational
   model's shadow record (5%+ at the best DK/FD price; never bet).
+- The learned correction starts from zero (2026-10-29, `nba/shade.py PRIOR`; user asked why 2026-10-28's board had
+  96 unders and 2 overs). The OVER_SHADE start (US books 2022-23, no Pinnacle) was not borne out: tracked props'
+  last pre-tip prices 2026-10-23 to 27 (39 games, from the committed payloads, graded on hoopR) had overs hitting
+  at or above their price at Pinnacle, DraftKings and FanDuel in points (+2.9), rebounds (0), threes (+1.4 / +3.0
+  / +3.1), PRA (0), P+R (+2.1 / +3.5 at DK/FD) and P+A; only assists (-4.3 / -1.9 / -1.7) and R+A (-1.2 / -1.8)
+  leaned under, each +-2.5-3.6. The correction's assists and threes came from the opening nights (2026-10-20 to
+  22, 16 games: assists overs ~31%, threes ~38%). Learned from those nights, the old start priced 2026-10-23 to 27
+  worse than no correction (log loss 0.69155 vs 0.68983, 1,263 props); from zero 0.68984, keeping the assists
+  gain. Combos without a Pinnacle price (P+R, P+A, R+A) never learn, so they had carried the 2022-23 shifts
+  outright. On 2026-10-28's 98 picks the zero start would have kept 56 (assists unders 39) and dropped 42 (threes
+  12, rebounds 12, R+A 14, P+R 2, two small points unders). Overs stay rare anyway: of the 22 picks that beat
+  Pinnacle's raw price that night, 20 were unders, since DraftKings and FanDuel charge more for overs.
 - Re-test of the first week (user, 2026-10-27, walk-forward replay of every lock from the committed board):
   balanced price-gap picks with no correction 63-75 (-11.8%; overs 26-36, threes overs 2-12), the fixed
   correction 195-181 (-0.6%), the learned one 187-172 (-1.1%); actual 115-114 (-4.0%, overs 15-24). The

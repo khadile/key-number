@@ -6,10 +6,13 @@ shadow (user, 2026-10-27).
   data/nba/shade/rows.parquet (odds data: the Actions cache, never the repo). Pinnacle's price near tip-off goes
   to closes.parquet once each game is final.
 - `estimate`: per market, the logit shift between Pinnacle's even split and how often the over actually hit,
-  starting from props.OVER_SHADE (fitted on five US books, 2022-23; no Pinnacle in it) with a prior sd of 0.10
-  and moved by every graded tracked prop of earlier days, weighted by a 14-day half-life. Replayed on the first
-  week (2026-10-20 to 26): points drifted from -0.088 to -0.020, assists from -0.026 to -0.139, threes and
-  rebounds held near the prior; the picks it would have made matched the fixed rule's (-1.1% vs -0.6%).
+  starting from zero (PRIOR) with a prior sd of 0.10 and moved by every graded tracked prop of earlier days,
+  weighted by a 14-day half-life. Until 2026-10-29 it started from props.OVER_SHADE (five US books, 2022-23; no
+  Pinnacle in it), which this season's Pinnacle prices did not bear out: learned from the opening nights
+  (2026-10-20 to 22), it priced the overs of 2026-10-23 to 27 worse than no correction at all (log loss 0.69155
+  against 0.68983, 1,263 tracked props), hurting points, rebounds and threes; from zero, 0.68984, keeping the
+  assists gain. It also put the 2022-23 shifts on every combo with no Pinnacle price (P+R, P+A, R+A), which
+  never learn here. On 2026-10-28 that start made 42 of the 98 props picks (threes, rebounds, R+A and P+R unders).
 - `edge_of`: a pick is "price" when DraftKings/FanDuel beat Pinnacle's raw price by 1%+ (a real price gap) and
   "correction" when only the over correction makes it +EV. The bet list judges them as separate categories.
 - `shadow`: the situational model's picks (5%+ EV at the best DK/FD price on Pinnacle's line), graded and
@@ -31,6 +34,7 @@ DIR = DATA / "nba" / "shade"
 ROWS, CLOSES = DIR / "rows.parquet", DIR / "closes.parquet"
 COEF = ROOT / "nba" / "sides_coef.json"
 TAU, HALF_LIFE, SHADOW_EV = 0.10, 14.0, 0.05
+PRIOR = 0.0          # the shift every market starts from: the even split taken as right until this season says otherwise
 ROW_SCHEMA = {"day": pl.String, "lock": pl.String, "game_id": pl.Int64, "athlete_id": pl.Int64, "name": pl.String,
               "team": pl.String, "opp": pl.String, "home": pl.String, "market": pl.String, "line": pl.Float64,
               "p_raw": pl.Float64, "o_pin": pl.Float64, "pm": pl.Float64, "games_now": pl.Int64, "spread": pl.Float64,
@@ -154,11 +158,11 @@ def graded(R: pl.DataFrame, stats: dict) -> pl.DataFrame:
 
 def estimate(G: pl.DataFrame, day: date) -> dict[str, dict]:
     """Per market: the logit shift (MAP, Newton) of the over's true chance from Pinnacle's even split, from graded
-    rows of days before `day`; prior props.OVER_SHADE, sd TAU; recency half-life HALF_LIFE days."""
+    rows of days before `day`; prior PRIOR, sd TAU; recency half-life HALF_LIFE days."""
     out = {}
     G = G.filter(pl.col("day") < day.isoformat()) if G.height else G
     for mk in NP.MARKETS:
-        mu0 = NP.OVER_SHADE.get(mk, 0.0)
+        mu0 = PRIOR
         S_ = G.filter(pl.col("market") == mk) if G.height else G
         z = np.array([_lg(p) for p in S_["p_raw"].to_list()]) if S_.height else np.zeros(0)
         y = S_["y"].to_numpy() if S_.height else np.zeros(0)
