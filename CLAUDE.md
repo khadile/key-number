@@ -698,12 +698,14 @@ budget with the NFL) comes after the pregame side is stable.
   market's, so leans stay mostly underdogs (~85%). Leaning on its disagreement against what it usually says at
   that line balanced dogs and favorites and covered no better (48.9-49.5%): not used. Whether to keep NBA
   game-line leans at all is the user's call.
-- Moneylines' margin comes off by Shin's method (half off each side; `model/probs.ml_no_vig`) from 2026-10-29,
-  in the NBA fair chance (picks, EV at the close, ladder ML legs, the card's win bar), the NFL's EV at the close
-  and the NFL card's win bar. NBA moneyline results graded before then keep their proportional `ev_close`
-  (append-only); the NFL's is recomputed every build. The proportional split overrated long shots: NFL closes 2006-2026 (nflverse,
-  5,386 games) said +250-399 dogs win 24.1% (won 23.2%; Shin 23.4%) and +400+ 15.0% (won 14.0%; Shin 14.0%);
-  DraftKings' NBA closes 2023-26 said +200-300 28.4% (won 26.7%) and +500+ 12.5% (won 9.1%). Through 2026-10-28,
+- NBA moneylines' margin comes off by Shin's method (half off each side; `model/probs.ml_no_vig`) from
+  2026-10-29, in the fair chance (picks, EV at the close, ladder ML legs, the card's win bar). Moneyline results
+  graded before then keep their proportional `ev_close` (append-only). The NFL is untouched (user, 2026-10-28:
+  "just NBA, NFL seems to be doing okay"); its EV at the close still splits the margin in proportion, which
+  flatters long-dog moneylines by 1-2% at +300 and more beyond. The proportional split overrated long shots:
+  NFL closes 2006-2026 (nflverse, 5,386 games) said +250-399 dogs win 24.1% (won 23.2%; Shin 23.4%) and +400+
+  15.0% (won 14.0%; Shin 14.0%); DraftKings' NBA closes 2023-26 said +200-300 28.4% (won 26.7%) and +500+ 12.5%
+  (won 9.1%). Through 2026-10-28,
   9 of 10 NBA moneyline picks were underdogs at +0.0% to +6.8%, inside that error; both of 2026-10-28's
   (WSH +320, LAC +164) go negative. Close games rarely get a moneyline in either sport: DK and FD hang Pinnacle's
   number plus their own margin on both sides (the best close-game price on 2026-10-28 was 0.3-1.2% short).
