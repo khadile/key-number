@@ -283,8 +283,11 @@ def bet_cat(p: dict) -> str:
 def bet_list(rows: list[dict], results: list[dict], pool: list[dict], board: BL.Board, day: date, now: datetime, mid: str) -> dict:
     """The day's bet list from the pool, judged on every earlier graded pick (model/betlist.py)."""
     res = {r["id"]: r for r in results}
+    # a correction-only prop is judged at Pinnacle's raw close: at the corrected close it would grade itself by the
+    # same correction that made it a pick (user, 2026-10-28)
+    close = lambda p: res[p["id"]].get("ev_close_raw" if p.get("edge") == "correction" else "ev_close")  # noqa: E731
     hist = [{"cat": bet_cat(p), "tier": BL.tier_of(p["ev"], board), "age": (day - date.fromisoformat(p["day"])).days,
-             "units": ledger.units_for(res[p["id"]]["result"], p["dec"], 1.0), "ev_close": res[p["id"]].get("ev_close")}
+             "units": ledger.units_for(res[p["id"]]["result"], p["dec"], 1.0), "ev_close": close(p)}
             for p in rows if p.get("kind") in ("pick", "prop") and res.get(p["id"], {}).get("result") in ("W", "L", "P")]
     cells = BL.estimate(hist, board)
     cands = [{"id": p["id"], "cat": bet_cat(p), "tier": BL.tier_of(p["ev"], board), "ev": p["ev"]}
