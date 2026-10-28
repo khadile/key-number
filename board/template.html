@@ -264,7 +264,6 @@ main { padding-block: 26px 96px; display: grid; grid-template-columns: minmax(0,
 .lines .pm-r b:last-child { text-align: left; }
 .lines .pm-r b.on { color: var(--ink); font-weight: 700; }
 .lines .pm-r .bar { display: flex; gap: 2px; height: 8px; border-radius: 999px; overflow: hidden; background: var(--surface); }
-.lines .pm-r.m .bar { height: 5px; opacity: 0.6; }
 .lines .pm-r .bar i { display: block; height: 100%; }
 .lines dd { margin: 0; font-family: var(--f-mono); font-size: 14px; font-weight: 500; }
 
@@ -931,7 +930,8 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     return alt && far(ca, alt) ? [ca, alt] : ["var(--s-away)", "var(--s-home)"];
   }
   const teamColor = (m) => visible(m && m.color, m && m.color2) || "var(--s-home)";
-  const noVig = (mlA, mlH) => { if (mlA == null || mlH == null) return null; const a = 1 / decOf(mlA), h = 1 / decOf(mlH); return a / (a + h); };
+  // the moneyline's margin off by Shin's method (half off each side, model/probs.py ml_no_vig): a proportional split overrates long shots
+  const noVig = (mlA, mlH) => { if (mlA == null || mlH == null) return null; const a = 1 / decOf(mlA), h = 1 / decOf(mlH), p = a - (a + h - 1) / 2; return p > 0 && p < 1 ? p : a / (a + h); };
   function wpBar(away, home, pAway, mA, mH, src) {
     if (pAway == null || !Number.isFinite(pAway)) return "";
     const [ca, ch] = pairColors(mA, mH);

@@ -15,6 +15,11 @@ number.
 Each game gets a spread pick and a total pick: the side and book with the best expected value. When no side is
 positive, the pick is the model's side at its best price: a lean, no stake, counted at 1u in the record, so the
 first checkup can see whether the early-season lean is worth anything. A moneyline is a pick only at positive EV.
+
+The moneyline's margin comes off by Shin's method (half off each side, model/probs.py ml_no_vig), from
+2026-10-29. Taking it off in proportion overstated underdogs: DraftKings' closes 2023-24 to 2025-26
+(reports/nba_angles.json) said +200 to +300 dogs win 28.4% (they won 26.7%) and +500 and longer 12.5% (9.1%),
+and through 2026-10-28 nine of the ten moneyline picks were underdogs at +0.0% to +6.8%, inside that error.
 """
 from dataclasses import dataclass
 
@@ -22,7 +27,7 @@ import numpy as np
 import polars as pl
 
 from board.market import american, fmt_line
-from model.probs import KeyDist
+from model.probs import KeyDist, ml_no_vig
 
 MARGINS = np.arange(-80, 81)
 TOTALS = np.arange(140, 321)
@@ -79,7 +84,7 @@ class GamePricer:
                 out[name] = float(np.mean(cs))
                 out[f"{name}_src"] = "pinnacle" if src == ["pinnacle"] else "dk/fd"
         src = ["pinnacle"] if "ml_home" in books.get("pinnacle", {}) else [b for b in SHOP if "ml_home" in books.get(b, {})]
-        ps = [_novig(books[b]["ml_home"], books[b]["ml_away"]) for b in src]
+        ps = [ml_no_vig(books[b]["ml_home"], books[b]["ml_away"]) for b in src]
         if ps:
             out["p_home"] = float(np.mean(ps))
         return out

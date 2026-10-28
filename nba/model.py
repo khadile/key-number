@@ -2,14 +2,25 @@
 
 Each team-game gives an offensive rating (points per 100 possessions) and a pace (possessions per game, the
 average of both teams' FGA + 0.44 FTA - OREB + TO). Before date D the ratings are a weighted ridge fit on the
-games before D, newer games counting more (half-life `half_life` days) and last season's games counting
-`prev_weight` as much, which carries a prior into the new season and fades as this season's games arrive:
+games before D, newer games counting more (half-life `half_life` league game days) and last season's games
+counting `prev_weight` as much, which carries a prior into the new season and fades as this season's games arrive:
 
     ORtg(team vs opp) = mu + O[team] + D[opp] + h * home        (D: points per 100 the defense gives up)
     pace(team vs opp) = mu_p + P[team] + P[opp]
 
 A game then projects to margin = (ORtg_home - ORtg_away) * pace / 100 and total = (ORtg_home + ORtg_away) *
 pace / 100, plus rest (back-to-backs, measured on past seasons) and who plays (nba/players.py).
+
+Ages count league game days (2026-10-29), as the props already did. On the calendar the summer aged last season's
+games six months: on opening night they weighed about 2% of a new game, about half a game a team against the
+ridge's 30, so every team rated near average. Through 2026-10-28 the model gave every game about the home team by
+2.3 (its margin against the market's: slope 0.01), so its lean was the underdog on 82% of spreads, and its totals
+ran 3 points under the market. Game days with ridge 10 (walk-forward with lineups; tuned 2020-21 to 2022-23, held
+out 2023-24 to 2025-26): margin error 11.13 -> 10.83 and 11.73 -> 11.26 (the close: 10.35, 10.65), the first
+three weeks 11.48 -> 11.03 and 11.28 -> 10.48 (10.87, 9.98), totals 14.79 -> 14.71 and 15.03 -> 14.80. It still
+knows nothing the close does not (the model's side covered 49-50%), and its margins run about 60% of the
+market's, so its lean is still the underdog about 85% of the time; leaning on its disagreement against what it
+usually says at that line balanced that and covered no better (48.9-49.5%).
 """
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -72,15 +83,21 @@ class Ratings:
 
 
 def fit(tg: pl.DataFrame, before: date, season: int, half_life: float = 45.0, prev_weight: float = 0.35,
-        lam: float = 30.0, lam_p: float = 30.0, window_days: int = 420) -> Ratings | None:
-    """Ratings from games before `before`: this season at full weight, earlier ones at `prev_weight`."""
+        lam: float = 10.0, lam_p: float = 10.0, window_days: int = 420, game_days: bool = True) -> Ratings | None:
+    """Ratings from games before `before`: this season at full weight, earlier ones at `prev_weight`.
+    `game_days`: a game's age counts league game days, not calendar days."""
     h = tg.filter((pl.col("date") < before) & (pl.col("date") >= before - timedelta(days=window_days)))
     if h.height < 50:
         return None
     teams = sorted(set(h["team"]) | set(h["opp"]))
     ix = {t: k for k, t in enumerate(teams)}
     n = len(teams)
-    age = (before - h["date"]).dt.total_days().to_numpy().astype(float)
+    if game_days:
+        days = h.select("date").unique().sort("date", descending=True).with_columns(age=pl.int_range(1, pl.len() + 1).cast(pl.Float64))
+        h = h.join(days, on="date", how="left", maintain_order="left")
+        age = h["age"].to_numpy()
+    else:
+        age = (before - h["date"]).dt.total_days().to_numpy().astype(float)
     w = 0.5 ** (age / half_life) * np.where(h["season"].to_numpy() < season, prev_weight, 1.0)
     ti = np.array([ix[t] for t in h["team"]])
     oi = np.array([ix[t] for t in h["opp"]])

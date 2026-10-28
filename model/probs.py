@@ -131,6 +131,16 @@ def no_vig(odds_a: float, odds_b: float) -> tuple[float, float]:
     return ia / (ia + ib), ib / (ia + ib)
 
 
+def ml_no_vig(dec_a: float, dec_b: float) -> float:
+    """Side a's chance from a two-way moneyline (decimal prices), the margin taken off by Shin's method, which for
+    two sides is half the margin off each. Splitting it in proportion (no_vig) overstates long shots: on NFL closes
+    2006-2026 +250 to +399 underdogs were said 24.1% and won 23.2%, +400 and longer 15.0% and 14.0%; this way says
+    23.4% and 14.0%. Near even money the two agree."""
+    ia, ib = 1 / dec_a, 1 / dec_b
+    p = ia - (ia + ib - 1) / 2
+    return p if 0 < p < 1 else ia / (ia + ib)
+
+
 def ev(p_win: float, p_push: float, odds: float) -> float:
     """Expected profit per 1 unit risked."""
     return p_win * (american_to_decimal(odds) - 1) - (1 - p_win - p_push)

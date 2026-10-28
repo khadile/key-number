@@ -369,6 +369,13 @@ ev_close`, NFL props' from `props/section._ev_close`, NBA from the ledgers).
 picks. The user picks a subset of the board to bet; this is the table that
 should drive that choice, not recent wins and losses.
 
+Leans lose about the vig at the close by construction (their price is already
+against them), so a row that includes them reads "losing to the close" whatever
+the model does. Through 2026-10-28: NFL leans -3.5% (weeks 5-8 and the 1-4
+replay), NBA -3.9%; +EV game-line picks NFL +0.7% (weeks 5-8) / +3.1% (replay),
+NBA +0.1%. The Spread and Over/under rows are mostly leans (NBA 124 of 146
+game-line picks). Read the +EV picks row and the bet list.
+
 Walk-forward test behind it (2026-10-26, scratchpad walk_nba.py / walk2.py):
 - **Fading a cold category is ruinous**: on the NBA props backtest, betting the
   other side of categories with a losing last 3-30 days returned -15% to -18%
@@ -682,6 +689,28 @@ budget with the NFL) comes after the pregame side is stable.
   and book with the best EV; when nothing is +EV the pick is the model's side as
   a lean (0u, counted at 1u). Moneyline only at +EV. Each pick records
   `with_model` so the checkup can read the early-season lean.
+- The game model's ratings age by league game days, ridge 10 (2026-10-29, `nba/model.py`). On the calendar the
+  summer left every team rated near average: through 2026-10-28 it called every game about home by 2.3 (slope
+  0.01 against the market), so the lean was the underdog on 82% of spreads and the under on 68% of totals
+  (64 of 64 spread leans were the model's side). Walk-forward with lineups, holdout 2023-24 to 2025-26: margin
+  error 11.73 -> 11.26 (close 10.65), first three weeks 11.28 -> 10.48 (9.98), totals 15.03 -> 14.80. It still
+  adds nothing to the close (the model's side covered 49-50% of ~7,000 games), and its margins run ~60% of the
+  market's, so leans stay mostly underdogs (~85%). Leaning on its disagreement against what it usually says at
+  that line balanced dogs and favorites and covered no better (48.9-49.5%): not used. Whether to keep NBA
+  game-line leans at all is the user's call.
+- Moneylines' margin comes off by Shin's method (half off each side; `model/probs.ml_no_vig`) from 2026-10-29,
+  in the NBA fair chance (picks, EV at the close, ladder ML legs, the card's win bar), the NFL's EV at the close
+  and the NFL card's win bar. NBA moneyline results graded before then keep their proportional `ev_close`
+  (append-only); the NFL's is recomputed every build. The proportional split overrated long shots: NFL closes 2006-2026 (nflverse,
+  5,386 games) said +250-399 dogs win 24.1% (won 23.2%; Shin 23.4%) and +400+ 15.0% (won 14.0%; Shin 14.0%);
+  DraftKings' NBA closes 2023-26 said +200-300 28.4% (won 26.7%) and +500+ 12.5% (won 9.1%). Through 2026-10-28,
+  9 of 10 NBA moneyline picks were underdogs at +0.0% to +6.8%, inside that error; both of 2026-10-28's
+  (WSH +320, LAC +164) go negative. Close games rarely get a moneyline in either sport: DK and FD hang Pinnacle's
+  number plus their own margin on both sides (the best close-game price on 2026-10-28 was 0.3-1.2% short).
+  The NFL moneyline is unchanged: its win curve on the spread (`model/probs.WinCurve`) is calibrated (2018-2026
+  walk-forward log loss 0.6105 vs the moneyline close's 0.6112), and where it rated a +250 dog 2+ points above
+  the market's moneyline those dogs won 26.0% vs the market's 21.3%; its +EV dogs at the consensus close returned
+  +9.4% (+-7.6) on 425 bets.
 - Props (`nba/props.py`): each team's five starters and sixth man; points,
   rebounds, assists, threes, PRA, P+R, P+A, R+A; one pick per player at 1%+ EV
   (`PROP_EV_MIN`). The market sets the level by scaling the player's rate (a
