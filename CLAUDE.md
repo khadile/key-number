@@ -914,6 +914,11 @@ picks ledger: `{day}:betlist` / `{day}:props:betlist` for NBA, `{season}_{week}:
   e.g. NFL receiving yards +5.3% at the close but -11% ROI on 165), and recency-weighted units at 1u (variance
   ~1 per pick, so units count at volume and can overrule the close in a category with a couple hundred picks).
   Half-life 10 days (NBA), 3 weeks (NFL).
+- A correction-only NBA prop (edge "correction") is judged at Pinnacle's RAW close (`ev_close_raw`), not the
+  corrected one (user, 2026-10-28): at the corrected close it graded itself by the same correction that made it a
+  pick (2026-10-27's correction picks: +3.9% corrected, -1.7% raw). Price picks keep `ev_close`. So a correction
+  cell reaches the list only on its tier's prior and its units. On 2026-10-28 it took Wagner and Bane (assists
+  unders, correction) off the props list; the list was chosen again before tip (old one in nba_props_withdrawn).
 - On the list: estimate +1%+ and 65%+ sure it is above zero; a cell with fewer than 3 graded picks goes by its
   tier; at most 2 picks per cell per lock; caps NBA lines 4/day, NBA props 6/day, NFL lines 6/week, NFL props 4
   per lock. Ranked by cell estimate, then EV.
