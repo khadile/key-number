@@ -707,6 +707,9 @@ def main() -> None:
     ls_existing = read(LS.PICKS)
     ls_writes: list[dict] = []
     newly = [gid for gid in due if gid in {p["game_id"] for p in p_writes if p.get("kind") == "props_locked"}] if due else []
+    # a props lock redone before tip (its props withdrawn, user 2026-10-28) prices no game's long shots twice
+    done_ls = LS.priced_games(today) | {r["game_id"] for r in ls_existing if r.get("day") == today.isoformat()}
+    newly = [gid for gid in newly if gid not in done_ls]
     if newly and x.height:
         M = load_milestones(newly, pmap)
         if M.height:

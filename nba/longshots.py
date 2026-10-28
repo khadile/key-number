@@ -118,6 +118,17 @@ def snapshot(R: pl.DataFrame, day, now) -> None:
     R.with_columns(day=pl.lit(day.isoformat()), at=pl.lit(now.isoformat())).write_parquet(p)
 
 
+def priced_games(day) -> set[int]:
+    """Games whose rungs were already priced at a props lock on `day` (that lock's snapshot)."""
+    out: set[int] = set()
+    for f in SNAP.glob(f"{day.isoformat()}_*.parquet"):
+        try:
+            out |= set(pl.read_parquet(f, columns=["game_id"])["game_id"].to_list())
+        except Exception:   # noqa: BLE001  (an unreadable snapshot only means the game may be priced again)
+            continue
+    return out
+
+
 def flags(R: pl.DataFrame, day, now) -> list[dict]:
     from board.market import american
     if not R.height:
