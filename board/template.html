@@ -930,7 +930,8 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     return alt && far(ca, alt) ? [ca, alt] : ["var(--s-away)", "var(--s-home)"];
   }
   const teamColor = (m) => visible(m && m.color, m && m.color2) || "var(--s-home)";
-  const noVig = (mlA, mlH) => { if (mlA == null || mlH == null) return null; const a = 1 / decOf(mlA), h = 1 / decOf(mlH); return a / (a + h); };
+  // the moneyline's margin off by Shin's method (half off each side, model/probs.py ml_no_vig): a proportional split overrates long shots
+  const noVig = (mlA, mlH) => { if (mlA == null || mlH == null) return null; const a = 1 / decOf(mlA), h = 1 / decOf(mlH), p = a - (a + h - 1) / 2; return p > 0 && p < 1 ? p : a / (a + h); };
   function wpBar(away, home, pAway, mA, mH, src) {
     if (pAway == null || !Number.isFinite(pAway)) return "";
     const [ca, ch] = pairColors(mA, mH);

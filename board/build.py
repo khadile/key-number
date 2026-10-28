@@ -23,7 +23,7 @@ from config import PARLAY_RISK, RAW, REPORTS, ROOT, STRAIGHT_RISK
 from model import betlist as BL
 from model import checks as C
 from model import features, project
-from model.probs import MARGIN_RANGE, TOTAL_RANGE, KeyDist, WinCurve
+from model.probs import MARGIN_RANGE, TOTAL_RANGE, KeyDist, WinCurve, ml_no_vig
 from model.ratings import load_inputs
 from model.staking import flat_risk, kelly_units
 from pipeline import action_network as AN
@@ -140,8 +140,8 @@ def ev_close(p: dict, close: dict | None, pricer: "Pricer") -> float | None:
         o, push, u = pricer.tdist.side_probs(mu, p["line"])
         pw = o if p["side"] == "over" else u
     elif p["market"] == "ml" and close.get("ml_home") and close.get("ml_away"):
-        ih, ia = 1 / close["ml_home"], 1 / close["ml_away"]
-        pw, push = (ih if p["side"] == "home" else ia) / (ih + ia), 0.0
+        ph = ml_no_vig(close["ml_home"], close["ml_away"])       # Shin's method: a proportional split overrates long shots
+        pw, push = (ph if p["side"] == "home" else 1 - ph), 0.0
     else:
         return None
     return round(pw * (p["dec"] - 1) - (1 - pw - push), 4)
