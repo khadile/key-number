@@ -1,6 +1,10 @@
 """Start a board build GitHub's scheduler skipped (user, 2026-10-21). Runs on the laptop every 5 minutes
 (Windows Task Scheduler, task "Key Number catch-up"); does nothing while the laptop is off.
 
+DISABLED 2026-10-28 (user, away for a week): cron-job.org now dispatches both workflows without force, using a
+fine-grained token with only Actions read/write on this repo. NBA at 10:45 and 5:45pm ET with backups at 11:45
+and 6:45; NFL at 10:15 on Mon/Tue/Thu/Sat with a backup at 11:15. Re-enable the task to bring this back.
+
 A slot counts as built when the repo's slot file says so: board/nba_last.json (NBA morning 10:30am ET,
 evening 5:30pm ET) and board/last_build.json (NFL Tuesday, Thursday, Saturday 10am ET). Fifteen minutes past a
 slot with no build, it dispatches that workflow WITHOUT force, so the workflow's own slot check still decides
