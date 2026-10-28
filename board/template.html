@@ -3048,6 +3048,27 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       ${lsSection()}
       <p class="fine">Model output, not betting advice. A void (the player sits) risks nothing and stays out of the record.</p>`;
   }
+  function npRawClose(rows) {   // EV at Pinnacle's raw close: the judge that does not assume the over correction
+    const g = (f) => rows.filter((r) => !isPar(r) && r.ev_close_raw != null && f(r)).map((r) => r.ev_close_raw);
+    const cell = (a) => { if (!a.length) return "–"; const m = a.reduce((x, y) => x + y, 0) / a.length; const se = a.length > 1 ? Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / (a.length - 1) / a.length) : 0; return `<span class="${cls(m)}">${evPct(m)}</span>${a.length >= 20 ? ` <span class="note">±${(200 * se).toFixed(1)}</span>` : ""} <span class="note">of ${a.length}</span>`; };
+    const sets = [["All props", () => true], ["Picks of the day", (r) => r.potd], ["Bet list", (r) => r.bet], ["Price gap", (r) => r.edge === "price"], ["Correction only", (r) => r.edge === "correction"]];
+    if (!g(() => true).length) return "";
+    return `<h3 style="margin-top:1.2rem">At Pinnacle's raw close</h3><div class="scroll"><table class="t"><thead><tr><th>Set</th><th class="num">EV at the raw close</th></tr></thead><tbody>${sets.map(([n, f]) => `<tr><td>${n}</td><td class="num">${cell(g(f))}</td></tr>`).join("")}</tbody></table></div>
+      <p class="note">The EV-at-the-close column above applies the learned over correction to Pinnacle's price, so a wrong correction would still look like an edge there. This one uses Pinnacle's even split as it stands, for picks graded from 2026-10-28 on.</p>`;
+  }
+  function npShade(sh, shadow) {
+    if (!sh) return "";
+    const pts = (s) => (s == null ? "–" : `${signed(100 * (1 / (1 + Math.exp(-s)) - 0.5), 1)} pts`);
+    const order = ["pts", "reb", "ast", "fg3", "pra", "pr", "pa", "ra"].filter((k) => sh[k]);
+    const shadowSec = shadow && shadow.length ? closeByCat(shadow, [["Situational model (shadow)", () => true], ["…its overs", (r) => r.side === "over"], ["…its unders", (r) => r.side === "under"]], "day") : '<p class="note">Its first picks grade after the next props lock.</p>';
+    return `<section class="sec"><header><h2>Over correction <em>learned this season</em></h2></header>
+      <div class="scroll"><table class="t"><thead><tr><th>Market</th><th class="num">Tracked props graded</th><th class="num">Pinnacle said over</th><th class="num">Over hit</th><th class="num">Correction at even money</th><th class="num">Started at</th></tr></thead><tbody>
+      ${order.map((k) => { const r = sh[k]; return `<tr><td>${NMK[k] || k}</td><td class="num">${num(r.n, 0)}</td><td class="num">${r.said == null ? "–" : pct(r.said, 1)}</td><td class="num">${r.hit == null ? "–" : pct(r.hit, 1)}</td><td class="num">${pts(r.shift)} <span class="note">±${(100 * r.se / 4).toFixed(1)}</span></td><td class="num">${pts(r.prior)}</td></tr>`; }).join("")}
+      </tbody></table></div>
+      <p class="note">Books shade overs, by how much differs by stat and season. Every tracked prop's Pinnacle price is recorded at each lock and graded; the correction starts from 2022-23's (five US books) and follows this season's results, recent nights counting most (14-day half-life). It sets how much an over is marked down before any pick is priced.</p></section>
+    <section class="sec"><header><h2>Situational model <em>in shadow, never bet</em></h2></header>
+      <p class="note">Prices every tracked prop from the player and the situation (form against the line, matchup, home, rest, teammates out, the model's projection). It beat the US books' opening lines in 2022-24 but not this season's Pinnacle or morning DraftKings/FanDuel prices (tested 2026-10-27); it runs here, picks at 5%+ EV at the best DraftKings/FanDuel price, so its record can earn it a place.</p>${shadowSec}</section>`;
+  }
   function renderNbaPropsRecord() {
     if (!N) return noNba();
     const R = N.props.record.live;
@@ -3060,7 +3081,10 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <section class="sec"><header><h2>By category <em>closing line value</em></h2></header>${closeByCat(N.props.record.rows || [], [
         ["Bet list", (r) => r.bet], ...NPCATS.filter(([k]) => k !== "parlay").map(([k, n]) => [n, (r) => !isPar(r) && nCat(r) === k]),
         ["Overs", (r) => !isPar(r) && r.side === "over"], ["Unders", (r) => !isPar(r) && r.side === "under"],
-        ["Picks of the day", (r) => r.potd], ["2%+ EV", (r) => !isPar(r) && r.ev >= 0.02], ["1–2% EV", (r) => !isPar(r) && r.ev < 0.02], ["Parlays", isPar]], "day")}${blCells(N.betlist && N.betlist.props && { ...N.betlist.props, half: "10 days" })}</section>
+        ["Picks of the day", (r) => r.potd], ["2%+ EV", (r) => !isPar(r) && r.ev >= 0.02], ["1–2% EV", (r) => !isPar(r) && r.ev < 0.02],
+        ["Price gap (beats Pinnacle's raw price)", (r) => r.edge === "price"], ["Correction only", (r) => r.edge === "correction"], ["Parlays", isPar]], "day")}${blCells(N.betlist && N.betlist.props && { ...N.betlist.props, half: "10 days" })}
+        ${npRawClose(N.props.record.rows || [])}</section>
+      ${npShade(N.props.shade, N.props.shadow)}
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${nUnitsChart(R, ["Props at 2%+ EV", "big"]) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
       <section class="sec"><header><h2>By market</h2></header><div class="scroll"><table class="t"><thead><tr><th>Market</th><th class="num">Record</th><th class="num">Units</th><th class="num">ROI</th><th class="num">EV at lock</th><th class="num">EV at close</th></tr></thead><tbody>
         ${[...mk, ["Overs", R.over], ["Unders", R.under]].map(([k, r]) => `<tr><td>${k}</td><td class="num">${rec(r)}</td><td class="num ${cls(r && r.units)}">${r && r.n ? units(r.units) : "–"}</td><td class="num">${r && r.n ? pct(r.roi, 1) : "–"}</td><td class="num">${r && r.n ? evPct(r.ev) : "–"}</td><td class="num">${r && r.n ? evPct(r.ev_close) : "–"}</td></tr>`).join("")}

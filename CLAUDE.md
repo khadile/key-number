@@ -766,6 +766,24 @@ budget with the NFL) comes after the pregame side is stable.
   (-7 to -10) and threes, not points or rebounds (~+0.7), the reverse of `OVER_SHADE`'s per-stat split; the
   correction fitted on US books 2022-24 had no Pinnacle data. With it, 672 unders vs 7 overs qualified at 1%+
   over 8 nights; on Pinnacle's raw price, 70 vs 61.
+- Learned over correction and edge source (user, 2026-10-27; `nba/shade.py`). Every tracked prop's Pinnacle
+  price at each props lock is recorded (data/nba/shade/, Actions cache; rebuilt from the committed board at
+  each past lock when missing, the workflow fetching full git history only then) with the best DK/FD price
+  on its line and the situational model's chance. Each build grades them and re-estimates the over
+  correction per market (`props.SHADE`, which `unshade` uses): prior `OVER_SHADE`, sd 0.10 logit, 14-day
+  half-life. First estimate (1,669 graded): points -0.5 pts at even money (was -2.2), rebounds -1.5 (-3.0),
+  assists -3.5 (-0.6; overs hit 39% against 48.5% said), threes -3.1 (-3.2). Each prop pick carries
+  `ev_raw` (the same pick on Pinnacle's raw price) and `edge`: "price" (beats Pinnacle's raw price by 1%+)
+  or "correction" (+EV only through the correction); a correction-only pick is its own bet-list category
+  ("reb under (correction)"). Results carry `ev_close_raw` (Pinnacle's raw close, the judge that does not
+  assume the correction); the props Record page shows it by set, the learned correction, and the situational
+  model's shadow record (5%+ at the best DK/FD price; never bet).
+- Re-test of the first week (user, 2026-10-27, walk-forward replay of every lock from the committed board):
+  balanced price-gap picks with no correction 63-75 (-11.8%; overs 26-36, threes overs 2-12), the fixed
+  correction 195-181 (-0.6%), the learned one 187-172 (-1.1%); actual 115-114 (-4.0%, overs 15-24). The
+  filtered sets carry it (user: judge the filter, not the board): actual Picks of the Day 20-9 (+28.7%),
+  +4.4% at the close and +2.7% (+-1.5) at Pinnacle's RAW close, against -0.7% (+-0.6) for all props. Judge
+  changes by Picks of the Day and the bet list, at the raw close first.
 - Starters (user, 2026-10-24): the tracked five are who started the team's last game this season, minus anyone
   Out or Doubtful, then ESPN's depth chart (`espn.depth_starters`), then the model's starts share. The model's
   own pick had been right on 231 of 280 in the first four nights; last-game starters 96%, the depth chart 93%.

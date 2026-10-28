@@ -34,6 +34,7 @@ from nba import espn, ledger
 from nba import props as NP
 from nba.data import CURRENT, load
 from nba import longshots as LS
+from nba import shade as SH
 from nba.ladders import best_ladder, ladder_legs
 from nba.lines import GamePricer, fit as fit_lines
 from pipeline import action_network as AN
@@ -227,6 +228,14 @@ def prop_picks(x: pl.DataFrame, mixes: dict, books: dict, pricer: NP.PropPricerN
                 best = {**pk, "market": m}
         if not best:
             continue
+        # the same pick on Pinnacle's raw price (no over correction): a real price gap, or only the correction
+        key = (r["game_id"], r["athlete_id"], best["market"])
+        lam_r, _ = pricer.anchor(mixes[key], books[key], None)
+        ev_raw = None
+        if lam_r is not None:
+            o, pu, u = mixes[key].probs(best["line"], lam_r)
+            pw = o if best["side"] == "over" else u
+            ev_raw = pw * (best["dec"] - 1) - (1 - pw - pu)
         side = "Over" if best["side"] == "over" else "Under"
         out.append({
             "kind": "prop", "id": f"{r['game_id']}:{r['athlete_id']}:{best['market']}", "game_id": r["game_id"],
@@ -235,6 +244,8 @@ def prop_picks(x: pl.DataFrame, mixes: dict, books: dict, pricer: NP.PropPricerN
             "label": f"{r['name']} {side} {best['line']:g} {NP.MARKET_LABEL[best['market']].lower()}",
             "book": best["book"], "book_name": BOOK_NAMES[best["book"]], "dec": round(best["dec"], 4), "american": american(best["dec"]),
             "p_win": round(best["p_win"], 4), "p_push": round(best["p_push"], 4), "ev": round(best["ev"], 4),
+            "ev_raw": None if ev_raw is None else round(ev_raw, 4),
+            "edge": None if ev_raw is None else ("price" if ev_raw >= PROP_EV_MIN else "correction"),
             "model_median": round(best["model_median"], 1), "market_median": round(best["market_median"], 1),
             "fair_median": round(best["fair_median"], 1), "anchor": best["anchor"], "exp_min": round(r["exp_min"], 1),
             "locked_at": now.isoformat(), "risk": flat_risk(best["ev"]), "kelly_u": kelly_units(best["p_win"], best["dec"], best["p_push"]),
@@ -259,8 +270,8 @@ def potd(picks: list[dict], n: int = POTD_N) -> list[str]:
 def bet_cat(p: dict) -> str:
     """A pick's bet-list category: the stat and side for props (combos pooled), favorite or underdog for spreads and
     moneylines, over or under for totals."""
-    if p.get("kind") == "prop":
-        return ("combo" if p["market"] in NP.COMBOS else p["market"]) + " " + p["side"]
+    if p.get("kind") == "prop":   # a correction-only pick is its own category (user, 2026-10-27)
+        return ("combo" if p["market"] in NP.COMBOS else p["market"]) + " " + p["side"] + (" (correction)" if p.get("edge") == "correction" else "")
     if p["market"] == "total":
         return f"total {p['side']}"
     fav = p["line"] < 0 if p["market"] == "spread" else p["dec"] < 2.0
@@ -408,6 +419,11 @@ def prop_closes(picks: list[dict], tips: dict, pmap: pl.DataFrame, finished: set
                 over, push, under = mix.probs(p["line"], lam)
                 pw = over if p["side"] == "over" else under
                 r.update(ev_close=round(pw * (p["dec"] - 1) - (1 - pw - push), 4), p_close=round(pw, 4))
+            lam_r, _ = pr.anchor(mix, bk, None)   # Pinnacle's raw close: the judge that does not assume the correction
+            if lam_r is not None:
+                over, push, under = mix.probs(p["line"], lam_r)
+                pw = over if p["side"] == "over" else under
+                r["ev_close_raw"] = round(pw * (p["dec"] - 1) - (1 - pw - push), 4)
         out[p["id"]] = r
     return out
 
@@ -454,6 +470,7 @@ def _rows(picks: list[dict], results: list[dict]) -> list[dict]:
             continue
         r = res.get(p["id"], {})
         base = {"day": p["day"], "result": r.get("result"), "ev": p.get("ev"), "ev_close": r.get("ev_close"), "clv": r.get("clv"),
+                "edge": p.get("edge"), "ev_close_raw": r.get("ev_close_raw"),
                 "american": p.get("american"), "potd": bool(p.get("potd")), "bet": bool(p.get("bet"))}
         if p.get("kind") == "parlay":
             legs = [by_id[l]["label"] for l in p["legs"] if l in by_id]
@@ -532,6 +549,25 @@ def main() -> None:
     positions = dict(zip(roster["athlete_id"].to_list(), roster["position"].to_list()))
     hist = NP.history(SEASON, positions)
     prof = NP.profiles(hist, today + timedelta(days=1), SEASON)   # through last night's games
+
+    # the books' over shading, learned per market from this season's graded props at Pinnacle's price (nba/shade.py)
+    try:
+        if n := SH.bootstrap(read(ledger.PROPS_PICKS), hist):
+            print(f"shade: rebuilt {n} tracked props from the committed board")
+    except Exception as e:   # noqa: BLE001  (missing history never stops the build)
+        print(f"shade bootstrap skipped: {type(e).__name__}: {e}")
+    shade_rows = SH.rows()
+    shade_g = SH.graded(shade_rows, stats)
+    shade_est = SH.estimate(shade_g, today)
+    NP.SHADE.update({m: v["shift"] for m, v in shade_est.items()})
+    edge_idx = SH.edge_index(shade_rows)
+    print(f"shade: learned from {shade_g.height} graded props:", {m: v["shift"] for m, v in shade_est.items()})
+
+    def _edges(rows: list[dict]) -> list[dict]:
+        for q in rows:
+            if q.get("kind") == "prop" and q.get("edge") is None and (e := SH.edge_of(q, edge_idx, PROP_EV_MIN)):
+                q["edge"] = e
+        return rows
 
     md, td, dinfo = fit_lines()
     pricer = GamePricer(md, td)
@@ -619,7 +655,7 @@ def main() -> None:
     P = load_props(sorted(day_ids), pmap) if day_ids else pl.DataFrame()
     now_b = _books(main_lines(P, pl.lit(now))) if P.height else {}
     pp = NP.PropPricerNba(PROPS_K)
-    p_existing = read(ledger.PROPS_PICKS)
+    p_existing = _edges(read(ledger.PROPS_PICKS))
     p_locked = {p["game_id"] for p in p_existing if p.get("kind") in ("prop", "props_locked")}
     p_writes: list[dict] = []
     due = [g["game_id"] for g in day_games if g["game_id"] not in p_locked and _due(props_lock(g["tip"]), g["tip"], now, a.lock_now)]
@@ -630,6 +666,14 @@ def main() -> None:
         if no_lines:
             print(f"props: no lines yet for {no_lines}; they lock at the next build")
         p_writes += prop_picks(xd.filter(~pl.col("game_id").is_in(no_lines)), MX, now_b, pp, today, now)
+        try:   # every tracked prop's price at the lock: the learned shading and the situational model's shadow record
+            new_rows = SH.lock_rows(xd.filter(~pl.col("game_id").is_in(no_lines)), MX, now_b, today, now,
+                                    {g["game_id"]: g["home"] for g in day_games}, fair_now)
+            if not a.dry_run:
+                SH.save(SH.with_sides(new_rows, hist))
+            print(f"shade: {len(new_rows)} tracked props recorded at the lock")
+        except Exception as e:   # noqa: BLE001  (never stops a lock)
+            print(f"shade rows skipped: {type(e).__name__}: {e}")
         # a game whose props were priced locks even with no pick (nothing cleared the bar): a marker, so it is final
         p_writes += [{"kind": "props_locked", "id": f"{gid}:props", "game_id": gid, "day": today.isoformat(), "at": now.isoformat()}
                      for gid in due if gid not in no_lines]
@@ -654,7 +698,7 @@ def main() -> None:
             print(f"props: locked {sum(w['kind'] == 'prop' for w in p_writes)} picks, {[w['id'] for w in p_writes if w['kind'] not in ('prop', 'props_locked')]}")
     prop_rows = p_existing + (p_writes if a.dry_run else [])
     if not a.dry_run:
-        prop_rows = read(ledger.PROPS_PICKS)
+        prop_rows = _edges(read(ledger.PROPS_PICKS))
 
     # --- long shots (user, 2026-10-20): every "N+" rung +200 or longer priced at each props lock; the ones with
     # value at both widths of the model's tail go on a watchlist at 0.25u, their own record (nba/longshots.py)
@@ -680,6 +724,15 @@ def main() -> None:
     p_done = {r["id"] for r in read(ledger.PROPS_RESULTS)}
     g_res = ledger.grade_games(game_rows, finals, game_closes(game_rows, tips, fmap, pricer, finals, g_done))
     p_res = ledger.grade_props(prop_rows, stats, set(finals), prop_closes(prop_rows, tips, pmap, set(finals), p_done))
+    try:
+        have_c = set(SH.closes()["game_id"].to_list())
+        need_c = sorted({g for g in shade_rows["game_id"].unique().to_list() if g in finals} - have_c) if shade_rows.height else []
+        if need_c and not a.dry_run:
+            P_c = load_props(need_c, pmap)
+            C_c = _books(main_lines(P_c, pl.col("kickoff") - timedelta(minutes=5))) if P_c.height else {}
+            SH.save_closes(SH.close_rows(shade_rows.filter(pl.col("game_id").is_in(need_c)), set(finals), SH.closes(), C_c))
+    except Exception as e:   # noqa: BLE001
+        print(f"shade closes skipped: {type(e).__name__}: {e}")
     ls_done = {r["id"] for r in read(LS.RESULTS)}
     ls_res = LS.grade(ls_rows, stats, set(finals))
     cal_done = {r["game_id"] for r in read(LS.CAL)}
@@ -864,6 +917,13 @@ def main() -> None:
     live_g = [p for p in game_rows if p.get("kind") in ("pick", "parlay", "alt")]
     ls_by = {r["id"]: r for r in ls_results}
     live_p = [p for p in prop_rows if p.get("kind") in ("prop", "parlay")]
+    def _shadow() -> list[dict]:   # the situational model's record, never bet (nba/shade.py)
+        try:
+            return SH.shadow(SH.graded(SH.rows(), stats), SH.closes())
+        except Exception as e:   # noqa: BLE001
+            print(f"shadow record skipped: {type(e).__name__}: {e}")
+            return []
+
     data = {
         "meta": {"season": SEASON, "label": f"{SEASON - 1}-{str(SEASON)[2:]}", "day": today.isoformat(),
                  "day_label": now.astimezone(ET).strftime("%A, %B ") + str(today.day), "generated": now.isoformat(),
@@ -880,7 +940,7 @@ def main() -> None:
                       "calibration": LS.calibration_table(cal_rows), "flag_ev": LS.FLAG_EV, "stake": LS.STAKE},
         "props": {"players": players, "parlays": daily(prop_rows, p_results, "props:"),
                   "record": {"live": ledger.record_props(live_p, p_results), "rows": _rows(live_p, p_results)},
-                  "locked": sorted(p_locked_now)},
+                  "locked": sorted(p_locked_now), "shade": shade_est, "shadow": _shadow()},
         "betlist": {"lines": betlist_view(raw_g, g_results), "props": betlist_view(raw_p, p_results)},
         "model": {"backtest": _backtest_card(), "angles": _angles_card()},
         "defense": _defense(hist, today),

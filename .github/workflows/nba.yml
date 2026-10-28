@@ -61,6 +61,12 @@ jobs:
           key: nba-data-${{ github.run_id }}
           restore-keys: nba-data-
 
+      # nba/shade.py rebuilds its tracked-prop rows from the board committed at each past lock when the cache has
+      # none (the first run, or an evicted cache): only then is the full history fetched
+      - name: Full history for the shade bootstrap
+        if: steps.slot.outputs.due == 'true' && hashFiles('data/nba/shade/rows.parquet') == ''
+        run: git fetch --unshallow --quiet || true
+
       - name: Build
         if: steps.slot.outputs.due == 'true'
         env:
