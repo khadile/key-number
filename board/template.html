@@ -2989,12 +2989,13 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   // ---------- props: today
   function npWhy(p) {
     const win = p.p_win / Math.max(1 - (p.p_push || 0), 1e-9);
-    return `Market middle ${num(p.market_median, 1)} (${p.anchor === "pinnacle" ? "Pinnacle no-vig" : p.anchor === "dk/fd" ? "DraftKings and FanDuel, no Pinnacle line" : "DraftKings and FanDuel: Pinnacle's line is behind both"}); model middle ${num(p.model_median, 1)} on ${num(p.exp_min, 1)} minutes. ${p.book_name} ${am(p.american)} wins ${pct(win, 1)} and needs ${pct(1 / p.dec, 1)}. EV ${evPct(p.ev)}. Stake 1u; quarter Kelly ${stakeU(p.kelly_u)}.`;
+    return `Market middle ${num(p.market_median, 1)} (${p.anchor === "pinnacle" ? "Pinnacle no-vig" : p.anchor === "dk/fd" ? "DraftKings and FanDuel, no Pinnacle line" : "DraftKings and FanDuel: Pinnacle's line is behind both"}); model middle ${num(p.model_median, 1)} on ${num(p.exp_min, 1)} minutes. ${p.book_name} ${am(p.american)} wins ${pct(win, 1)} and needs ${pct(1 / p.dec, 1)}. EV ${evPct(p.ev)}.${p.risk === 0 ? " Under 2% EV: a lean, no stake; the record counts it at 1u." : ` Stake 1u; quarter Kelly ${stakeU(p.kelly_u)}.`}`;
   }
   function npChip(p) {
     if (!p) return "";
-    return `<span class="chip${p.potd ? " potw" : ""}" data-tip="${esc(npWhy(p))}"><span class="m">${p.potd ? "Pick of the day" : NMK[p.market]}</span><b>${p.side === "over" ? "Over" : "Under"} ${num(p.line, 1).replace(/\.0$/, "")}</b>
-      <span class="pr">${am(p.american)} ${esc(p.book_name)}</span>${resN(p.result)}${p.actual != null ? ` <span class="note">final ${num(p.actual, 0)}</span>` : ""}</span>`;
+    const lean = p.risk === 0;
+    return `<span class="chip${p.potd ? " potw" : ""}${lean ? " lean" : ""}" data-tip="${esc(npWhy(p))}"><span class="m">${p.potd ? "Pick of the day" : lean ? "Lean · " + NMK[p.market] : NMK[p.market]}</span><b>${p.side === "over" ? "Over" : "Under"} ${num(p.line, 1).replace(/\.0$/, "")}</b>
+      <span class="pr">${am(p.american)} ${esc(p.book_name)}</span>${stakePill(p)}${resN(p.result)}${p.actual != null ? ` <span class="note">final ${num(p.actual, 0)}</span>` : ""}</span>`;
   }
   // Tags from the props back-test (CLAUDE.md 9), never checks: the model's rebound under at 55%+, and situations
   // that leaned the under against the close in all three seasons when two or more stack.
@@ -3116,7 +3117,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     app.innerHTML = `
       <section class="hello"><h1>NBA props record</h1><p class="lede">Every prop pick at 1u, graded at the line and price it locked at. Voids (the player sat) are left out${R.voids ? `: ${R.voids} so far` : ""}.</p></section>
       <section class="sec"><header><h2>Season to date</h2></header>${npStrip(R)}
-        ${R.split && (R.split.big.n + R.split.small.n) ? `<p class="note">Of these, props at 2%+ expected value went ${rec(R.split.big)}, <span class="${cls(R.split.big.units)}">${units(R.split.big.units)}</span> (${term("evclose", "EV at the close")} ${evPct(R.split.big.ev_close)}); props at 1–2% went ${rec(R.split.small)}, <span class="${cls(R.split.small.units)}">${units(R.split.small.units)}</span> (${evPct(R.split.small.ev_close)}). NFL props now need 2%+; the Nov 2 checkup asks the same of these.</p>` : ""}
+        ${R.split && (R.split.big.n + R.split.small.n) ? `<p class="note">Of these, props at 2%+ expected value went ${rec(R.split.big)}, <span class="${cls(R.split.big.units)}">${units(R.split.big.units)}</span> (${term("evclose", "EV at the close")} ${evPct(R.split.big.ev_close)}); props at 1–2% went ${rec(R.split.small)}, <span class="${cls(R.split.small.units)}">${units(R.split.small.units)}</span> (${evPct(R.split.small.ev_close)}). From 2026-10-28 props under 2% are leans: shown, no stake, still counted at 1u here.</p>` : ""}
         ${nKelly(R.kelly, "props")}</section>
       <section class="sec"><header><h2>By category <em>closing line value</em></h2></header>${closeByCat(N.props.record.rows || [], [
         ["Bet list", (r) => r.bet], ...NPCATS.filter(([k]) => k !== "parlay").map(([k, n]) => [n, (r) => !isPar(r) && nCat(r) === k]),

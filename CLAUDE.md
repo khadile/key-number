@@ -835,6 +835,20 @@ budget with the NFL) comes after the pregame side is stable.
   the Day, bet list and parlays moved to nba_props_withdrawn.jsonl, as on 2026-10-21): 64 picks, 15 overs (6 beat
   Pinnacle's raw price; 9 small points overs, points' learned shift now +0.04) and 49 unders (assists 37). A
   props lock prices a game's long shots once a day (`longshots.priced_games`), so re-locks never add long shots.
+- Two props rules (user, 2026-10-28, after asking whether the board leaned too much on assists; `build.prop_picks`):
+  - A player's slot goes to his best REAL price edge (beats Pinnacle's raw price by 1%+), by Kelly; a
+    correction-only pick only when he has none. The correction lifts every under of a market alike, so the best
+    pick by Kelly kept landing on assists: 37 of 2026-10-28's 64 picks were assists unders, 31 correction-only, and
+    8 correction-only picks had taken the slot of a same-line price edge (Adebayo: under 3.5 assists at -0.2% raw
+    over under points at DraftKings +2.4%).
+  - Under 2% EV (`PROP_STAKE_MIN`) a prop is a lean: shown, 0u, counted at 1u in the record, never a Pick of the
+    Day, parlay leg or bet-list pick. The Nov 2 checkup item, settled early: 85 graded 1-2% picks 40-45 (-8.2u),
+    +0.2% (+-0.5) at the close, against 2-4% +2.6% and 4%+ +5.0%.
+  - Also measured that night (all graded NBA props): overs kept none of their lock edge to the close (+2.4% ->
+    0.0%, 40 picks); points and PRA kept ~40% (Pinnacle's points props catch up to DK/FD by tip), rebounds 94%,
+    threes 84%, assists 79%; picks in the same game did not win or lose together (variance ratio 0.87).
+  - Applied to 2026-10-28 before tip at the user's request (third lock that night; the 6:21pm one moved to
+    nba_props_withdrawn.jsonl).
 - Re-test of the first week (user, 2026-10-27, walk-forward replay of every lock from the committed board):
   balanced price-gap picks with no correction 63-75 (-11.8%; overs 26-36, threes overs 2-12), the fixed
   correction 195-181 (-0.6%), the learned one 187-172 (-1.1%); actual 115-114 (-4.0%, overs 15-24). The
@@ -961,8 +975,8 @@ Context only, never a pricing input.
 **Psychology angles queued to test the same way (closing-line value, probe stakes):** star and prime-time overs;
 overreaction to last week's blowout or viral game; non-QB injury line moves and backups' props lagging news;
 reverse line movement (tickets one way, line the other) and its timing; boosts that are +EV by arithmetic and
-same-game-parlay correlation pricing. Also pending: NBA props at 1-2% EV to leans (Nov 2 checkup; at the close
--0.9% +-1.2 vs 2%+ +2.8% +-1.0); a per-category stake (full / 0.25u probe / 0) once the bet list has a few weeks.
+same-game-parlay correlation pricing. NBA props at 1-2% EV became leans on 2026-10-28 (section 9). Also pending:
+a per-category stake (full / 0.25u probe / 0) once the bet list has a few weeks.
 
 ## Layout
 
