@@ -131,3 +131,15 @@
 {"id": "401909875:alt:total:over:225.5:draftkings", "result": "L", "units": -1.0, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
 {"id": "2026-10-26:lottery", "result": "L", "units": -0.5, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
 {"id": "2026-10-26:golden", "result": "L", "units": -0.5, "graded_at": "2026-10-27T20:38:52.947610+00:00"}
+{"id": "401909877:spread", "result": "W", "units": 0.94, "clv": -1.0, "ev_close": -0.0798, "p_close": 0.4743, "graded_at": "2026-10-28T14:48:00.703020+00:00"}
+{"id": "401909877:total", "result": "W", "units": 0.909, "clv": 1.0, "ev_close": 0.0045, "p_close": 0.5262, "graded_at": "2026-10-28T14:48:00.703020+00:00"}
+{"id": "401909878:spread", "result": "L", "units": -1.0, "clv": 0.5, "ev_close": -0.0474, "p_close": 0.5094, "graded_at": "2026-10-28T14:48:00.703020+00:00"}
+{"id": "401909878:total", "result": "L", "units": -1.0, "clv": 1.5, "ev_close": 0.0032, "p_close": 0.5336, "graded_at": "2026-10-28T14:48:00.703020+00:00"}
+{"id": "401909879:spread", "result": "L", "units": -1.0, "clv": -0.5, "ev_close": -0.0678, "p_close": 0.484, "graded_at": "2026-10-28T14:48:00.703020+00:00"}
+{"id": "401909879:total", "result": "L", "units": -1.0, "clv": 0.0, "ev_close": -0.062, "p_close": 0.4955, "graded_at": "2026-10-28T14:48:00.703020+00:00"}
+{"id": "401909879:ml", "result": "L", "units": -1.0, "ev_close": 0.0205, "p_close": 0.085, "graded_at": "2026-10-28T14:48:00.703020+00:00"}
+{"id": "401909880:spread", "result": "W", "units": 0.952, "clv": 0.0, "ev_close": -0.0285, "p_close": 0.4977, "graded_at": "2026-10-28T14:48:00.703020+00:00"}
+{"id": "401909880:total", "result": "L", "units": -1.0, "clv": -1.0, "ev_close": -0.0688, "p_close": 0.48, "graded_at": "2026-10-28T14:48:00.703020+00:00"}
+{"id": "401909880:alt:total:under:241.5:fanduel", "result": "L", "units": -1.0, "graded_at": "2026-10-28T14:48:00.703020+00:00"}
+{"id": "401909877:alt:total:over:215.5:fanduel", "result": "W", "units": 0.51, "graded_at": "2026-10-28T14:48:00.703020+00:00"}
+{"id": "2026-10-27:golden", "result": "L", "units": -0.5, "graded_at": "2026-10-28T14:48:00.703020+00:00"}
