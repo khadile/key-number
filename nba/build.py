@@ -55,6 +55,7 @@ PARLAY_POOL = 16
 # A prop is a pick at 1% expected value or more. Below that the edge is inside the error of the no-vig estimate
 # (splitting the vig evenly or by the odds moves a -110 side's chance by more): opening night had picks at +0.03%.
 PROP_EV_MIN = 0.01
+PROP_STAKE_MIN = 0.02   # under it a prop is a lean (user, 2026-10-28: 85 graded 1-2% picks +0.2% at the close, 2-4% +2.6%)
 
 
 def _f(x, nd=2):
@@ -215,27 +216,33 @@ def mixes_of(x: pl.DataFrame) -> dict[tuple[int, int, str], NP.Mix]:
 
 
 def prop_picks(x: pl.DataFrame, mixes: dict, books: dict, pricer: NP.PropPricerNba, day: date, now: datetime) -> list[dict]:
-    """The best positive-EV prop per tracked player at DraftKings or FanDuel (one pick per player)."""
+    """One prop per tracked player at DraftKings or FanDuel: his best real price edge by Kelly (beats Pinnacle's raw
+    price by PROP_EV_MIN), else his best pick through the over correction (user, 2026-10-28: the correction had
+    lifted every assists under alike, so it took players' slots from real price edges). Under PROP_STAKE_MIN it
+    is a lean: shown, no stake, counted at 1u in the record."""
     out = []
     for r in x.iter_rows(named=True):
-        best = None
+        cands = []
         for m in NP.MARKETS:
             key = (r["game_id"], r["athlete_id"], m)
             if key not in mixes or key not in books:
                 continue
             pk = pricer.price(mixes[key], books[key], m)
-            if pk and pk["ev"] >= PROP_EV_MIN and (best is None or kelly(pk) > kelly(best)):
-                best = {**pk, "market": m}
-        if not best:
+            if not pk or pk["ev"] < PROP_EV_MIN:
+                continue
+            # the same pick on Pinnacle's raw price (no over correction): a real price gap, or only the correction
+            lam_r, _ = pricer.anchor(mixes[key], books[key], None)
+            ev_r = None
+            if lam_r is not None:
+                o, pu, u = mixes[key].probs(pk["line"], lam_r)
+                pw = o if pk["side"] == "over" else u
+                ev_r = pw * (pk["dec"] - 1) - (1 - pw - pu)
+            cands.append({**pk, "market": m, "ev_r": ev_r})
+        if not cands:
             continue
-        # the same pick on Pinnacle's raw price (no over correction): a real price gap, or only the correction
-        key = (r["game_id"], r["athlete_id"], best["market"])
-        lam_r, _ = pricer.anchor(mixes[key], books[key], None)
-        ev_raw = None
-        if lam_r is not None:
-            o, pu, u = mixes[key].probs(best["line"], lam_r)
-            pw = o if best["side"] == "over" else u
-            ev_raw = pw * (best["dec"] - 1) - (1 - pw - pu)
+        price = [c for c in cands if c["ev_r"] is not None and c["ev_r"] >= PROP_EV_MIN]
+        best = max(price or cands, key=kelly)
+        ev_raw, staked = best["ev_r"], best["ev"] >= PROP_STAKE_MIN
         side = "Over" if best["side"] == "over" else "Under"
         out.append({
             "kind": "prop", "id": f"{r['game_id']}:{r['athlete_id']}:{best['market']}", "game_id": r["game_id"],
@@ -248,7 +255,8 @@ def prop_picks(x: pl.DataFrame, mixes: dict, books: dict, pricer: NP.PropPricerN
             "edge": None if ev_raw is None else ("price" if ev_raw >= PROP_EV_MIN else "correction"),
             "model_median": round(best["model_median"], 1), "market_median": round(best["market_median"], 1),
             "fair_median": round(best["fair_median"], 1), "anchor": best["anchor"], "exp_min": round(r["exp_min"], 1),
-            "locked_at": now.isoformat(), "risk": flat_risk(best["ev"]), "kelly_u": kelly_units(best["p_win"], best["dec"], best["p_push"]),
+            "locked_at": now.isoformat(), "risk": 1.0 if staked else 0.0,
+            "kelly_u": kelly_units(best["p_win"], best["dec"], best["p_push"]) if staked else 0.0,
             # the model as it priced the pick, so its closing chance can be worked out at grading
             "mix": {"exp_min": round(r["exp_min"], 3), "sd_min": round(r["sd_min"], 3),
                     **mixes[(r["game_id"], r["athlete_id"], best["market"])].params()}, "lam": round(best["lam"], 4)})
@@ -259,7 +267,7 @@ def potd(picks: list[dict], n: int = POTD_N) -> list[str]:
     # Price-gap picks first; a correction-only pick takes a slot only for a game with no price pick
     # (user, 2026-10-27: past props POTD price 10-5, correction 1-1). Game lines carry no "edge".
     seen, top = set(), []
-    for p in sorted((p for p in picks if p["ev"] > 0), key=lambda p: (p.get("edge") == "correction", -kelly(p))):
+    for p in sorted((p for p in picks if p["ev"] > 0 and p.get("risk", 1.0) > 0), key=lambda p: (p.get("edge") == "correction", -kelly(p))):
         if p["game_id"] in seen:
             continue
         seen.add(p["game_id"])
@@ -296,7 +304,7 @@ def bet_list(rows: list[dict], results: list[dict], pool: list[dict], board: BL.
 
 
 def parlays(picks: list[dict], day: date, prefix: str, now: datetime, want=("golden", "lottery")) -> list[dict]:
-    pool = sorted((p for p in picks if p["ev"] > 0), key=lambda p: -kelly(p))[:PARLAY_POOL]
+    pool = sorted((p for p in picks if p["ev"] > 0 and p.get("risk", 1.0) > 0), key=lambda p: -kelly(p))[:PARLAY_POOL]
     out = []
     for par in build_parlays(pool):
         if par and par["type"] in want:
@@ -310,7 +318,7 @@ def props_golden(pool: list[dict], day: date, now: datetime) -> dict | None:
     import math
     by: dict = {}
     for p in pool:
-        if p["ev"] > 0:
+        if p["ev"] > 0 and p.get("risk", 1.0) > 0:
             by.setdefault(p["game_id"], []).append(p)
     legs = best_ladder(by)
     if not legs:
