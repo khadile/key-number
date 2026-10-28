@@ -784,6 +784,11 @@ budget with the NFL) comes after the pregame side is stable.
   filtered sets carry it (user: judge the filter, not the board): actual Picks of the Day 20-9 (+28.7%),
   +4.4% at the close and +2.7% (+-1.5) at Pinnacle's RAW close, against -0.7% (+-0.6) for all props. Judge
   changes by Picks of the Day and the bet list, at the raw close first.
+- Picks of the Day take price-gap picks first (user, 2026-10-27; `build.potd`): still one per game by Kelly,
+  but a correction-only pick takes a slot only for a game with no price pick. Past props POTD by edge: price
+  10-5, unknown 9-3, correction 1-1. Tonight's replay: the learned correction alone made Tatum and Holiday
+  (correction-only) Picks of the Day; price-first gives back Mitchell Robinson and Doncic. Game lines carry
+  no `edge` and are unaffected.
 - Starters (user, 2026-10-24): the tracked five are who started the team's last game this season, minus anyone
   Out or Doubtful, then ESPN's depth chart (`espn.depth_starters`), then the model's starts share. The model's
   own pick had been right on 231 of 280 in the first four nights; last-game starters 96%, the depth chart 93%.

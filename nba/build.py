@@ -256,8 +256,10 @@ def prop_picks(x: pl.DataFrame, mixes: dict, books: dict, pricer: NP.PropPricerN
 
 
 def potd(picks: list[dict], n: int = POTD_N) -> list[str]:
+    # Price-gap picks first; a correction-only pick takes a slot only for a game with no price pick
+    # (user, 2026-10-27: past props POTD price 10-5, correction 1-1). Game lines carry no "edge".
     seen, top = set(), []
-    for p in sorted((p for p in picks if p["ev"] > 0), key=lambda p: -kelly(p)):
+    for p in sorted((p for p in picks if p["ev"] > 0), key=lambda p: (p.get("edge") == "correction", -kelly(p))):
         if p["game_id"] in seen:
             continue
         seen.add(p["game_id"])
