@@ -701,8 +701,10 @@ budget with the NFL) comes after the pregame side is stable.
 - Moneylines' margin comes off by Shin's method (half off each side; `model/probs.ml_no_vig`) from 2026-10-29,
   in the NBA fair chance (picks, EV at the close, ladder ML legs, the card's win bar), the NFL's EV at the close
   and the NFL card's win bar (user, 2026-10-28: both sports). NBA moneyline results graded before then keep their
-  proportional `ev_close` (append-only); the NFL's is recomputed every build, so its moneyline rows read 1-2%
-  lower at +300 from then on. The proportional split overrated long shots: NFL closes 2006-2026 (nflverse,
+  proportional `ev_close` (append-only); the NFL's is recomputed every build, so its moneyline rows read lower from
+  then on (about m x (0.5 - p) off the closing chance, m Pinnacle's margin: ~1 point of EV at +200, ~2.5 at +300).
+  Estimated at a 2.7% margin: NFL moneyline dogs at the close +4.1% -> ~+1.7% (weeks 5-8), +5.0% -> ~+2.3%
+  (replay); Picks of the Week +1.8% -> ~+0.7%. The bet list's NFL moneyline-dog cells will weaken accordingly. The proportional split overrated long shots: NFL closes 2006-2026 (nflverse,
   5,386 games) said +250-399 dogs win 24.1% (won 23.2%; Shin 23.4%) and +400+ 15.0% (won 14.0%; Shin 14.0%);
   DraftKings' NBA closes 2023-26 said +200-300 28.4% (won 26.7%) and +500+ 12.5% (won 9.1%). Through 2026-10-28,
   9 of 10 NBA moneyline picks were underdogs at +0.0% to +6.8%, inside that error; both of 2026-10-28's
@@ -906,6 +908,16 @@ picks ledger: `{day}:betlist` / `{day}:props:betlist` for NBA, `{season}_{week}:
 - First lists (dry run, 2026-10-26): NBA props all 4%+ unders (threes, points, combos), 1-2% tier out (-0.9% at
   the close vs 2-4% +1.7%, 4%+ +5.3%); NBA game lines none (losing to the close); NFL lines ML underdogs 4%+ and
   spread underdogs 2-4%; NFL props 4%+ cells.
+- What the user stakes (2026-10-28): game lines' Picks of the Day / Week and the bet list; leans stay for research.
+  NBA lines' bet list was empty 2026-10-26 to 28, and its Picks of the Day are small, though not few: 19 in 9 days
+  (NFL Picks of the Week: 18 in 4 weeks), median EV at the lock +0.7% (NFL +4.3%), 6 of 19 at 1%+ (NFL 14 of 18),
+  at the close -0.2% +-1.3 (NFL +1.8% +-1.8 before the moneyline fix). Of the 22 NBA +EV line picks, 6 reached the
+  bet list's 1% floor, 4 of them long-dog moneylines that the vig fix removes, and the graded ones lost at the close
+  (Dallas +500 -11.7%), so every tier read negative. The difference is structural: NBA lines are line shopping only
+  (k = 0) on same-day lines at 10:30am, when DraftKings and FanDuel have caught up to Pinnacle; the NFL's model moves
+  its prices (k measured each week), its moneylines come from a win curve that has found real underdog value, and it
+  locks Tuesday, days before kickoff. Where an NBA line edge could exist is timing (locking near the open, untested:
+  the archive is on the Actions cache), not a lower bar.
 - **Calibrate at every checkup:** bet list vs all picks, by units AND EV at the close. If the list does not beat
   the full board at the close over 4+ weeks, revisit the constants (PRIOR_SD, CELL_SD, CLOSE_BIAS, half-lives,
   MIN_EDGE/MIN_PROB) on the replay, not on a few days. Never re-pick past lists.
