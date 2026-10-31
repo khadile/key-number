@@ -414,3 +414,5 @@
 {"id": "401909286:3978:ast", "result": "L", "units": -1.0, "actual": 5.0, "clv": 0.0, "ev_close": 0.109, "p_close": 0.5064, "ev_close_raw": 0.0622, "graded_at": "2026-10-31T14:49:10.237071+00:00"}
 {"id": "2026-10-30:props:lottery", "result": "L", "units": -0.5, "graded_at": "2026-10-31T14:49:10.237071+00:00"}
 {"id": "2026-10-30:props:golden", "result": "L", "units": -0.5, "graded_at": "2026-10-31T14:49:10.237071+00:00"}
+{"id": "401909896:4431736:reb", "result": "W", "units": 0.0, "actual": 4.0, "clv": 0.0, "ev_close": 0.0633, "p_close": 0.5343, "ev_close_raw": 0.0633, "graded_at": "2026-10-31T21:49:49.757893+00:00"}
+{"id": "401909896:4683021:fg3", "result": "L", "units": -1.0, "actual": 2.0, "clv": 0.0, "ev_close": 0.0246, "p_close": 0.4251, "ev_close_raw": 0.0291, "graded_at": "2026-10-31T21:49:49.757893+00:00"}
