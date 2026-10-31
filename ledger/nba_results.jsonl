@@ -183,3 +183,28 @@
 {"id": "401909893:alt:total:over:229.5:fanduel", "result": "L", "units": -1.0, "graded_at": "2026-10-30T14:47:56.969314+00:00"}
 {"id": "401909895:alt:total:over:225.5:fanduel", "result": "W", "units": 0.51, "graded_at": "2026-10-30T14:47:56.969314+00:00"}
 {"id": "2026-10-29:golden", "result": "L", "units": -0.5, "graded_at": "2026-10-30T14:47:56.969314+00:00"}
+{"id": "401909277:spread", "result": "L", "units": -1.0, "clv": 3.0, "ev_close": 0.0472, "p_close": 0.5541, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909277:total", "result": "L", "units": -1.0, "clv": -1.0, "ev_close": -0.0829, "p_close": 0.4804, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909278:spread", "result": "W", "units": 0.952, "clv": 0.5, "ev_close": 0.024, "p_close": 0.5246, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909278:total", "result": "L", "units": -1.0, "clv": -1.5, "ev_close": -0.104, "p_close": 0.4643, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909279:spread", "result": "W", "units": 0.952, "clv": -0.5, "ev_close": -0.055, "p_close": 0.4841, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909279:total", "result": "W", "units": 0.9259999999999999, "clv": 1.0, "ev_close": -0.0009, "p_close": 0.5187, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909280:spread", "result": "W", "units": 0.952, "clv": -1.5, "ev_close": -0.1163, "p_close": 0.4527, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909280:total", "result": "W", "units": 0.9099999999999999, "clv": 3.5, "ev_close": 0.0969, "p_close": 0.5743, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909281:spread", "result": "W", "units": 0.952, "clv": 0.0, "ev_close": -0.0241, "p_close": 0.5, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909281:total", "result": "W", "units": 0.9259999999999999, "clv": 0.5, "ev_close": -0.018, "p_close": 0.5098, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909282:spread", "result": "L", "units": -1.0, "clv": 0.0, "ev_close": -0.0241, "p_close": 0.5, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909282:total", "result": "W", "units": 0.9099999999999999, "clv": 0.5, "ev_close": -0.0186, "p_close": 0.5138, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909283:spread", "result": "W", "units": 0.9099999999999999, "clv": 0.5, "ev_close": 0.0013, "p_close": 0.5242, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909283:total", "result": "W", "units": 0.9099999999999999, "clv": 0.0, "ev_close": -0.0494, "p_close": 0.4977, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909284:spread", "result": "L", "units": -1.0, "clv": 1.0, "ev_close": 0.0081, "p_close": 0.5278, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909284:total", "result": "W", "units": 0.8700000000000001, "clv": 0.5, "ev_close": -0.0512, "p_close": 0.5074, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909285:spread", "result": "W", "units": 0.8700000000000001, "clv": 0.5, "ev_close": -0.04, "p_close": 0.5134, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909285:total", "result": "W", "units": 0.9099999999999999, "clv": 0.0, "ev_close": -0.0494, "p_close": 0.4977, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909286:spread", "result": "L", "units": -1.0, "clv": 0.5, "ev_close": -0.0311, "p_close": 0.5073, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909286:total", "result": "L", "units": -1.0, "clv": 0.0, "ev_close": -0.0366, "p_close": 0.5046, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909281:alt:total:under:240.5:fanduel", "result": "W", "units": 0.29000000000000004, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909286:alt:spread:home:14.5:fanduel", "result": "W", "units": 0.26, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "401909279:alt:total:under:237.5:fanduel", "result": "W", "units": 0.24, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "2026-10-30:lottery", "result": "W", "units": 2.9395471, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
+{"id": "2026-10-30:golden", "result": "W", "units": 0.5077479999999999, "graded_at": "2026-10-31T14:49:10.235942+00:00"}
