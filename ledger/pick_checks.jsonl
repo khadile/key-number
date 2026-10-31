@@ -79,3 +79,15 @@
 {"kind": "game", "id": "2026_08_ARI_DAL:ml", "game_id": "2026_08_ARI_DAL", "verdict": "ev", "failed": ["market"], "at": "2026-10-29T14:15:36.978299+00:00"}
 {"kind": "game", "id": "2026_08_IND_JAX:ml", "game_id": "2026_08_IND_JAX", "verdict": "ev", "failed": ["market"], "at": "2026-10-29T14:15:36.978299+00:00"}
 {"kind": "prop", "id": "2026_08_CAR_GB:00-0039811:rec_yds", "game_id": "2026_08_CAR_GB", "verdict": "good", "failed": [], "at": "2026-10-29T14:15:36.978299+00:00"}
+{"kind": "game", "id": "2026_08_ARI_DAL:ml", "game_id": "2026_08_ARI_DAL", "verdict": "good", "failed": [], "at": "2026-10-31T14:15:27.339432+00:00"}
+{"kind": "prop", "id": "2026_08_ATL_TB:00-0039361:receptions", "game_id": "2026_08_ATL_TB", "verdict": "ev", "failed": ["lean"], "at": "2026-10-31T14:15:27.339432+00:00"}
+{"kind": "prop", "id": "2026_08_BAL_BUF:00-0032764:rec_yds", "game_id": "2026_08_BAL_BUF", "verdict": "good", "failed": [], "at": "2026-10-31T14:15:27.339432+00:00"}
+{"kind": "prop", "id": "2026_08_CLE_PIT:00-0041037:receptions", "game_id": "2026_08_CLE_PIT", "verdict": "good", "failed": [], "at": "2026-10-31T14:15:27.339432+00:00"}
+{"kind": "prop", "id": "2026_08_IND_JAX:00-0040719:rec_yds", "game_id": "2026_08_IND_JAX", "verdict": "good", "failed": [], "at": "2026-10-31T14:15:27.339432+00:00"}
+{"kind": "prop", "id": "2026_08_KC_DEN:00-0041496:rec_yds", "game_id": "2026_08_KC_DEN", "verdict": "ev", "failed": ["lean"], "at": "2026-10-31T14:15:27.339432+00:00"}
+{"kind": "prop", "id": "2026_08_KC_DEN:00-0033881:rec_yds", "game_id": "2026_08_KC_DEN", "verdict": "good", "failed": [], "at": "2026-10-31T14:15:27.339432+00:00"}
+{"kind": "prop", "id": "2026_08_LV_NYJ:00-0040122:rush_yds", "game_id": "2026_08_LV_NYJ", "verdict": "ev", "failed": ["lean"], "at": "2026-10-31T14:15:27.339432+00:00"}
+{"kind": "prop", "id": "2026_08_MIN_DET:00-0036322:receptions", "game_id": "2026_08_MIN_DET", "verdict": "good", "failed": [], "at": "2026-10-31T14:15:27.339432+00:00"}
+{"kind": "prop", "id": "2026_08_NE_MIA:00-0036875:rec_yds", "game_id": "2026_08_NE_MIA", "verdict": "ev", "failed": ["lean"], "at": "2026-10-31T14:15:27.339432+00:00"}
+{"kind": "prop", "id": "2026_08_PHI_WAS:00-0034351:rec_yds", "game_id": "2026_08_PHI_WAS", "verdict": "good", "failed": [], "at": "2026-10-31T14:15:27.339432+00:00"}
+{"kind": "prop", "id": "2026_08_TEN_CIN:00-0035261:receptions", "game_id": "2026_08_TEN_CIN", "verdict": "good", "failed": [], "at": "2026-10-31T14:15:27.339432+00:00"}

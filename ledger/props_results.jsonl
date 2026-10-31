@@ -100,3 +100,4 @@
 {"id": "2026_07_TB_CAR:00-0039361:rec_yds", "result": "W", "units": 0.8620000000000001, "actual": 4.0, "clv": 0.0, "graded_at": "2026-10-26T21:15:24.991769+00:00"}
 {"id": "2026_07:props:golden", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-10-26T21:15:24.991769+00:00"}
 {"id": "2026_07:props:lottery", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-10-26T21:15:24.991769+00:00"}
+{"id": "2026_08_CAR_GB:00-0039811:rec_yds", "result": "L", "units": -1.0, "actual": 9.0, "clv": 2.0, "graded_at": "2026-10-31T14:19:26.590112+00:00"}

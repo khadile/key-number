@@ -100,3 +100,5 @@
 {"id": "2026_07:lottery", "result": "L", "units": -0.5, "clv": null, "graded_at": "2026-10-26T21:15:03.811637+00:00"}
 {"id": "2026_07_DAL_PHI:spread", "result": "L", "units": -1.0, "clv": 0.5, "graded_at": "2026-10-27T19:23:06.826003+00:00"}
 {"id": "2026_07_DAL_PHI:total", "result": "W", "units": 0.9099999999999999, "clv": -0.5, "graded_at": "2026-10-27T19:23:06.826003+00:00"}
+{"id": "2026_08_CAR_GB:spread", "result": "W", "units": 0.909, "clv": 0.0, "graded_at": "2026-10-31T14:19:14.434571+00:00"}
+{"id": "2026_08_CAR_GB:total", "result": "L", "units": -1.0, "clv": -1.0, "graded_at": "2026-10-31T14:19:14.434571+00:00"}
