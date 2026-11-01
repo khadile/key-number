@@ -416,3 +416,33 @@
 {"id": "2026-10-30:props:golden", "result": "L", "units": -0.5, "graded_at": "2026-10-31T14:49:10.237071+00:00"}
 {"id": "401909896:4431736:reb", "result": "W", "units": 0.0, "actual": 4.0, "clv": 0.0, "ev_close": 0.0633, "p_close": 0.5343, "ev_close_raw": 0.0633, "graded_at": "2026-10-31T21:49:49.757893+00:00"}
 {"id": "401909896:4683021:fg3", "result": "L", "units": -1.0, "actual": 2.0, "clv": 0.0, "ev_close": 0.0246, "p_close": 0.4251, "ev_close_raw": 0.0291, "graded_at": "2026-10-31T21:49:49.757893+00:00"}
+{"id": "401909897:1966:pra", "result": "V", "units": 0.0, "actual": null, "ev_close": 0.0452, "p_close": 0.5388, "ev_close_raw": 0.0189, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909898:4395628:pra", "result": "L", "units": -1.0, "actual": 25.0, "clv": 1.0, "ev_close": -0.0039, "p_close": 0.5414, "ev_close_raw": 0.0206, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909898:5144091:ast", "result": "W", "units": 1.029, "actual": 7.0, "clv": 0.0, "ev_close": -0.0694, "p_close": 0.4586, "ev_close_raw": -0.0142, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909898:2490149:ast", "result": "W", "units": 0.0, "actual": 2.0, "clv": 0.0, "ev_close": -0.0825, "p_close": 0.5727, "ev_close_raw": -0.1256, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909898:4869342:pts", "result": "L", "units": -1.0, "actual": 8.0, "clv": 1.0, "ev_close": 0.0316, "p_close": 0.5561, "ev_close_raw": 0.0486, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909899:4065733:ast", "result": "V", "units": 0.0, "actual": null, "clv": 0.0, "ev_close": 0.0267, "p_close": 0.5233, "ev_close_raw": -0.0269, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909899:3064440:reb", "result": "W", "units": 0.0, "actual": 0.0, "clv": 0.0, "ev_close": 0.0185, "p_close": 0.611, "ev_close_raw": 0.0121, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909899:5142620:ast", "result": "W", "units": 1.08, "actual": 5.0, "clv": 0.0, "ev_close": 0.0485, "p_close": 0.5041, "ev_close_raw": -0.0083, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909900:3134907:reb", "result": "L", "units": -1.0, "actual": 3.0, "clv": 0.0, "ev_close": 0.02, "p_close": 0.4679, "ev_close_raw": 0.0287, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909900:4432848:pts", "result": "W", "units": 0.0, "actual": 8.0, "clv": 0.0, "ev_close": 0.0197, "p_close": 0.5173, "ev_close_raw": 0.0013, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909900:3133628:reb", "result": "L", "units": -1.0, "actual": 7.0, "clv": 0.0, "ev_close": 0.0611, "p_close": 0.6209, "ev_close_raw": 0.0543, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909900:4591725:ast", "result": "L", "units": -1.0, "actual": 7.0, "clv": 0.0, "ev_close": 0.0452, "p_close": 0.493, "ev_close_raw": -0.0126, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909900:4432158:pts", "result": "W", "units": 0.0, "actual": 27.0, "clv": 0.0, "ev_close": -0.0109, "p_close": 0.5091, "ev_close_raw": 0.0071, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909900:3992:pts", "result": "L", "units": -0.0, "actual": 13.0, "clv": 0.0, "ev_close": -0.0064, "p_close": 0.5159, "ev_close_raw": 0.0115, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909900:3908809:fg3", "result": "W", "units": 1.1600000000000001, "actual": 2.0, "clv": 0.0, "ev_close": 0.0555, "p_close": 0.4886, "ev_close_raw": 0.0537, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909901:5104157:ast", "result": "L", "units": -1.0, "actual": 4.0, "clv": 0.0, "ev_close": 0.0676, "p_close": 0.4642, "ev_close_raw": 0.0054, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909901:4066259:pts", "result": "L", "units": -0.0, "actual": 22.0, "clv": 0.0, "ev_close": 0.0406, "p_close": 0.5331, "ev_close_raw": 0.0225, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909901:5037871:ast", "result": "L", "units": -1.0, "actual": 6.0, "clv": 0.0, "ev_close": 0.0776, "p_close": 0.5131, "ev_close_raw": 0.0203, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909901:4592479:reb", "result": "W", "units": 1.0899999999999999, "actual": 3.0, "clv": 0.0, "ev_close": 0.1019, "p_close": 0.5272, "ev_close_raw": 0.0935, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909901:4431671:ast", "result": "L", "units": -1.0, "actual": 3.0, "clv": 0.0, "ev_close": 0.0401, "p_close": 0.4929, "ev_close_raw": -0.0174, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909901:4433247:reb", "result": "L", "units": -0.0, "actual": 6.0, "clv": 0.0, "ev_close": -0.0101, "p_close": 0.5439, "ev_close_raw": -0.0174, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909901:4397002:pra", "result": "L", "units": -1.0, "actual": 39.0, "clv": 1.0, "ev_close": 0.0869, "p_close": 0.5617, "ev_close_raw": 0.0606, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909901:4432816:ast", "result": "W", "units": 0.0, "actual": 4.0, "clv": 0.0, "ev_close": 0.1453, "p_close": 0.6125, "ev_close_raw": 0.0963, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909901:4432847:ast", "result": "L", "units": -0.0, "actual": 4.0, "clv": 0.0, "ev_close": 0.0894, "p_close": 0.4465, "ev_close_raw": 0.024, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909902:4432639:pts", "result": "W", "units": 0.885, "actual": 30.0, "clv": 0.0, "ev_close": 0.0267, "p_close": 0.5447, "ev_close_raw": 0.0441, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909902:4222252:pts", "result": "L", "units": -1.0, "actual": 10.0, "clv": 0.0, "ev_close": 0.048, "p_close": 0.5416, "ev_close_raw": 0.0301, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909902:3133626:pts", "result": "W", "units": 0.0, "actual": 11.0, "clv": -1.0, "ev_close": -0.1154, "p_close": 0.4379, "ev_close_raw": -0.0958, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "401909902:4278073:ast", "result": "W", "units": 0.0, "actual": 3.0, "clv": 0.0, "ev_close": 0.0274, "p_close": 0.5213, "ev_close_raw": -0.0264, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "2026-10-31:props:lottery", "result": "L", "units": -0.5, "graded_at": "2026-11-01T15:48:21.326557+00:00"}
+{"id": "2026-10-31:props:golden", "result": "L", "units": -0.5, "graded_at": "2026-11-01T15:48:21.326557+00:00"}

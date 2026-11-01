@@ -93,3 +93,12 @@
 {"id": "401909279:5279130:ast:8+:fanduel", "result": "L", "units": -0.25, "actual": 2.0, "graded_at": "2026-10-31T14:49:10.237529+00:00"}
 {"id": "401909896:4066336:pra:45+:draftkings", "result": "L", "units": -0.25, "actual": 20.0, "graded_at": "2026-10-31T21:49:49.758378+00:00"}
 {"id": "401909896:4683021:pra:55+:fanduel", "result": "L", "units": -0.25, "actual": 31.0, "graded_at": "2026-10-31T21:49:49.758378+00:00"}
+{"id": "401909897:3032979:pa:35+:fanduel", "result": "L", "units": -0.25, "actual": 11.0, "graded_at": "2026-11-01T15:48:21.327152+00:00"}
+{"id": "401909898:4277813:reb:6+:fanduel", "result": "L", "units": -0.25, "actual": 3.0, "graded_at": "2026-11-01T15:48:21.327152+00:00"}
+{"id": "401909898:4701230:pa:45+:fanduel", "result": "L", "units": -0.25, "actual": 17.0, "graded_at": "2026-11-01T15:48:21.327152+00:00"}
+{"id": "401909898:5144091:ast:8+:draftkings", "result": "L", "units": -0.25, "actual": 7.0, "graded_at": "2026-11-01T15:48:21.327152+00:00"}
+{"id": "401909898:4997538:reb:10+:fanduel", "result": "W", "units": 2.25, "actual": 10.0, "graded_at": "2026-11-01T15:48:21.327152+00:00"}
+{"id": "401909902:3133626:reb:8+:fanduel", "result": "L", "units": -0.25, "actual": 7.0, "graded_at": "2026-11-01T15:48:21.327152+00:00"}
+{"id": "401909902:4433192:reb:10+:draftkings", "result": "L", "units": -0.25, "actual": 3.0, "graded_at": "2026-11-01T15:48:21.327152+00:00"}
+{"id": "401909901:5104157:pa:40+:fanduel", "result": "W", "units": 2.5, "actual": 47.0, "graded_at": "2026-11-01T15:48:21.327152+00:00"}
+{"id": "401909901:4432847:pra:30+:fanduel", "result": "L", "units": -0.25, "actual": 9.0, "graded_at": "2026-11-01T15:48:21.327152+00:00"}
