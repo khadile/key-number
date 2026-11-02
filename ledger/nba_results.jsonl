@@ -227,3 +227,11 @@
 {"id": "401909901:alt:total:under:238.5:fanduel", "result": "W", "units": 0.3400000000000001, "graded_at": "2026-11-01T15:48:21.324842+00:00"}
 {"id": "2026-10-31:lottery", "result": "L", "units": -0.5, "graded_at": "2026-11-01T15:48:21.324842+00:00"}
 {"id": "2026-10-31:golden", "result": "W", "units": 0.5184, "graded_at": "2026-11-01T15:48:21.324842+00:00"}
+{"id": "401909903:spread", "result": "L", "units": -1.0, "clv": -0.5, "ev_close": -0.0733, "p_close": 0.4747, "graded_at": "2026-11-02T15:48:29.182516+00:00"}
+{"id": "401909903:total", "result": "L", "units": -1.0, "clv": 2.0, "ev_close": 0.0463, "p_close": 0.5481, "graded_at": "2026-11-02T15:48:29.182516+00:00"}
+{"id": "401909904:spread", "result": "L", "units": -1.0, "clv": -0.5, "ev_close": -0.0799, "p_close": 0.492, "graded_at": "2026-11-02T15:48:29.182516+00:00"}
+{"id": "401909904:total", "result": "L", "units": -1.0, "clv": -1.0, "ev_close": -0.0955, "p_close": 0.4735, "graded_at": "2026-11-02T15:48:29.182516+00:00"}
+{"id": "401909905:spread", "result": "L", "units": -1.0, "clv": 0.5, "ev_close": -0.0416, "p_close": 0.5125, "graded_at": "2026-11-02T15:48:29.182516+00:00"}
+{"id": "401909905:total", "result": "L", "units": -1.0, "clv": 2.0, "ev_close": 0.0164, "p_close": 0.5436, "graded_at": "2026-11-02T15:48:29.182516+00:00"}
+{"id": "401909906:spread", "result": "L", "units": -1.0, "clv": -1.0, "ev_close": -0.1089, "p_close": 0.4665, "graded_at": "2026-11-02T15:48:29.182516+00:00"}
+{"id": "401909906:total", "result": "W", "units": 0.8799999999999999, "clv": -2.5, "ev_close": -0.1513, "p_close": 0.4515, "graded_at": "2026-11-02T15:48:29.182516+00:00"}
