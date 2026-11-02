@@ -91,3 +91,6 @@
 {"kind": "prop", "id": "2026_08_NE_MIA:00-0036875:rec_yds", "game_id": "2026_08_NE_MIA", "verdict": "ev", "failed": ["lean"], "at": "2026-10-31T14:15:27.339432+00:00"}
 {"kind": "prop", "id": "2026_08_PHI_WAS:00-0034351:rec_yds", "game_id": "2026_08_PHI_WAS", "verdict": "good", "failed": [], "at": "2026-10-31T14:15:27.339432+00:00"}
 {"kind": "prop", "id": "2026_08_TEN_CIN:00-0035261:receptions", "game_id": "2026_08_TEN_CIN", "verdict": "good", "failed": [], "at": "2026-10-31T14:15:27.339432+00:00"}
+{"kind": "game", "id": "2026_08_CHI_SEA:spread", "game_id": "2026_08_CHI_SEA", "verdict": "ev", "failed": ["who"], "at": "2026-11-02T15:15:39.765159+00:00"}
+{"kind": "game", "id": "2026_08_CHI_SEA:ml", "game_id": "2026_08_CHI_SEA", "verdict": "ev", "failed": ["who"], "at": "2026-11-02T15:15:39.765159+00:00"}
+{"kind": "prop", "id": "2026_08_CHI_SEA:00-0039918:pass_yds", "game_id": "2026_08_CHI_SEA", "verdict": "good", "failed": [], "at": "2026-11-02T15:15:39.765159+00:00"}

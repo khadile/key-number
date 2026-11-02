@@ -101,3 +101,16 @@
 {"id": "2026_07:props:golden", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-10-26T21:15:24.991769+00:00"}
 {"id": "2026_07:props:lottery", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-10-26T21:15:24.991769+00:00"}
 {"id": "2026_08_CAR_GB:00-0039811:rec_yds", "result": "L", "units": -1.0, "actual": 9.0, "clv": 2.0, "graded_at": "2026-10-31T14:19:26.590112+00:00"}
+{"id": "2026_08_ATL_TB:00-0039361:receptions", "result": "L", "units": -1.0, "actual": 0.0, "clv": 1.0, "graded_at": "2026-11-02T15:25:18.292246+00:00"}
+{"id": "2026_08_BAL_BUF:00-0032764:rec_yds", "result": "W", "units": 0.935, "actual": 7.0, "clv": 0.0, "graded_at": "2026-11-02T15:25:18.292246+00:00"}
+{"id": "2026_08_CLE_PIT:00-0041037:receptions", "result": "L", "units": -1.0, "actual": 6.0, "clv": 0.0, "graded_at": "2026-11-02T15:25:18.292246+00:00"}
+{"id": "2026_08_IND_JAX:00-0040719:rec_yds", "result": "L", "units": -1.0, "actual": 55.0, "clv": 2.0, "graded_at": "2026-11-02T15:25:18.292246+00:00"}
+{"id": "2026_08_KC_DEN:00-0041496:rec_yds", "result": "W", "units": 0.8799999999999999, "actual": 63.0, "clv": 0.0, "graded_at": "2026-11-02T15:25:18.292246+00:00"}
+{"id": "2026_08_KC_DEN:00-0033881:rec_yds", "result": "W", "units": 0.8799999999999999, "actual": 0.0, "clv": 0.0, "graded_at": "2026-11-02T15:25:18.292246+00:00"}
+{"id": "2026_08_LV_NYJ:00-0040122:rush_yds", "result": "L", "units": -1.0, "actual": 9.0, "clv": 1.0, "graded_at": "2026-11-02T15:25:18.292246+00:00"}
+{"id": "2026_08_MIN_DET:00-0036322:receptions", "result": "W", "units": 0.6759999999999999, "actual": 5.0, "clv": 0.0, "graded_at": "2026-11-02T15:25:18.292246+00:00"}
+{"id": "2026_08_NE_MIA:00-0036875:rec_yds", "result": "L", "units": -1.0, "actual": 8.0, "clv": 4.0, "graded_at": "2026-11-02T15:25:18.292246+00:00"}
+{"id": "2026_08_PHI_WAS:00-0034351:rec_yds", "result": "W", "units": 0.917, "actual": 30.0, "clv": -1.0, "graded_at": "2026-11-02T15:25:18.292246+00:00"}
+{"id": "2026_08_TEN_CIN:00-0035261:receptions", "result": "W", "units": 1.48, "actual": 3.0, "clv": 0.0, "graded_at": "2026-11-02T15:25:18.292246+00:00"}
+{"id": "2026_08:props:golden", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-11-02T15:25:18.292246+00:00"}
+{"id": "2026_08:props:lottery", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-11-02T15:25:18.292246+00:00"}
