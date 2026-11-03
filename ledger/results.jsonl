@@ -132,3 +132,8 @@
 {"id": "2026_08_PHI_WAS:spread", "result": "W", "units": 0.9259999999999999, "clv": 0.0, "graded_at": "2026-11-02T15:24:54.968422+00:00"}
 {"id": "2026_08_PHI_WAS:total", "result": "L", "units": -1.0, "clv": 0.0, "graded_at": "2026-11-02T15:24:54.968422+00:00"}
 {"id": "2026_08_PHI_WAS:ml", "result": "W", "units": 0.4590000000000001, "clv": null, "graded_at": "2026-11-02T15:24:54.968422+00:00"}
+{"id": "2026_08_CHI_SEA:spread", "result": "W", "units": 0.8200000000000001, "clv": 0.0, "graded_at": "2026-11-03T15:23:25.635722+00:00"}
+{"id": "2026_08_CHI_SEA:total", "result": "L", "units": -1.0, "clv": 0.5, "graded_at": "2026-11-03T15:23:25.635722+00:00"}
+{"id": "2026_08_CHI_SEA:ml", "result": "W", "units": 1.48, "clv": null, "graded_at": "2026-11-03T15:23:25.635722+00:00"}
+{"id": "2026_08:golden", "result": "W", "units": 0.82769, "clv": null, "graded_at": "2026-11-03T15:23:25.635722+00:00"}
+{"id": "2026_08:lottery", "result": "L", "units": -0.5, "clv": null, "graded_at": "2026-11-03T15:23:25.635722+00:00"}

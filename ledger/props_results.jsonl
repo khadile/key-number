@@ -114,3 +114,4 @@
 {"id": "2026_08_TEN_CIN:00-0035261:receptions", "result": "W", "units": 1.48, "actual": 3.0, "clv": 0.0, "graded_at": "2026-11-02T15:25:18.292246+00:00"}
 {"id": "2026_08:props:golden", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-11-02T15:25:18.292246+00:00"}
 {"id": "2026_08:props:lottery", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-11-02T15:25:18.292246+00:00"}
+{"id": "2026_08_CHI_SEA:00-0039918:pass_yds", "result": "L", "units": -1.0, "actual": 247.0, "clv": 6.0, "graded_at": "2026-11-03T15:23:47.407392+00:00"}
