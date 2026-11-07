@@ -137,3 +137,6 @@
 {"id": "2026_08_CHI_SEA:ml", "result": "W", "units": 1.48, "clv": null, "graded_at": "2026-11-03T15:23:25.635722+00:00"}
 {"id": "2026_08:golden", "result": "W", "units": 0.82769, "clv": null, "graded_at": "2026-11-03T15:23:25.635722+00:00"}
 {"id": "2026_08:lottery", "result": "L", "units": -0.5, "clv": null, "graded_at": "2026-11-03T15:23:25.635722+00:00"}
+{"id": "2026_09_JAX_BAL:spread", "result": "L", "units": -1.0, "clv": 1.0, "graded_at": "2026-11-07T15:19:16.645534+00:00"}
+{"id": "2026_09_JAX_BAL:total", "result": "W", "units": 0.952, "clv": -2.5, "graded_at": "2026-11-07T15:19:16.645534+00:00"}
+{"id": "2026_09_JAX_BAL:ml", "result": "L", "units": -1.0, "clv": null, "graded_at": "2026-11-07T15:19:16.645534+00:00"}
