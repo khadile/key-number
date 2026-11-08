@@ -703,3 +703,14 @@
 {"id": "401909295:4592479:pts", "result": "W", "units": 0.0, "actual": 8.0, "clv": 0.0, "ev_close": 0.018, "p_close": 0.5488, "ev_close_raw": -0.0075, "graded_at": "2026-11-07T15:49:11.696965+00:00"}
 {"id": "2026-11-06:props:lottery", "result": "L", "units": -0.5, "graded_at": "2026-11-07T15:49:11.696965+00:00"}
 {"id": "2026-11-06:props:golden", "result": "L", "units": -0.5, "graded_at": "2026-11-07T15:49:11.696965+00:00"}
+{"id": "401909939:4431680:pts", "result": "L", "units": -0.0, "actual": 16.0, "clv": -1.0, "ev_close": -0.0127, "p_close": 0.4888, "ev_close_raw": -0.0401, "graded_at": "2026-11-08T15:48:08.129463+00:00"}
+{"id": "401909939:5101761:ast", "result": "W", "units": 1.1800000000000002, "actual": 3.0, "clv": 0.0, "ev_close": -0.004, "p_close": 0.4569, "ev_close_raw": -0.0569, "graded_at": "2026-11-08T15:48:08.129463+00:00"}
+{"id": "401909940:3136195:ast", "result": "W", "units": 0.8999999999999999, "actual": 3.0, "clv": 0.0, "ev_close": 0.0496, "p_close": 0.5524, "ev_close_raw": 0.0032, "graded_at": "2026-11-08T15:48:08.129463+00:00"}
+{"id": "401909941:4278073:pts", "result": "W", "units": 0.0, "actual": 30.0, "clv": -1.0, "ev_close": -0.0721, "p_close": 0.4754, "ev_close_raw": -0.0984, "graded_at": "2026-11-08T15:48:08.129463+00:00"}
+{"id": "401909941:4900671:ast", "result": "W", "units": 1.2999999999999998, "actual": 0.0, "clv": 0.0, "ev_close": 0.0288, "p_close": 0.4473, "ev_close_raw": -0.0268, "graded_at": "2026-11-08T15:48:08.129463+00:00"}
+{"id": "401909942:4709138:ast", "result": "W", "units": 0.0, "actual": 1.0, "clv": 0.0, "ev_close": 0.0878, "p_close": 0.473, "ev_close_raw": 0.0317, "graded_at": "2026-11-08T15:48:08.129463+00:00"}
+{"id": "401909943:4601023:ast", "result": "L", "units": -0.0, "actual": 3.0, "clv": 0.0, "ev_close": 0.012, "p_close": 0.5163, "ev_close_raw": -0.0361, "graded_at": "2026-11-08T15:48:08.129463+00:00"}
+{"id": "401909943:4437244:ast", "result": "L", "units": -0.0, "actual": 6.0, "clv": 0.0, "ev_close": 0.0192, "p_close": 0.455, "ev_close_raw": -0.0351, "graded_at": "2026-11-08T15:48:08.129463+00:00"}
+{"id": "401909944:5104157:ast", "result": "L", "units": -0.0, "actual": 3.0, "clv": 0.0, "ev_close": 0.043, "p_close": 0.4575, "ev_close_raw": -0.0123, "graded_at": "2026-11-08T15:48:08.129463+00:00"}
+{"id": "401909944:4845367:ast", "result": "W", "units": 0.0, "actual": 5.0, "clv": 0.0, "ev_close": 0.0445, "p_close": 0.4748, "ev_close_raw": -0.0093, "graded_at": "2026-11-08T15:48:08.129463+00:00"}
+{"id": "2026-11-07:props:lottery", "result": "W", "units": 4.2633, "graded_at": "2026-11-08T15:48:08.129463+00:00"}

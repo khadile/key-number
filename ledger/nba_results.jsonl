@@ -332,3 +332,21 @@
 {"id": "401909292:alt:total:under:242.5:fanduel", "result": "W", "units": 0.3600000000000001, "graded_at": "2026-11-07T15:49:11.695168+00:00"}
 {"id": "401909295:alt:total:under:237.5:fanduel", "result": "W", "units": 0.49, "graded_at": "2026-11-07T15:49:11.695168+00:00"}
 {"id": "2026-11-06:golden", "result": "W", "units": 0.5132000000000001, "graded_at": "2026-11-07T15:49:11.695168+00:00"}
+{"id": "401909938:spread", "result": "L", "units": -1.0, "clv": -0.5, "ev_close": -0.0828, "p_close": 0.4887, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "401909938:total", "result": "L", "units": -1.0, "clv": 0.5, "ev_close": -0.0116, "p_close": 0.5087, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "401909938:ml", "result": "W", "units": 0.373, "ev_close": 0.0015, "p_close": 0.7294, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "401909939:spread", "result": "L", "units": -1.0, "clv": 0.0, "ev_close": -0.0649, "p_close": 0.5, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "401909939:total", "result": "W", "units": 0.8700000000000001, "clv": 0.5, "ev_close": -0.0508, "p_close": 0.5076, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "401909940:spread", "result": "L", "units": -1.0, "clv": 0.0, "ev_close": -0.0379, "p_close": 0.4909, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "401909940:total", "result": "W", "units": 0.909, "clv": 2.0, "ev_close": 0.0385, "p_close": 0.544, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "401909941:spread", "result": "L", "units": -1.0, "clv": -1.0, "ev_close": -0.0877, "p_close": 0.4678, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "401909941:total", "result": "L", "units": -1.0, "clv": 2.0, "ev_close": 0.0412, "p_close": 0.5395, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "401909942:spread", "result": "L", "units": -1.0, "clv": -2.0, "ev_close": -0.1592, "p_close": 0.4345, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "401909942:total", "result": "W", "units": 0.95, "clv": -3.0, "ev_close": -0.1554, "p_close": 0.4331, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "401909943:spread", "result": "W", "units": 0.952, "clv": 0.0, "ev_close": -0.0239, "p_close": 0.5, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "401909943:total", "result": "L", "units": -1.0, "clv": 0.0, "ev_close": -0.045, "p_close": 0.5, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "401909944:spread", "result": "L", "units": -1.0, "clv": 0.0, "ev_close": -0.0459, "p_close": 0.4954, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "401909944:total", "result": "W", "units": 0.893, "clv": 2.0, "ev_close": 0.0352, "p_close": 0.5469, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "401909938:alt:total:under:235.5:fanduel", "result": "W", "units": 0.56, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "401909944:alt:total:under:240.5:fanduel", "result": "W", "units": 0.29000000000000004, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
+{"id": "2026-11-07:golden", "result": "W", "units": 0.5062, "graded_at": "2026-11-08T15:48:08.127267+00:00"}
