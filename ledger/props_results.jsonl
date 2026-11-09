@@ -117,3 +117,9 @@
 {"id": "2026_08_CHI_SEA:00-0039918:pass_yds", "result": "L", "units": -1.0, "actual": 247.0, "clv": 6.0, "graded_at": "2026-11-03T15:23:47.407392+00:00"}
 {"id": "2026_09_JAX_BAL:00-0032764:rec_yds", "result": "W", "units": 0.855, "actual": 0.0, "clv": 0.0, "graded_at": "2026-11-07T15:19:40.597103+00:00"}
 {"id": "2026_09_JAX_BAL:00-0036550:receptions", "result": "L", "units": -1.0, "actual": 1.0, "clv": 0.0, "graded_at": "2026-11-07T15:19:40.597103+00:00"}
+{"id": "2026_09_CLE_NO:00-0038551:rush_yds", "result": "V", "units": 0.0, "actual": null, "clv": null, "graded_at": "2026-11-09T15:25:01.251409+00:00"}
+{"id": "2026_09_DEN_CAR:00-0041496:rec_yds", "result": "L", "units": -1.0, "actual": 31.0, "clv": 0.0, "graded_at": "2026-11-09T15:25:01.251409+00:00"}
+{"id": "2026_09_DET_MIA:00-0039139:rec_yds", "result": "W", "units": 0.893, "actual": 0.0, "clv": 1.0, "graded_at": "2026-11-09T15:25:01.251409+00:00"}
+{"id": "2026_09_NYJ_KC:00-0039890:receptions", "result": "W", "units": 1.1, "actual": 0.0, "clv": 0.0, "graded_at": "2026-11-09T15:25:01.251409+00:00"}
+{"id": "2026_09:props:golden", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-11-09T15:25:01.251409+00:00"}
+{"id": "2026_09:props:lottery", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-11-09T15:25:01.251409+00:00"}

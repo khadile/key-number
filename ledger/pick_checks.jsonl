@@ -111,3 +111,4 @@
 {"kind": "prop", "id": "2026_09_DEN_CAR:00-0041496:rec_yds", "game_id": "2026_09_DEN_CAR", "verdict": "good", "failed": [], "at": "2026-11-07T15:15:30.429805+00:00"}
 {"kind": "prop", "id": "2026_09_DET_MIA:00-0039139:rec_yds", "game_id": "2026_09_DET_MIA", "verdict": "good", "failed": [], "at": "2026-11-07T15:15:30.429805+00:00"}
 {"kind": "prop", "id": "2026_09_NYJ_KC:00-0039890:receptions", "game_id": "2026_09_NYJ_KC", "verdict": "ev", "failed": ["who"], "at": "2026-11-07T15:15:30.429805+00:00"}
+{"kind": "prop", "id": "2026_09_BUF_MIN:00-0037261:receptions", "game_id": "2026_09_BUF_MIN", "verdict": "good", "failed": [], "at": "2026-11-09T15:15:28.150242+00:00"}
