@@ -171,3 +171,7 @@
 {"id": "2026_09_ARI_SEA:ml", "result": "L", "units": -1.0, "clv": null, "graded_at": "2026-11-09T15:24:46.770787+00:00"}
 {"id": "2026_09_TB_CHI:spread", "result": "L", "units": -1.0, "clv": 0.0, "graded_at": "2026-11-09T15:24:46.770787+00:00"}
 {"id": "2026_09_TB_CHI:total", "result": "W", "units": 0.9259999999999999, "clv": 1.0, "graded_at": "2026-11-09T15:24:46.770787+00:00"}
+{"id": "2026_09_BUF_MIN:spread", "result": "L", "units": -1.0, "clv": 0.5, "graded_at": "2026-11-10T15:23:30.674566+00:00"}
+{"id": "2026_09_BUF_MIN:total", "result": "L", "units": -1.0, "clv": 0.5, "graded_at": "2026-11-10T15:23:30.674566+00:00"}
+{"id": "2026_09:golden", "result": "L", "units": -0.5, "clv": null, "graded_at": "2026-11-10T15:23:30.674566+00:00"}
+{"id": "2026_09:lottery", "result": "L", "units": -0.5, "clv": null, "graded_at": "2026-11-10T15:23:30.674566+00:00"}

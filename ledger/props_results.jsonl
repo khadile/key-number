@@ -123,3 +123,4 @@
 {"id": "2026_09_NYJ_KC:00-0039890:receptions", "result": "W", "units": 1.1, "actual": 0.0, "clv": 0.0, "graded_at": "2026-11-09T15:25:01.251409+00:00"}
 {"id": "2026_09:props:golden", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-11-09T15:25:01.251409+00:00"}
 {"id": "2026_09:props:lottery", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-11-09T15:25:01.251409+00:00"}
+{"id": "2026_09_BUF_MIN:00-0037261:receptions", "result": "W", "units": 0.685, "actual": 4.0, "clv": 1.0, "graded_at": "2026-11-10T15:23:49.172251+00:00"}
