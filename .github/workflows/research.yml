@@ -1,0 +1,66 @@
+name: research
+
+# One-off studies that need what only Actions has: the OddsPapi key and the odds archive in the cache.
+# Run by hand; each job prints tallies only (the log of a public repository is public, odds data stays out).
+#
+#   exchange-probe   python -m pipeline.exchange_probe  (free OddsPapi calls: do the exchanges carry props?)
+#   nba-line-timing  python -m nba.line_timing          (the board's NBA line rule at other lock times)
+
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Which study"
+        type: choice
+        options:
+          - exchange-probe
+          - nba-line-timing
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      # read only: the builds own this cache, a study never writes it back
+      - name: Restore NBA data
+        if: inputs.job == 'nba-line-timing'
+        uses: actions/cache/restore@v4
+        with:
+          path: data/nba
+          key: nba-data-research
+          restore-keys: nba-data-
+
+      - name: Exchange probe
+        if: inputs.job == 'exchange-probe'
+        env:
+          ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
+          PYTHONIOENCODING: utf-8
+        run: python -m pipeline.exchange_probe
+
+      - name: NBA line timing
+        if: inputs.job == 'nba-line-timing'
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python -m nba.line_timing
+
+      - name: Save the report
+        if: inputs.job == 'nba-line-timing'
+        run: |
+          git config user.name "key-number-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/nba_line_timing.json
+          git commit -m "NBA line timing study $(TZ=America/New_York date +%Y-%m-%d)" || echo "nothing to commit"
+          for i in 1 2 3 4 5; do git pull --rebase -q && git push && break; sleep 15; done
