@@ -7,6 +7,7 @@ Writes board/nfl_data.json and renders board/nfl_board.html (board/render.py), w
 """
 import argparse
 import json
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -435,6 +436,7 @@ def main() -> None:
                     if not far(q):
                         groups["  re-locked, same side" if q["side"] == h["side"] else "  re-locked, other side"].append(q)
         print(f"relock study, weeks {finished['week'].min()}-{finished['week'].max()}:")
+        study_out = {"weeks": [int(finished["week"].min()), int(finished["week"].max())], "at": now.isoformat(), "rows": []}
         for name, ps in groups.items():
             gr = ledger.grade_all([{**q, "risk": STRAIGHT_RISK} for q in ps], finals, closes)
             u = [ledger.units_for(r["result"], q["dec"], STRAIGHT_RISK) for q, r in zip(ps, gr)]
@@ -442,6 +444,11 @@ def main() -> None:
             w, l = sum(r["result"] == "W" for r in gr), sum(r["result"] == "L" for r in gr)
             print(f"  {name:42} n {len(ps):3d}  {w}-{l}  {sum(u):+.1f}u  EV then {100 * np.mean([q['ev'] for q in ps]) if ps else 0:+.1f}%"
                   f"  EV at the close {100 * np.mean(ec) if ec else 0:+.1f}% ({len(ec)})  ML {sum(q['market'] == 'ml' for q in ps)}")
+            study_out["rows"].append({"set": name.strip(), "n": len(ps), "w": w, "l": l, "units": round(sum(u), 2),
+                                      "ev": round(float(np.mean([q["ev"] for q in ps])), 4) if ps else None,
+                                      "ev_close": round(float(np.mean(ec)), 4) if ec else None, "ev_close_n": len(ec),
+                                      "ml": sum(q["market"] == "ml" for q in ps), "by_week": dict(sorted(Counter(q["week"] for q in ps).items()))})
+        (REPORTS / "nfl_relock_study.json").write_text(json.dumps(study_out, indent=1), encoding="utf-8")
 
     # --- public betting splits (pipeline/action_network.py, user 2026-10-26): context on the cards and on each pick as
     # it locks, never a pricing input. Saved raw at every build (Actions cache) for the public-tax study.

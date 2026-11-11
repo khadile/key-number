@@ -84,6 +84,17 @@ jobs:
           PYTHONIOENCODING: utf-8
         run: python -m board.build --dry-run --relock-study
 
+      # tallies of the held-pick replay; nothing else a dry run writes is kept
+      - name: Save the held-pick replay
+        if: inputs.job == 'nfl-dry-run'
+        run: |
+          git config user.name "key-number-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f reports/nfl_relock_study.json
+          git commit -m "NFL held-pick replay $(TZ=America/New_York date +%Y-%m-%d)" -- reports/nfl_relock_study.json || echo "nothing to commit"
+          git checkout -q -- .   # drop what the dry run rewrote (payload, reports): only the replay's tallies are kept
+          for i in 1 2 3 4 5; do git pull --rebase -q && git push && break; sleep 15; done
+
       - name: Restore exchange snapshots
         if: inputs.job == 'exchange-test'
         uses: actions/cache/restore@v4
