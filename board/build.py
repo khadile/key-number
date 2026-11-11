@@ -40,6 +40,14 @@ LIVE_START_WEEK = 5  # first week whose picks were locked live; earlier 2026 wee
 # while moneylines at 1.5 to 3 points made +12% in both halves (393 bets). Totals are not held (two +EV all year).
 GAP_HOLD = 3.0
 GAP_RULE_FROM = (2026, 11)
+# A held game gets one second look, at its last board update before kickoff (Thursday, Saturday or Monday 10am ET:
+# props.pricing.lock_time), when the injury report has named the quarterback and the model is rebuilt on him.
+# If the model is then within 3 points of the market and the held market has a +EV side at the prices of that
+# moment, that side is locked as a new pick ("<held id>:relock", 1u, never a Pick of the Week or bet-list pick);
+# the held pick stays in the ledger and in the Held row, and the record counts the market once, as its re-lock.
+# A "relook" line marks the game as looked at, whatever came of it. Evidence: with the real starter the model's
+# side covered 56% of 278 games where its team had changed quarterback (2018-2026, at the close); the re-locks
+# have their own record row and are judged at the close like everything else.
 BET_BOARD = BL.Board(half_life=3, cap=6)   # the bet list (model/betlist.py): three-week half-life, six a week
 
 
@@ -163,6 +171,7 @@ def _pick_rows(picks: list[dict], results: list[dict], verdict_by: dict | None =
     vb = verdict_by or {}
     evc = evc or {}
     by_id = {p["id"]: p for p in picks}
+    superseded = {p["relock_of"] for p in picks if p.get("relock_of")}   # held picks re-locked later (GAP_HOLD)
     out = []
     for p in picks:
         r = res.get(p["id"], {})
@@ -177,7 +186,8 @@ def _pick_rows(picks: list[dict], results: list[dict], verdict_by: dict | None =
             game = f"{away} at {home}"
         out.append({"week": p["week"], "market": market, "label": label, "game": game, "legs": legs,
                     "american": p.get("american"), "book": p.get("book_name"), "potw": bool(p.get("potw")), "bet": bool(p.get("bet")),
-                    "hold": p.get("hold"), **_stake(p), **vb.get(p["id"], {}),
+                    "hold": p.get("hold"), "relock": bool(p.get("relock_of")), "superseded": p["id"] in superseded,
+                    **_stake(p), **vb.get(p["id"], {}),
                     "p_win": p.get("p_win") if p.get("kind") != "parlay" else p.get("p"),
                     "ev": p.get("ev"), "result": r.get("result"),
                     # straight picks at 1u in the record, leans included (board/ledger.record)
@@ -232,6 +242,8 @@ def main() -> None:
     ap.add_argument("--sim-lock", choices=("tuesday", "last", "last-info"), default="tuesday",
                     help="replay of weeks 1-4: lock game lines at Tuesday's prices (default), at the last board "
                          "update before each game, or there with that later information")
+    ap.add_argument("--relock-study", action="store_true",
+                    help="print how Tuesday's 3+ point picks did, and what a second look at the last update would have locked")
     args = ap.parse_args()
     now = datetime.now(timezone.utc)
 
@@ -403,6 +415,34 @@ def main() -> None:
     sim_results = ledger.grade_all(sim, finals, closes)
     pre = ledger.record(sim, sim_results)
 
+    if args.relock_study:
+        # Every finished week: Tuesday's +EV spread and moneyline picks with the model 3+ points from the market (what
+        # GAP_HOLD holds, at Tuesday prices with Tuesday information), and what a second look at the game's last update
+        # would lock (that moment's prices, the real starters). Tallies only.
+        groups: dict[str, list[dict]] = {"held on Tuesday": [], "re-locked (within 3 at the last update)": [],
+                                         "still 3+ at the last update": [], "  re-locked, same side": [], "  re-locked, other side": []}
+        far = lambda q: q.get("market_spread") is not None and abs(q["model_margin"] - q["market_spread"]) >= GAP_HOLD
+        for wk in sorted(finished["week"].unique()):
+            fw = finished.filter(pl.col("week") == wk)
+            tue = [q for q in make_picks(fw, at_publish, pub_by, False) if q["market"] != "total" and q["ev"] > 0 and far(q)]
+            late = {(q["game_id"], q["market"]): q
+                    for q in make_picks(fw.filter(pl.col("game_id").is_in([q["game_id"] for q in tue])), at_last_update, live_by, False)}
+            for h in tue:
+                groups["held on Tuesday"].append(h)
+                q = late.get((h["game_id"], h["market"]))
+                if q and q["ev"] > 0:
+                    groups["still 3+ at the last update" if far(q) else "re-locked (within 3 at the last update)"].append(q)
+                    if not far(q):
+                        groups["  re-locked, same side" if q["side"] == h["side"] else "  re-locked, other side"].append(q)
+        print(f"relock study, weeks {finished['week'].min()}-{finished['week'].max()}:")
+        for name, ps in groups.items():
+            gr = ledger.grade_all([{**q, "risk": STRAIGHT_RISK} for q in ps], finals, closes)
+            u = [ledger.units_for(r["result"], q["dec"], STRAIGHT_RISK) for q, r in zip(ps, gr)]
+            ec = [e for q in ps if (e := ev_close(q, closes.get(q["game_id"]), pricer)) is not None]
+            w, l = sum(r["result"] == "W" for r in gr), sum(r["result"] == "L" for r in gr)
+            print(f"  {name:42} n {len(ps):3d}  {w}-{l}  {sum(u):+.1f}u  EV then {100 * np.mean([q['ev'] for q in ps]) if ps else 0:+.1f}%"
+                  f"  EV at the close {100 * np.mean(ec) if ec else 0:+.1f}% ({len(ec)})  ML {sum(q['market'] == 'ml' for q in ps)}")
+
     # --- public betting splits (pipeline/action_network.py, user 2026-10-26): context on the cards and on each pick as
     # it locks, never a pricing input. Saved raw at every build (Actions cache) for the public-tax study.
     nick = dict(pl.read_parquet(RAW / "teams.parquet").select("team_abbr", "team_nick").iter_rows())
@@ -423,9 +463,22 @@ def main() -> None:
                    if p["season"] == season and p.get("week") == week and p.get("kind") == "pick"}
     todo = this_week.filter(~pl.col("game_id").is_in(list(week_locked)))
     new_locks: list[dict] = []
+    relooks: list[dict] = []
     if week >= LIVE_START_WEEK:
         if todo.height:
             new_locks += make_picks(todo, lambda g, L: now, live_by, not week_locked)
+        relooked = {r["game_id"] for r in ledger.read(ledger.PICKS) if r.get("kind") == "relook"}
+        held_due = [p for p in existing if p.get("kind") == "pick" and p.get("hold") and p["season"] == season and p["week"] == week
+                    and p["game_id"] not in relooked and lock_time(kickoff_of[p["game_id"]]) <= now < kickoff_of[p["game_id"]]]
+        for gid in sorted({p["game_id"] for p in held_due}):
+            fresh = {p["market"]: p for p in make_picks(this_week.filter(pl.col("game_id") == gid), lambda g, L: now, live_by, False)}
+            took = [{**fresh[h["market"]], "id": f"{h['id']}:relock", "relock_of": h["id"]} for h in held_due
+                    if h["game_id"] == gid and (q := fresh.get(h["market"])) and q["ev"] > 0 and not q.get("hold")]
+            new_locks += took
+            any_ = next(iter(fresh.values()), None)
+            relooks.append({"kind": "relook", "id": f"{gid}:relook", "game_id": gid, "season": season, "week": week, "at": now.isoformat(),
+                            "relocked": [p["id"] for p in took],
+                            "gap": round(abs(any_["model_margin"] - any_["market_spread"]), 1) if any_ and any_.get("market_spread") is not None else None})
         # Parlays the week does not have yet, built from locked picks whose games have not started.
         week_picks = [p for p in existing + new_locks if p.get("kind") == "pick"
                       and p["season"] == season and p["week"] == week and kickoff_of[p["game_id"]] > now]
@@ -460,7 +513,9 @@ def main() -> None:
                      for p in new_locks if p["ev"] > 0 and p.get("risk", STRAIGHT_RISK) > 0]
             new_bl = [BL.marker(bl_id, BL.choose(bl_cands, bl_cells, BET_BOARD), bl_cells,
                                 {"season": season, "week": week, "at": now.isoformat()})]
-        writes = migrations + new_locks + new_parlays + new_bl
+        writes = migrations + new_locks + new_parlays + new_bl + relooks
+        if relooks:
+            print(f"held games looked at again: {len(relooks)}, re-locked picks: {sum(len(r['relocked']) for r in relooks)}")
         if writes:
             if args.dry_run:
                 print(f"dry run: would write {len(writes)} ledger lines for week {week}: "

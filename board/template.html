@@ -1340,7 +1340,8 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     else if (p.market === "total") s = `Model total ${num(p.model_total, 1)}, market ${half(p.market_total)}. `;
     return `${s}Wins ${pct(win, 1)} by our numbers; ${am(p.american)} needs ${pct(need, 1)} to break even. EV ${signed(100 * p.ev, 1)}%. ${stakeWhy(p)}`;
   }
-  const stakeWhy = (p) => (p.hold ? "Held: the model is 3 or more points from the market, which usually means news the model lacks (often who plays quarterback). No stake; the record still counts it at 1u."
+  const stakeWhy = (p) => (p.relock_of ? `Stake 1u. Re-locked at the game's last update: held on Tuesday with the model 3 or more points from the market, within 3 now that the injury report is in. Quarter Kelly, its own record: ${stakeU(p.kelly_u)}.`
+    : p.hold ? "Held: the model is 3 or more points from the market, which usually means news the model lacks (often who plays quarterback). No stake; the record still counts it at 1u."
     : p.risk === 0 ? "A lean: negative EV, so no stake; the record still counts it at 1u."
     : p.ev <= 0 ? "Staked 1u: locked before the lean rule (week 6)."
     : `Stake 1u. Quarter Kelly, its own record: ${stakeU(p.kelly_u)}.`);
@@ -1913,9 +1914,9 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
         <p class="note">Weeks 1–${D.meta.live_start - 1} were replayed before launch at Tuesday lines with only Tuesday information; picks are live from week ${D.meta.live_start}. Every pick counts at 1u here, ${term("lean", "leans")} included, so this is the model's full record; the board gives leans no stake because their price is against them. The Quarter Kelly section below is the +EV picks only.</p>
         ${leansNote(A)}</section>
       <section class="sec"><header><h2>By category <em>closing line value</em></h2></header>${closeByCat([...(D.record.pre_rows || []), ...(D.record.live_rows || [])], [
-        ["Bet list", (r) => r.bet], ["Spread", (r) => r.market === "spread"], ["Over/under", (r) => r.market === "total"], ["Moneyline", (r) => r.market === "ml"],
+        ["Bet list", (r) => r.bet], ["Spread", (r) => r.market === "spread" && !r.superseded], ["Over/under", (r) => r.market === "total"], ["Moneyline", (r) => r.market === "ml" && !r.superseded],
         ["Picks of the week", (r) => r.potw], ["Good picks", (r) => r.verdict === "good"], ["+EV picks", (r) => !isPar(r) && r.ev > 0 && !r.hold],
-        ["Held: 3+ points from the market", (r) => !!r.hold], ["Leans", (r) => r.risk === 0 && !r.hold], ["Parlays", isPar]])}${blCells(D.betlist && { ...D.betlist, half: "3 weeks" })}</section>
+        ["Held: 3+ points from the market", (r) => !!r.hold], ["Re-locked after a hold", (r) => r.relock], ["Leans", (r) => r.risk === 0 && !r.hold], ["Parlays", isPar]])}${blCells(D.betlist && { ...D.betlist, half: "3 weeks" })}</section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${unitsChart(A) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
       ${verdictSection(D.record.verdicts, "pick")}
       ${kellySection(A.kelly, D.meta.live_start, "picks", `<div class="strip three">${kTile(term("ats", "ATS"), A.kelly.ats)}${kTile("Over/under", A.kelly.ou)}${kTile("Moneyline", A.kelly.ml)}</div>`)}

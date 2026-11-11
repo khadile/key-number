@@ -47,7 +47,7 @@ def read_picks() -> list[dict]:
     stakes = {r["id"]: r["risk"] for r in rows if r.get("kind") == "stake"}
     out = []
     for r in rows:
-        if r.get("kind") in ("parlay_type", "stake", "betlist"):   # betlist: board/build.py marks its picks
+        if r.get("kind") in ("parlay_type", "stake", "betlist", "relook"):   # betlist, relook: board/build.py's markers
             continue
         if r.get("kind") == "parlay":
             r = {**r, "type": types.get(r["id"], r.get("type", "golden"))}
@@ -156,7 +156,10 @@ def record(picks: list[dict], results: list[dict]) -> dict:
     for r in graded:
         if r.get("kind") != "parlay":
             r.update(units=units_for(r["result"], r["dec"], STRAIGHT_RISK), risk=STRAIGHT_RISK)
-    rows = graded
+    # a held pick that was re-locked at the game's last update (board/build.py GAP_HOLD) counts once, as its
+    # re-lock; the held pick itself stays in the Held row
+    superseded = {p["relock_of"] for p in picks if p.get("relock_of")}
+    rows = [r for r in graded if r["id"] not in superseded]
     straight = [r for r in rows if r.get("kind") != "parlay"]
     pos = [r for r in straight if kelly_of(r) > 0]   # the picks quarter Kelly stakes: positive EV
     kt = lambda v: {**kelly_tally(v), "flat": _tally(v)}
@@ -172,7 +175,8 @@ def record(picks: list[dict], results: list[dict]) -> dict:
         # the same record split by the price: +EV picks, and negative-EV sides (leans on the board from week 6)
         "split": {"pos": _tally([r for r in straight if r["ev"] > 0 and not r.get("hold")]), "neg": _tally([r for r in straight if r["ev"] <= 0]),
                   # +EV picks held without a stake: the model 3+ points from the market at the lock (board/build.py GAP_HOLD)
-                  "held": _tally([r for r in straight if r["ev"] > 0 and r.get("hold")])},
+                  "held": _tally([r for r in graded if r.get("kind") != "parlay" and r["ev"] > 0 and r.get("hold")]),
+                  "relock": _tally([r for r in straight if r.get("relock_of")])},
         # quarter-Kelly sizing, its own record from week 1, apart from the flat one (model/staking.py). Each tally
         # carries the same picks' flat record ("flat"), so the two compare like for like; "since" is week 6 on.
         "kelly": {**{k: kt(v) for k, v in (("all", pos), ("ats", [r for r in pos if r["market"] == "spread"]),

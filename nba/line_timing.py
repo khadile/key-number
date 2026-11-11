@@ -92,17 +92,27 @@ def rows(pricer: GamePricer) -> pl.DataFrame:
                     ahead[nm] = fair[nm] + 0.5 * gaps[key]
             if "ml_home" not in books.get("pinnacle", {}):
                 fair.pop("p_home", None), ahead.pop("p_home", None)
+            drift = {"spread": close["margin"] - fair["margin"] if "margin" in close and "margin" in fair else None,
+                     "total": close["total"] - fair["total"] if "total" in close and "total" in fair else None}
+            jobs = []
             for rule, f in (("board", fair), ("ahead", ahead)):
                 opts = pricer.options(books, f, g["home"], g["away"])
                 for market, o in opts.items():
                     if not o or (rule == "ahead" and market == "ml"):
                         continue
-                    pk = max(o, key=lambda x: x["ev"])
-                    ps = pricer.p_side(pk, close)
-                    evc = None if ps is None else ps[0] * (pk["dec"] - 1) - (1 - ps[0] - ps[1])
-                    out.append({"game_id": g["game_id"], "day": str(day), "moment": name, "rule": rule, "market": market,
+                    jobs.append((rule, market, max(o, key=lambda x: x["ev"])))
+                    if rule == "board" and market != "ml":   # each side's best price, whatever its EV
+                        kind = (lambda x: x["side"]) if market == "total" else (lambda x: "fav" if x["line"] < 0 else "dog" if x["line"] > 0 else None)
+                        for sd in ("over", "under") if market == "total" else ("fav", "dog"):
+                            if (c := [x for x in o if kind(x) == sd]):
+                                jobs.append((f"side:{sd}", market, max(c, key=lambda x: x["ev"])))
+            for rule, market, pk in jobs:
+                ps = pricer.p_side(pk, close)
+                evc = None if ps is None else ps[0] * (pk["dec"] - 1) - (1 - ps[0] - ps[1])
+                out.append({"game_id": g["game_id"], "day": str(day), "moment": name, "rule": rule, "market": market,
                                 "ev": pk["ev"], "ev_close": evc, "units": _units(pk, margin, total), "book": pk["book"],
-                                "steam": _toward(pk, mv_m, mv_t), "gap": abs(gaps[market]) if market in gaps else None})
+                                "steam": _toward(pk, mv_m, mv_t), "gap": abs(gaps[market]) if market in gaps else None,
+                                "drift": drift.get(market)})
     return pl.DataFrame(out, infer_schema_length=None)
 
 
@@ -121,6 +131,40 @@ def _fmt(r: dict) -> str:
     pm = lambda v, s: "    –" if v is None else f"{100 * v:+5.1f}" + (f"±{100 * s:.1f}" if s is not None else "")
     return (f"n {r['n']:4d}  EV then {100 * r['ev']:+5.1f}%  at close {pm(r['ev_close'], r['ev_close_se'])}%  still +EV {'–' if r['held'] is None else f'{100 * r['held']:.0f}%'}"
             f"  {r['w']}-{r['l']}  ROI {pm(r['roi'], r['roi_se'])}%")
+
+
+def history(report: dict) -> None:
+    """Past seasons, from ESPN's record of one book's opening and closing lines (nba/angles.py): which way totals
+    moved between the open and the close, and what the under and the over returned at the opening price."""
+    from nba import angles as A
+    try:
+        if not A.OUT.exists():
+            A.fetch()
+        g = A.games()
+    except Exception as e:   # the study still stands without it
+        print(f"\n(no ESPN open/close history: {e})")
+        return
+    g = g.filter(pl.col("open_total").is_not_null() & pl.col("close_total").is_not_null() & pl.col("open_over").is_not_null() & pl.col("open_under").is_not_null())
+    g = g.with_columns(first=pl.col("date").min().over("season")).with_columns(
+        early=(pl.col("date") - pl.col("first")).dt.total_days() <= 21, move=pl.col("close_total") - pl.col("open_total"),
+        tot=pl.col("hs") + pl.col("as_"), du=A.dec(pl.col("open_under")), do=A.dec(pl.col("open_over")))
+    g = g.filter(pl.col("move").abs() <= 15)
+    print("\n=== 9. Past seasons (ESPN's book of record): the total from the open to the close, and each side at the opening price ===")
+    for lab, x in [(f"{se}{' first 3 weeks' if e else ''}", g.filter((pl.col("season") == se) & (pl.col("early") if e else pl.lit(True))))
+                   for se in sorted(g["season"].unique().to_list()) for e in (False, True)] + [("all seasons", g), ("all, first 3 weeks", g.filter(pl.col("early")))]:
+        if x.height < 30:
+            continue
+        mv = x["move"].to_numpy()
+        row = {"table": "history", "set": lab, "n": x.height, "move": round(float(mv.mean()), 3), "se": round(float(mv.std(ddof=1) / np.sqrt(len(mv))), 3),
+               "fell": round(float((mv < 0).mean()), 3), "rose": round(float((mv > 0).mean()), 3)}
+        txt = f"     {lab:22} n {x.height:5d}  move {mv.mean():+.2f}±{mv.std(ddof=1) / np.sqrt(len(mv)):.2f}  fell {100 * (mv < 0).mean():.0f}%  rose {100 * (mv > 0).mean():.0f}%"
+        for sd, dcol, sign in (("under", "du", -1), ("over", "do", 1)):
+            d = (x["tot"] - x["open_total"]).to_numpy() * sign
+            u = np.where(d > 0, x[dcol].to_numpy() - 1, np.where(d == 0, 0.0, -1.0))
+            row[sd] = {"w": int((d > 0).sum()), "l": int((d < 0).sum()), "roi": round(float(u.mean()), 4), "se": round(float(u.std(ddof=1) / np.sqrt(len(u))), 4)}
+            txt += f"  | {sd} at the open {int((d > 0).sum())}-{int((d < 0).sum())} ROI {100 * u.mean():+.1f}±{100 * u.std(ddof=1) / np.sqrt(len(u)):.1f}%"
+        print(txt)
+        report["rows"].append(row)
 
 
 def main() -> None:
@@ -175,6 +219,32 @@ def main() -> None:
                 r = _line(x)
                 print(f"     {m:12} {bk:11} {_fmt(r)}")
                 report["rows"].append({"table": "book", "moment": m, "book": bk, **r})
+    print("\n=== 6. Where the fair number goes from each moment to the close (Pinnacle, points; total: close minus then) ===")
+    for m in order:
+        x = b.filter((pl.col("moment") == m) & (pl.col("market") == "total"))["drift"].drop_nulls().to_numpy()
+        if len(x) >= 20:
+            print(f"     {m:12} games {len(x):4d}  total {x.mean():+.2f}±{x.std(ddof=1) / np.sqrt(len(x)):.2f}  fell {100 * (x < -0.01).mean():.0f}%  rose {100 * (x > 0.01).mean():.0f}%")
+            report["rows"].append({"table": "drift", "moment": m, "n": len(x), "total": round(float(x.mean()), 3), "se": round(float(x.std(ddof=1) / np.sqrt(len(x))), 3),
+                                   "fell": round(float((x < -0.01).mean()), 3), "rose": round(float((x > 0.01).mean()), 3)})
+    print("\n=== 7. Each side's best DK/FD price in every game, whatever its EV ===")
+    for sd in ("under", "over", "dog", "fav"):
+        print(f"  -- {sd} --")
+        for m in order:
+            x = D.filter((pl.col("rule") == f"side:{sd}") & (pl.col("moment") == m))
+            if x.height >= 20:
+                r = _line(x)
+                print(f"     {m:12} {_fmt(r)}")
+                report["rows"].append({"table": "side", "side": sd, "moment": m, **r})
+    print("\n=== 8. +EV board picks on totals by side ===")
+    for sd in ("under", "over"):
+        ids = D.filter((pl.col("rule") == f"side:{sd}") & (pl.col("ev") > 0))
+        for m in order:
+            x = ids.filter(pl.col("moment") == m)
+            if x.height >= 8:
+                r = _line(x)
+                print(f"     {sd:5} {m:12} {_fmt(r)}")
+                report["rows"].append({"table": "ev_side", "side": sd, "moment": m, **r})
+    history(report)
     OUT.write_text(json.dumps(report, indent=1), encoding="utf-8")
     print(f"\nwrote {OUT}")
 

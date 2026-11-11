@@ -5,6 +5,8 @@ name: research
 #
 #   exchange-probe   python -m pipeline.exchange_probe  (free OddsPapi calls: do the exchanges carry props?)
 #   nba-line-timing  python -m nba.line_timing          (the board's NBA line rule at other lock times)
+#   nfl-dry-run      python -m board.build --dry-run --relock-study  (the whole NFL build, nothing written:
+#                    a test of new rules on real data, plus the held-pick replay)
 
 on:
   workflow_dispatch:
@@ -15,6 +17,7 @@ on:
         options:
           - exchange-probe
           - nba-line-timing
+          - nfl-dry-run
 
 permissions:
   contents: write
@@ -22,7 +25,7 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
 
@@ -42,6 +45,34 @@ jobs:
           path: data/nba
           key: nba-data-research
           restore-keys: nba-data-
+
+      - name: Restore nflverse downloads
+        if: inputs.job == 'nfl-dry-run'
+        uses: actions/cache/restore@v4
+        with:
+          path: data/raw
+          key: nflverse-research
+          restore-keys: nflverse-
+
+      - name: Restore the odds archive
+        if: inputs.job == 'nfl-dry-run'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/oddspapi/history
+            data/oddspapi/props
+            data/oddspapi/request_log.jsonl
+            data/oddspapi/open_close.parquet
+            data/actionnetwork
+          key: oddspapi-research
+          restore-keys: oddspapi-
+
+      - name: NFL dry run
+        if: inputs.job == 'nfl-dry-run'
+        env:
+          ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
+          PYTHONIOENCODING: utf-8
+        run: python -m board.build --dry-run --relock-study
 
       - name: Exchange probe
         if: inputs.job == 'exchange-probe'
