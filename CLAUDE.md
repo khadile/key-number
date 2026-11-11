@@ -1066,8 +1066,65 @@ holds. Good picks +2.3% +- 0.9 at the close against +EV-only -1.0% +- 0.6: the c
 - Pinnacle stays the reference for NFL props (first in Pikkit's ranking; 2025's test here agreed).
 
 **Read at the next checkup:** NBA props from 2026-11-11 against the US close (the "From Nov 11" rows); held NFL
-picks against staked ones; NFL overs the rule passed on (shadow); whether OddsPapi carries Novig or Kalshi props
-(a sharper reference than any sportsbook, if it does).
+picks against staked ones and the re-locks; NFL overs the rule passed on (shadow); the exchange test (section 12).
+
+## 12. Research on Actions; the exchanges; NBA line timing (2026-11-11, after the checkup)
+
+**research.yml** (run by hand: `gh workflow run research.yml -R khadile/key-number -f job=<name>`, or the GitHub
+MCP's `actions_run_trigger` from a cloud session): studies that need what only Actions has, the OddsPapi key and
+the odds archives in the caches. Caches are restored read-only (a study never writes a build's cache back). The
+log of a public repository is public: a study prints tallies, never prices. Jobs:
+- `exchange-probe` (`pipeline/exchange_probe.py`), `exchange-test` (`nba/exchange_test.py`, inputs `games`,
+  `until`), `nba-line-timing` (`nba/line_timing.py`, commits reports/nba_line_timing.json), `nfl-dry-run`
+  (`python -m board.build --dry-run --relock-study`: the whole NFL build on real data with nothing written, the
+  way to test a rule before a real build runs it).
+- A study that calls /historical-odds must not overlap a build (one call per 5 seconds for the key, whoever
+  asks): give `exchange-test` an `until` before the next build window (NBA 14:30-16:00 and 22:30-23:59 UTC,
+  NFL Tue/Thu/Sat/Mon from 14:07 UTC in winter).
+
+**The exchanges are in OddsPapi's free history** (probe, three NBA games, 2026-11-11; 348 books on the plan):
+- Novig (`novig.us`): all eight tracked NBA prop markets plus steals and blocks, ~350-385 two-sided lines a game
+  (alternates included) on 15-16 players, up from about 21 hours before the tip. The two sides' implied chances
+  sum to 1.06 at the median (1.015 at the tightest tenth): an order book's bid and ask, so the midpoint is the
+  price. 5 to 10 MILLION price points a game: ask for it alone and keep snapshots, never the ticks (three books
+  in one call killed a 16 GB runner).
+- ProphetX (`prophetx`): the same eight markets, wider (1.09), ~0.7 million points a game.
+- Polymarket US (`polymarket.us`): points, rebounds, assists (and steals, blocks) only, the two sides 1.01 apart,
+  small size on props (median limit $15-40), up 6 to 23 hours before. Game lines 1.01, limits in the thousands.
+- Kalshi (`kalshi`): game lines at 1.01-1.02 with the deepest limits; its player markets are "N+" contracts
+  (`players-points`, `players-3pointers`, ...), not over/unders: the fair price for the long-shot rungs, if those
+  ever come back.
+- Matchbook: game lines only. `betfair-ex` and `polymarket` (global) must be asked for one book per call.
+- NFL not probed yet (the runner died first): run `exchange-probe` again with `--books` narrowed.
+
+**NBA game lines: nothing to fix, tested on the full price history** (user: "why are there no changes even though
+the model is significantly underperforming?"; `nba/line_timing.py`, reports/nba_line_timing.json, 159 games
+2026-10-20 to 11-10, every price change at Pinnacle, DraftKings and FanDuel):
+- What the record shows: +EV picks 25-25, -4.1u, +1.5% +- 1.2 at the close; Picks of the Day 21-22, -3.7u, where one
+  standard deviation of luck on those prices is +-8.4u; the bet list has taken one NBA line all season. The
+  -27.3u is the 291 leans, priced against us by construction (-4.0% at the close) and never staked. The game
+  model sets no price (k = 0), so there is no model calibration that changes a staked pick.
+- DraftKings and FanDuel sit 0.2 points from Pinnacle on spreads and 0.3 to 0.4 on totals at every hour from the
+  night before to the tip. That gap is the whole edge available to line shopping: about 1%.
+- Lock time: the rule's +EV picks at the close, by when they are taken: 20 hours before -1.8% +- 1.3 (44), 14h
+  -0.4 (63), 10h +1.7 (62), 10:30am ET +0.5 +- 1.1 (43), 1pm -1.2 (44), 3:30pm +0.1 (21), 5:45pm -0.9 (15), 45 min
+  before +1.8 (24). No hour stands out; the night before is the worst. The 10:30am lock stays.
+- Reading Pinnacle's momentum: pushing the fair number half a gap past Pinnacle made the picks worse at every hour
+  (-0.3% to -2.9% at the close); picks Pinnacle had just moved toward did no better than the rest.
+- Totals fell during the day this season: Pinnacle's fair total closed 0.28 +- 0.12 below its 10:30am number (0.58
+  +- 0.19 below the night before's), so the morning's best under gained 1.2 points of EV by the close and the best
+  over lost 1.2. Still not a bet: the under was worth -2.4% +- 0.5 at the close. Not a standing pattern either:
+  ESPN's open-to-close totals 2023-24 to 2025-26 rose 0.12 +- 0.06 on average (first three weeks -0.32 +- 0.20, two
+  seasons of three), and unders at the open returned -5.2% (overs -4.3%). The unders' 91-68 this season is results
+  (the same record at the closing number), not the drift. The model's total leans (72% overs since 10-29) sat on
+  the wrong side of it, which is the -6% the checkup found.
+- Outside: no public NBA spread or totals model with a record against the closing line turned up (EPM, DARKO and
+  the like publish ratings, not a market record); TeamRankings' 22,582 games since 2008 put overs against the
+  opening total at 49.9%.
+- What could still move it: a sharper reference (Kalshi and Polymarket hang NBA spreads and totals at 1.01 with
+  real size; whether Pinnacle follows them is a lead-lag test on ~160 calls, not run), or softer markets than the
+  main line (the Ladder's alternates, team totals). Otherwise NBA lines stay a small line-shopping side at about
+  +1%, which will look flat for months: 2 picks a day at +1% earn about 0.02u a day against +-1.5u of noise.
 
 ## Layout
 
