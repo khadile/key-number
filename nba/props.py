@@ -24,8 +24,8 @@ Tracked (user, 2026-10-20): each team's five starters and its sixth man. Markets
 - Outcomes: 4,000 simulated games: minutes, then each stat as a negative binomial around rate x minutes
   (dispersion DISP, variance over mean given minutes); combos are the sums of the same simulated games.
 
-The model supplies the shape of each player's range; the price comes from the market (props/pricing.py, the
-same rule as NFL props: Pinnacle's no-vig number, else the DK/FD average, nudged toward the model by k).
+The model supplies the shape of each player's range; the level comes from the market: FanDuel's and DraftKings'
+no-vig prices (REF_W below; Pinnacle until 2026-11-10), nudged toward the model by k.
 """
 import json
 from dataclasses import dataclass
@@ -392,7 +392,7 @@ class Mix:
 # confirmed the shift (threes overs as the plus-money side: 1.5 41.7% said, 39.7% won; 2.5 43.2%, 40.1%). Applied
 # to the anchor's no-vig chance of the over. Combos take their main stat's. About -2 to -3 points near even.
 OVER_SHADE = {"pts": -0.088, "reb": -0.122, "ast": -0.026, "fg3": -0.128, "pra": -0.088, "pr": -0.088, "pa": -0.088, "ra": -0.122}
-# Since 2026-10-27 each build learns the shift per market from this season's graded props at Pinnacle's price
+# Since 2026-10-27 each build learns the shift per market from this season's graded props at the reference's price
 # (nba/shade.py estimate) and sets SHADE before pricing; since 2026-10-29 it starts from zero, not from OVER_SHADE
 # (kept here as the 2022-23 measurement and the default before a build sets SHADE).
 SHADE: dict[str, float] = dict(OVER_SHADE)
@@ -406,26 +406,40 @@ def unshade(p_over: float, market: str | None) -> float:
     return float(1 / (1 + np.exp(-(np.log(p / (1 - p)) + SHADE[market]))))
 
 
+# Whose prices set the level (2026-11-11 checkup). Pinnacle is not the sharp book for NBA props. On 10,208 tracked
+# props at the lock, 2026-10-23 to 11-09, graded: in a joint fit of the result on the three books' even-split
+# chances (same line, 2,979 props) Pinnacle's weight was -0.52 +- 0.60 against DraftKings' +0.62 and FanDuel's +0.81;
+# where the US books sat 2-4 points off Pinnacle the result went their way (over 42.8% where Pinnacle said 51.2% and
+# they said 48.5%; 50.0% where Pinnacle said 46.6% and they said 49.3%); FanDuel's level read at DraftKings' other
+# number beat DraftKings' own price (log loss 0.6856 vs 0.6870 and 0.6841 vs 0.6864), not the reverse. Pinnacle's
+# props also carry more margin (7.0% against 6.7% and 6.3%) and move least. Outside rankings agree (Pikkit, Dec
+# 2024: FanDuel first for NBA props, Pinnacle fifth). The board's picks against Pinnacle's price had gone 356-370
+# at a stated 53.2% (won 49.0%), worse the bigger the stated edge. So the level is FanDuel's and DraftKings', FanDuel
+# counting more; Pinnacle sets it only when neither has the prop (then nothing can be bet anyway).
+REF_W = {"fanduel": 0.6, "draftkings": 0.4}
+
+
+def ref_book(books: dict[str, dict]) -> str | None:
+    """The book the over shift is measured against: FanDuel when it has the prop, else DraftKings."""
+    return next((b for b in ("fanduel", "draftkings") if b in books), None)
+
+
 @dataclass
 class PropPricerNba:
-    """props/pricing.py's rule on counts: the market's level from Pinnacle's no-vig price (else DraftKings and
-    FanDuel's), moved toward the model by k (in log rate; 0 for now), priced at DraftKings and FanDuel.
-
-    Pinnacle's NBA props update far less often than DraftKings' and FanDuel's (opening night 2026: 1,408 price
-    records in two days against 130,251 at DraftKings; a third of its lines last changed over a day earlier), so
-    when DraftKings and FanDuel both sit on the same side of Pinnacle's line, Pinnacle is taken as behind the news
-    and the two of them set the level. One book off a line the other two share is the shopping edge."""
+    """The market's level from FanDuel's and DraftKings' no-vig prices (REF_W; each book's line and price turned
+    into the rate at which the count gives that chance, averaged in logs), moved toward the model by k (in log
+    rate), priced at DraftKings and FanDuel. A pick is one of the two hanging a number or a price the other's
+    level beats: with one US book alone there is nothing to shop, so nothing clears."""
     k: float = 0.0
 
     def anchor(self, mix: Mix, books: dict[str, dict], market: str | None = None) -> tuple[float | None, str | None]:
-        shop = [b for b in ("draftkings", "fanduel") if b in books]
-        if "pinnacle" in books:
-            pin = books["pinnacle"]["line"]
-            off = [np.sign(books[b]["line"] - pin) for b in shop]
-            if not (len(off) == 2 and off[0] == off[1] != 0):
-                return mix.solve(pin, unshade(books["pinnacle"]["p_over"], market)), "pinnacle"
-        ls = [mix.solve(books[b]["line"], unshade(books[b]["p_over"], market)) for b in shop]
-        return (float(np.exp(np.mean(np.log(ls)))), "dk/fd" if "pinnacle" not in books else "dk/fd, pinnacle behind") if ls else (None, None)
+        use = [(b, w) for b, w in REF_W.items() if b in books]
+        if not use:
+            if "pinnacle" not in books:
+                return None, None
+            return mix.solve(books["pinnacle"]["line"], unshade(books["pinnacle"]["p_over"], market)), "pinnacle"
+        logs = sum(w * np.log(mix.solve(books[b]["line"], unshade(books[b]["p_over"], market))) for b, w in use)
+        return float(np.exp(logs / sum(w for _, w in use))), "fd+dk" if len(use) == 2 else use[0][0]
 
     def price(self, mix: Mix, books: dict[str, dict], market: str | None = None) -> dict | None:
         lam_m, src = self.anchor(mix, books, market)

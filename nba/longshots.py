@@ -129,9 +129,18 @@ def priced_games(day) -> set[int]:
     return out
 
 
+# Paused 2026-11-11 (checkup). Every rung +200 or longer, graded against its price with no model in it (50,691
+# rungs, 2026-10-20 to 11-09): implied 4.0% hit 2.0%, implied 7.1% hit 4.2%, 14.3% hit 10.8%, 26.3% hit 21.3%, so
+# betting them all returns -19% to -51%. The books keep 20-50% on these ladders; the model's narrow width came
+# close to the truth (11.8% said, 10.8% hit), and a flag needed value at both widths, which picked the rungs
+# where the model was most wrong: the 164 flagged went 7-157 (-25.0u on 41u). Rungs are still priced and graded
+# (the calibration ledger); nothing is flagged or staked until that table shows a band the books underprice.
+PAUSED = True
+
+
 def flags(R: pl.DataFrame, day, now) -> list[dict]:
     from board.market import american
-    if not R.height:
+    if PAUSED or not R.height:
         return []
     f = R.filter((pl.col("ev_wide") >= FLAG_EV) & (pl.col("ev_narrow") >= FLAG_EV)).sort("ev_narrow", descending=True)
     out, seen = [], set()

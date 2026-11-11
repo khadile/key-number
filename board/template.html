@@ -990,7 +990,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     kelly: "Quarter Kelly: a stake sized to the edge for the price, a quarter of what the Kelly formula says, rounded to ¼, ½, 1 or 2 units (1u = 1% of the bankroll). A solid favorite with an edge gets more, a long shot less. Kept as its own record beside the flat one, because sizing by the model's confidence amplifies its mistakes as much as its edge.",
     roi: "Return on investment: units won divided by units risked.",
     potw: "Picks of the week: the strongest picks by edge relative to the payout, one per game.",
-    potd: "Picks of the day: the day's strongest positive-EV picks by edge relative to the payout, one per game. NBA props take picks that beat Pinnacle's raw price first, and use correction-only picks only for games with none.",
+    potd: "Picks of the day: the day's strongest positive-EV picks by edge relative to the payout, one per game. NBA props take picks that beat the market's raw price first, and use correction-only picks only for games with none.",
     evclose: "EV at the close: what each pick's locked price was worth against Pinnacle's no-vig line just before the game started. A market-anchored edge is only real if the price beats where the market settled, and this shows it long before wins and losses do.",
     golden: "Golden Parlay: two or three positive-value picks from different games, priced +150 to +300. It should cash now and then.",
     lottery: "+EV Lottery: three to five positive-value picks priced over +500. It misses most weeks and is here for the occasional big payout.",
@@ -2989,7 +2989,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   // ---------- props: today
   function npWhy(p) {
     const win = p.p_win / Math.max(1 - (p.p_push || 0), 1e-9);
-    return `Market middle ${num(p.market_median, 1)} (${p.anchor === "pinnacle" ? "Pinnacle no-vig" : p.anchor === "dk/fd" ? "DraftKings and FanDuel, no Pinnacle line" : "DraftKings and FanDuel: Pinnacle's line is behind both"}); model middle ${num(p.model_median, 1)} on ${num(p.exp_min, 1)} minutes. ${p.book_name} ${am(p.american)} wins ${pct(win, 1)} and needs ${pct(1 / p.dec, 1)}. EV ${evPct(p.ev)}.${p.risk === 0 ? " Under 2% EV: a lean, no stake; the record counts it at 1u." : ` Stake 1u; quarter Kelly ${stakeU(p.kelly_u)}.`}`;
+    return `Market middle ${num(p.market_median, 1)} (${{ "fd+dk": "FanDuel and DraftKings no-vig, FanDuel counting more", fanduel: "FanDuel no-vig", draftkings: "DraftKings no-vig", pinnacle: "Pinnacle no-vig", "dk/fd": "DraftKings and FanDuel, no Pinnacle line" }[p.anchor] || "DraftKings and FanDuel: Pinnacle's line was behind both"}); model middle ${num(p.model_median, 1)} on ${num(p.exp_min, 1)} minutes. ${p.book_name} ${am(p.american)} wins ${pct(win, 1)} and needs ${pct(1 / p.dec, 1)}. EV ${evPct(p.ev)}.${p.risk === 0 ? " Under 2% EV: a lean, no stake; the record counts it at 1u." : ` Stake 1u; quarter Kelly ${stakeU(p.kelly_u)}.`}`;
   }
   function npChip(p) {
     if (!p) return "";
@@ -3047,8 +3047,9 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <td class="num pos">${evPct(p.ev_narrow)} to ${evPct(p.ev_wide)}</td><td>${resN(p.result) || '<span class="note">pending</span>'}${p.actual != null ? ` <span class="note">${num(p.actual, 0)}</span>` : ""}</td></tr>`).join("");
     return `<section class="sec"><header><h2>Long shots <em>the "N+" rungs, +200 and longer</em></h2></header>
       <p class="note">Every DraftKings and FanDuel rung for the tracked players is priced at the props lock. The model's tail is the least certain part of it, so a rung makes this list only with ${pct(LS.flag_ev || 0.1)}+ value at both a wide and a narrow tail; at most ${8} a night, one per player. Tracked at ${LS.stake || 0.25}u each, apart from the props record. A lookout, not picks: the record below decides whether it is real.</p>
+      ${N.meta.longshots_paused ? '<p class="note"><b>Paused Nov 11.</b> Graded against their prices with no model involved, long shots lose in every band: rungs the books priced at 4% hit 2%, at 7% hit 4%, at 14% hit 11%, at 26% hit 21% (50,691 rungs). The books keep 20-50% on these ladders, so nothing is flagged or staked. Every rung is still graded in the table below.</p>' : ""}
       ${rows ? `<div class="scroll"><table class="t"><thead><tr><th>Rung</th><th>Book</th><th class="num">Price</th><th class="num">Book says</th><th class="num">Model says</th><th class="num">EV</th><th>Result</th></tr></thead><tbody>${rows}</tbody></table></div>`
-        : '<p class="note">Nothing on the list today (or today\'s props have not locked yet).</p>'}
+        : N.meta.longshots_paused ? "" : '<p class="note">Nothing on the list today (or today\'s props have not locked yet).</p>'}
       <p class="note">Long shots so far: ${R.n ? `${R.w}-${R.l}, <span class="${cls(R.units)}">${units(R.units)}</span> on ${num(R.staked, 2)}u (ROI ${pct(R.roi, 1)}); the model said ${pct(R.said_lo, 1)}–${pct(R.said_hi, 1)} would hit, the books ${pct(R.implied, 1)}, and ${pct(R.w / R.n, 1)} did` : "none graded yet"}.</p></section>`;
   }
   function lsCalSection() {
@@ -3081,7 +3082,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     }).join("");
     app.innerHTML = `
       <section class="hello"><h1>NBA props · ${esc(N.meta.day_label)}</h1>
-        <p class="lede">Each team's five starters and sixth man: points, rebounds, assists, threes and the combos. The market sets the level (Pinnacle's no-vig line); the model sets the shape of each player's range; a pick is the one market per player where DraftKings or FanDuel pays 1% or more over that.</p></section>
+        <p class="lede">Each team's five starters and sixth man: points, rebounds, assists, threes and the combos. The market sets the level: FanDuel's and DraftKings' no-vig prices, FanDuel counting more (they price NBA props better than Pinnacle, the reference until Nov 10). The model sets the shape of each player's range. A pick is the one market per player where one of the two pays 1% or more over that level; 2% or more for a stake.</p></section>
       <section class="sec"><header><h2>Record <em>${esc(N.meta.label)} season</em></h2><a class="more" href="#nba-props-record">Full record →</a></header>
         ${npStrip(R)}${nKelly(R.kelly, "props")}</section>
       <section class="sec"><header><h2>Today's best</h2></header>${nBest(potd, PR.parlays, "props")}</section>
@@ -3089,13 +3090,13 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       ${lsSection()}
       <p class="fine">Model output, not betting advice. A void (the player sits) risks nothing and stays out of the record.</p>`;
   }
-  function npRawClose(rows) {   // EV at Pinnacle's raw close: the judge that does not assume the over correction
+  function npRawClose(rows) {   // EV at the reference's raw close: the judge that does not assume the over correction
     const g = (f) => rows.filter((r) => !isPar(r) && r.ev_close_raw != null && f(r)).map((r) => r.ev_close_raw);
     const cell = (a) => { if (!a.length) return "–"; const m = a.reduce((x, y) => x + y, 0) / a.length; const se = a.length > 1 ? Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / (a.length - 1) / a.length) : 0; return `<span class="${cls(m)}">${evPct(m)}</span>${a.length >= 20 ? ` <span class="note">±${(200 * se).toFixed(1)}</span>` : ""} <span class="note">of ${a.length}</span>`; };
     const sets = [["All props", () => true], ["Picks of the day", (r) => r.potd], ["Bet list", (r) => r.bet], ["Price gap", (r) => r.edge === "price"], ["Correction only", (r) => r.edge === "correction"]];
     if (!g(() => true).length) return "";
-    return `<h3 style="margin-top:1.2rem">At Pinnacle's raw close</h3><div class="scroll"><table class="t"><thead><tr><th>Set</th><th class="num">EV at the raw close</th></tr></thead><tbody>${sets.map(([n, f]) => `<tr><td>${n}</td><td class="num">${cell(g(f))}</td></tr>`).join("")}</tbody></table></div>
-      <p class="note">The EV-at-the-close column above applies the learned over correction to Pinnacle's price, so a wrong correction would still look like an edge there. This one uses Pinnacle's even split as it stands, for picks graded from 2026-10-28 on.</p>`;
+    return `<h3 style="margin-top:1.2rem">At the raw close</h3><div class="scroll"><table class="t"><thead><tr><th>Set</th><th class="num">EV at the raw close</th></tr></thead><tbody>${sets.map(([n, f]) => `<tr><td>${n}</td><td class="num">${cell(g(f))}</td></tr>`).join("")}</tbody></table></div>
+      <p class="note">The EV-at-the-close column above applies the learned over correction to the closing price, so a wrong correction would still look like an edge there. This one uses the close's even split as it stands, for picks graded from 2026-10-28 on. Through Nov 10 the close was Pinnacle's; from Nov 11 it is FanDuel's and DraftKings'.</p>`;
   }
   function npShade(sh, shadow) {
     if (!sh) return "";
@@ -3103,10 +3104,10 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     const order = ["pts", "reb", "ast", "fg3", "pra", "pr", "pa", "ra"].filter((k) => sh[k]);
     const shadowSec = shadow && shadow.length ? closeByCat(shadow, [["Situational model (shadow)", () => true], ["…its overs", (r) => r.side === "over"], ["…its unders", (r) => r.side === "under"]], "day") : '<p class="note">Its first picks grade after the next props lock.</p>';
     return `<section class="sec"><header><h2>Over correction <em>learned this season</em></h2></header>
-      <div class="scroll"><table class="t"><thead><tr><th>Market</th><th class="num">Tracked props graded</th><th class="num">Pinnacle said over</th><th class="num">Over hit</th><th class="num">Correction at even money</th><th class="num">Started at</th></tr></thead><tbody>
+      <div class="scroll"><table class="t"><thead><tr><th>Market</th><th class="num">Tracked props graded</th><th class="num">Book said over</th><th class="num">Over hit</th><th class="num">Correction at even money</th><th class="num">Started at</th></tr></thead><tbody>
       ${order.map((k) => { const r = sh[k]; return `<tr><td>${NMK[k] || k}</td><td class="num">${num(r.n, 0)}</td><td class="num">${r.said == null ? "–" : pct(r.said, 1)}</td><td class="num">${r.hit == null ? "–" : pct(r.hit, 1)}</td><td class="num">${pts(r.shift)} <span class="note">±${(100 * r.se / 4).toFixed(1)}</span></td><td class="num">${pts(r.prior)}</td></tr>`; }).join("")}
       </tbody></table></div>
-      <p class="note">Books shade overs, by how much differs by stat and season. Every tracked prop's Pinnacle price is recorded at each lock and graded; the correction starts from 2022-23's (five US books) and follows this season's results, recent nights counting most (14-day half-life). It sets how much an over is marked down before any pick is priced.</p></section>
+      <p class="note">Books shade overs, by how much differs by stat and season. Every tracked prop's price at FanDuel (DraftKings when FanDuel has none) is recorded at each lock and graded; the correction starts at zero and follows this season's results, recent nights counting most (14-day half-life). It sets how much an over is marked down before any pick is priced.</p></section>
     <section class="sec"><header><h2>Situational model <em>in shadow, never bet</em></h2></header>
       <p class="note">Prices every tracked prop from the player and the situation (form against the line, matchup, home, rest, teammates out, the model's projection). It beat the US books' opening lines in 2022-24 but not this season's Pinnacle or morning DraftKings/FanDuel prices (tested 2026-10-27); it runs here, picks at 5%+ EV at the best DraftKings/FanDuel price, so its record can earn it a place.</p>${shadowSec}</section>`;
   }
@@ -3118,12 +3119,15 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <section class="hello"><h1>NBA props record</h1><p class="lede">Every prop pick at 1u, graded at the line and price it locked at. Voids (the player sat) are left out${R.voids ? `: ${R.voids} so far` : ""}.</p></section>
       <section class="sec"><header><h2>Season to date</h2></header>${npStrip(R)}
         ${R.split && (R.split.big.n + R.split.small.n) ? `<p class="note">Of these, props at 2%+ expected value went ${rec(R.split.big)}, <span class="${cls(R.split.big.units)}">${units(R.split.big.units)}</span> (${term("evclose", "EV at the close")} ${evPct(R.split.big.ev_close)}); props at 1–2% went ${rec(R.split.small)}, <span class="${cls(R.split.small.units)}">${units(R.split.small.units)}</span> (${evPct(R.split.small.ev_close)}). From 2026-10-28 props under 2% are leans: shown, no stake, still counted at 1u here.</p>` : ""}
+        ${N.meta.props_ref_from ? `<p class="note"><b>Changed ${esc(dayShort(N.meta.props_ref_from))}.</b> Through Nov 10 every prop was priced against Pinnacle. Graded against results, Pinnacle turned out not to be the sharp book for NBA props: FanDuel and DraftKings price them better, and where they disagreed with Pinnacle they were right. The picks made against Pinnacle won 49% where the board said 53%. The level now comes from FanDuel and DraftKings, so far fewer props clear the bar, and EV at the close is measured against their closing prices. Records before and after are split in the table below.</p>` : ""}
         ${nKelly(R.kelly, "props")}</section>
       <section class="sec"><header><h2>By category <em>closing line value</em></h2></header>${closeByCat(N.props.record.rows || [], [
         ["Bet list", (r) => r.bet], ...NPCATS.filter(([k]) => k !== "parlay").map(([k, n]) => [n, (r) => !isPar(r) && nCat(r) === k]),
         ["Overs", (r) => !isPar(r) && r.side === "over"], ["Unders", (r) => !isPar(r) && r.side === "under"],
         ["Picks of the day", (r) => r.potd], ["2%+ EV", (r) => !isPar(r) && r.ev >= 0.02], ["1–2% EV", (r) => !isPar(r) && r.ev < 0.02],
-        ["Price gap (beats Pinnacle's raw price)", (r) => r.edge === "price"], ["Correction only", (r) => r.edge === "correction"], ["Parlays", isPar]], "day")}${blCells(N.betlist && N.betlist.props && { ...N.betlist.props, half: "10 days" })}
+        ["Price gap (beats the market's raw price)", (r) => r.edge === "price"], ["Correction only", (r) => r.edge === "correction"],
+        ["From Nov 11: FanDuel-led level", (r) => !isPar(r) && r.day >= (N.meta.props_ref_from || "9")], ["…staked", (r) => !isPar(r) && r.risk !== 0 && r.day >= (N.meta.props_ref_from || "9")],
+        ["Through Nov 10: Pinnacle's level", (r) => !isPar(r) && r.day < (N.meta.props_ref_from || "9")], ["Parlays", isPar]], "day")}${blCells(N.betlist && N.betlist.props && { ...N.betlist.props, half: "10 days" })}
         ${npRawClose(N.props.record.rows || [])}</section>
       ${npShade(N.props.shade, N.props.shadow)}
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${nUnitsChart(R, ["Props at 2%+ EV", "big"]) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
@@ -3154,16 +3158,16 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
         <h3>Why the model does not set the price</h3>
         <p>Over six seasons of walk-forward tests (${esc(B.seasons || "2020-21 to 2025-26")}), team ratings plus who plays missed the final margin by ${num(B.mae_margin_model, 2)} points on average against the closing line's ${num(B.mae_margin_close, 2)}, and added nothing the close did not already know (β ${num(B.beta_spread, 2)}). In each season's first three weeks it did a little better (β ${num(B.beta_spread_first3wk, 2)} over ${num(B.games_first3wk, 0)} games), not enough to trust. So the board records whether each pick sat on the model's side, and the first checkup reads that.</p>
         <h3>Props</h3>
-        <p>Each team's five starters and sixth man, in eight markets. Minutes come from his recent games, counted in league game days so the summer does not age last season (which counts for less as this one fills in), with a teammate ruled out handing over his minutes. After time out, the summer included, he plays fewer minutes for a few games: in 2023-24 and 2024-25 (out of sample) the first game back ran 4.5 to 5.3 minutes under a player's usual and fading over four games, and the board takes that off. Each stat per minute is pulled toward his own record over two seasons, itself pulled toward his position's average. Given minutes, a stat is a negative binomial whose spread was measured on 2025-26 starters: the ranges held 50% of outcomes in their middle half and 79% in their 10–90% band. The market sets the level: the model's rate is scaled until it gives Pinnacle's no-vig chance at Pinnacle's line (DraftKings and FanDuel's when Pinnacle has no line, or when both sit on the same side of a Pinnacle line that has stopped moving). A pick is the one market per player with 1% or more of value at DraftKings or FanDuel.</p>
+        <p>Each team's five starters and sixth man, in eight markets. Minutes come from his recent games, counted in league game days so the summer does not age last season (which counts for less as this one fills in), with a teammate ruled out handing over his minutes. After time out, the summer included, he plays fewer minutes for a few games: in 2023-24 and 2024-25 (out of sample) the first game back ran 4.5 to 5.3 minutes under a player's usual and fading over four games, and the board takes that off. Each stat per minute is pulled toward his own record over two seasons, itself pulled toward his position's average. Given minutes, a stat is a negative binomial whose spread was measured on 2025-26 starters: the ranges held 50% of outcomes in their middle half and 79% in their 10–90% band. The market sets the level: the model's rate is scaled until it gives FanDuel's and DraftKings' no-vig chances at their lines (FanDuel counts 60%, DraftKings 40%), then moved 5% of the way to the model's own rate. Through Nov 10 the level was Pinnacle's; on 10,208 tracked props graded this season Pinnacle's price added nothing to the two US books', and where they disagreed with it they were right. A pick is the one market per player with 1% or more of value at DraftKings or FanDuel (2% for a stake), which now means one of the two is off the other.</p>
         <h3>When things lock</h3>
         <ul><li><b>10:30am ET.</b> Last night graded from ESPN's box scores; the day's game lines lock with the game-line Picks of the Day and parlays; props lock for games before 6:30pm.</li>
           <li><b>5:30pm ET</b>, after the league's 5pm injury report: the rest of the props lock, then the props Picks of the Day and parlays.</li></ul>
         ${anglesProse(N.model && N.model.angles)}
         <h3>Edges being tested</h3>
-        <ul><li>Line shopping against Pinnacle, game lines and props (the record's EV at the close shows first whether it is real).</li>
+        <ul><li>Line shopping: game lines against Pinnacle, props between FanDuel and DraftKings (the record's EV at the close shows first whether it is real).</li>
           <li>Unders: books shade popular overs; overs and unders are recorded apart.</li>
           <li>The Golden Parlay's legs: the likely side of an alternate line carries the least margin (opening night, FanDuel's 70-90% alternate totals cost 0-3% against the fair line, the long-shot side 15-35%), so when a book's whole ladder trails Pinnacle those legs can have value.</li>
-          <li>Long shots: every "N+" rung is graded against its price, so whether books misprice them shows up without trusting the model's tail.</li>
+          <li>Long shots: every "N+" rung is graded against its price. Through Nov 9 the books overpriced every band (a rung priced at 14% hit 11%), so nothing is flagged or staked now; the grading goes on.</li>
           <li>The model's early-season lean, while ratings still carry last season.</li>
           <li>Back-to-backs and rest, a teammate's props when a starter sits, and referee crews on totals: next, as data comes in.</li></ul>
         <h3>Checkups</h3>

@@ -1,11 +1,14 @@
 """The books' over shading learned from this season, each prop pick's edge source, and the situational model in
 shadow (user, 2026-10-27).
 
-- At every props lock, every tracked prop's Pinnacle price (raw even-split no-vig chance of the over), the best
-  DraftKings/FanDuel price on the same line, and the situational model's chance (nba/sides.py, never bet) go to
-  data/nba/shade/rows.parquet (odds data: the Actions cache, never the repo). Pinnacle's price near tip-off goes
-  to closes.parquet once each game is final.
-- `estimate`: per market, the logit shift between Pinnacle's even split and how often the over actually hit,
+- At every props lock, every tracked prop's price at the reference book (FanDuel when it has the prop, else
+  DraftKings: props.ref_book; raw even-split no-vig chance of the over), the best DraftKings/FanDuel price on the
+  same line, and the situational model's chance (nba/sides.py, never bet) go to data/nba/shade/rows_us.parquet
+  (odds data: the Actions cache, never the repo). The same book's price near tip-off goes to closes_us.parquet
+  once each game is final. Until 2026-11-10 the reference was Pinnacle (rows.parquet, left in the cache): the
+  2026-11-11 checkup found FanDuel and DraftKings price NBA props better than Pinnacle does (nba/props.py REF_W),
+  so the shift is now measured where the level is taken.
+- `estimate`: per market, the logit shift between the reference's even split and how often the over actually hit,
   starting from zero (PRIOR) with a prior sd of 0.10 and moved by every graded tracked prop of earlier days,
   weighted by a 14-day half-life. Until 2026-10-29 it started from props.OVER_SHADE (five US books, 2022-23; no
   Pinnacle in it), which this season's Pinnacle prices did not bear out: learned from the opening nights
@@ -13,10 +16,10 @@ shadow (user, 2026-10-27).
   against 0.68983, 1,263 tracked props), hurting points, rebounds and threes; from zero, 0.68984, keeping the
   assists gain. It also put the 2022-23 shifts on every combo with no Pinnacle price (P+R, P+A, R+A), which
   never learn here. On 2026-10-28 that start made 42 of the 98 props picks (threes, rebounds, R+A and P+R unders).
-- `edge_of`: a pick is "price" when DraftKings/FanDuel beat Pinnacle's raw price by 1%+ (a real price gap) and
+- `edge_of`: a pick is "price" when it beats the reference's raw price by 1%+ (a real price gap) and
   "correction" when only the over correction makes it +EV. The bet list judges them as separate categories.
-- `shadow`: the situational model's picks (5%+ EV at the best DK/FD price on Pinnacle's line), graded and
-  valued at Pinnacle's raw close: its record on the props Record page, never a bet.
+- `shadow`: the situational model's picks (5%+ EV at the best DK/FD price on the reference's line), graded and
+  valued at the reference's raw close: its record on the props Record page, never a bet.
 """
 import json
 import math
@@ -31,15 +34,15 @@ from nba import props as NP
 from nba import sides as S
 
 DIR = DATA / "nba" / "shade"
-ROWS, CLOSES = DIR / "rows.parquet", DIR / "closes.parquet"
+ROWS, CLOSES = DIR / "rows_us.parquet", DIR / "closes_us.parquet"
 COEF = ROOT / "nba" / "sides_coef.json"
 TAU, HALF_LIFE, SHADOW_EV = 0.10, 14.0, 0.05
 PRIOR = 0.0          # the shift every market starts from: the even split taken as right until this season says otherwise
 ROW_SCHEMA = {"day": pl.String, "lock": pl.String, "game_id": pl.Int64, "athlete_id": pl.Int64, "name": pl.String,
               "team": pl.String, "opp": pl.String, "home": pl.String, "market": pl.String, "line": pl.Float64,
-              "p_raw": pl.Float64, "o_pin": pl.Float64, "pm": pl.Float64, "games_now": pl.Int64, "spread": pl.Float64,
+              "p_raw": pl.Float64, "o_ref": pl.Float64, "pm": pl.Float64, "games_now": pl.Int64, "spread": pl.Float64,
               "total": pl.Float64, "bo_dec": pl.Float64, "bo_book": pl.String, "bu_dec": pl.Float64, "bu_book": pl.String,
-              "p_sides": pl.Float64}
+              "p_sides": pl.Float64, "ref": pl.String}
 CLOSE_SCHEMA = {"game_id": pl.Int64, "athlete_id": pl.Int64, "market": pl.String, "line": pl.Float64, "p_close": pl.Float64}
 SHOP = {"draftkings": "DraftKings", "fanduel": "FanDuel"}
 
@@ -81,15 +84,16 @@ def save_closes(new: list[dict]) -> None:
 # ---------------------------------------------------------------- at a lock
 
 def lock_rows(x: pl.DataFrame, mixes: dict, books: dict, day: date, now, homes: dict, fair: dict) -> list[dict]:
-    """Every tracked prop with a Pinnacle price at this lock. `books[(gid, aid, market)][book]` = {line, over, under,
-    p_over} (decimal prices, even-split no-vig); `fair[gid]` = {margin (home), total}."""
+    """Every tracked prop with a price at the reference book at this lock. `books[(gid, aid, market)][book]` =
+    {line, over, under, p_over} (decimal prices, even-split no-vig); `fair[gid]` = {margin (home), total}."""
     out = []
     for r in x.iter_rows(named=True):
         for m in NP.MARKETS:
             bk = books.get((r["game_id"], r["athlete_id"], m)) or {}
-            pin = bk.get("pinnacle")
-            if not pin:
+            ref = NP.ref_book(bk)
+            if not ref:
                 continue
+            pin = bk[ref]                      # the reference book's line and price (the name is from Pinnacle's days)
             same = {b: bk[b] for b in SHOP if b in bk and bk[b]["line"] == pin["line"]}
             bo = max(same.items(), key=lambda t: t[1]["over"], default=(None, None))
             bu = max(same.items(), key=lambda t: t[1]["under"], default=(None, None))
@@ -101,10 +105,10 @@ def lock_rows(x: pl.DataFrame, mixes: dict, books: dict, day: date, now, homes: 
             f = fair.get(r["game_id"]) or {}
             out.append({"day": day.isoformat(), "lock": now.isoformat(), "game_id": r["game_id"], "athlete_id": r["athlete_id"],
                         "name": r["name"], "team": r["team"], "opp": r["opp"], "home": homes.get(r["game_id"]), "market": m,
-                        "line": float(pin["line"]), "p_raw": float(pin["p_over"]), "o_pin": float(pin["over"]), "pm": pm,
+                        "line": float(pin["line"]), "p_raw": float(pin["p_over"]), "o_ref": float(pin["over"]), "pm": pm,
                         "games_now": int(r.get("games_now") or 0), "spread": f.get("margin"), "total": f.get("total"),
                         "bo_dec": bo[1]["over"] if bo[1] else None, "bo_book": SHOP.get(bo[0]),
-                        "bu_dec": bu[1]["under"] if bu[1] else None, "bu_book": SHOP.get(bu[0]), "p_sides": None})
+                        "bu_dec": bu[1]["under"] if bu[1] else None, "bu_book": SHOP.get(bu[0]), "p_sides": None, "ref": ref})
     return out
 
 
@@ -115,7 +119,7 @@ def with_sides(new: list[dict], hist: pl.DataFrame) -> list[dict]:
     if not todo:
         return new
     P = pl.DataFrame([{"i": i, "game_id": r["game_id"], "athlete_id": r["athlete_id"], "market": r["market"], "line": r["line"],
-                       "p": r["p_raw"], "o_dec": r["o_pin"], "pm": r["pm"] if r["pm"] is not None else r["p_raw"],
+                       "p": r["p_raw"], "o_dec": r["o_ref"], "pm": r["pm"] if r["pm"] is not None else r["p_raw"],
                        "games_now": r["games_now"], "close_spread": r["spread"], "close_total": r["total"]}
                       for i, r in enumerate(new) if r["market"] in coef],
                      schema={"i": pl.Int64, "game_id": pl.Int64, "athlete_id": pl.Int64, "market": pl.String, "line": pl.Float64,
@@ -157,7 +161,7 @@ def graded(R: pl.DataFrame, stats: dict) -> pl.DataFrame:
 
 
 def estimate(G: pl.DataFrame, day: date) -> dict[str, dict]:
-    """Per market: the logit shift (MAP, Newton) of the over's true chance from Pinnacle's even split, from graded
+    """Per market: the logit shift (MAP, Newton) of the over's true chance from the reference's even split, from graded
     rows of days before `day`; prior PRIOR, sd TAU; recency half-life HALF_LIFE days."""
     out = {}
     G = G.filter(pl.col("day") < day.isoformat()) if G.height else G
@@ -191,8 +195,8 @@ def edge_index(R: pl.DataFrame) -> dict:
 
 
 def edge_of(p: dict, idx: dict, ev_min: float) -> str | None:
-    """"price" when the pick beats Pinnacle's raw price by ev_min or more, "correction" when only the over
-    correction makes it +EV, None when unknown (a line Pinnacle did not have, before this was recorded)."""
+    """"price" when the pick beats the reference's raw price by ev_min or more, "correction" when only the over
+    correction makes it +EV, None when unknown (a line the reference did not have, before this was recorded)."""
     ev = p.get("ev_raw")
     if ev is None:
         hit = idx.get((p["day"], p["game_id"], p["athlete_id"], p["market"]))
@@ -207,7 +211,7 @@ def edge_of(p: dict, idx: dict, ev_min: float) -> str | None:
 
 def shadow(G: pl.DataFrame, C: pl.DataFrame) -> list[dict]:
     """Its picks: per player and lock day, the side and book with the best EV under its chance, 5%+; graded, with
-    EV at Pinnacle's raw close on the same line. Rows shaped like the record's (build._rows)."""
+    EV at the reference book's raw close on the same line. Rows shaped like the record's (build._rows)."""
     if not G.height or "p_sides" not in G.columns:
         return []
     G = G.filter(pl.col("p_sides").is_not_null())
@@ -237,18 +241,18 @@ def shadow(G: pl.DataFrame, C: pl.DataFrame) -> list[dict]:
 
 
 def close_rows(R: pl.DataFrame, finished: set, have: pl.DataFrame, C: dict) -> list[dict]:
-    """Pinnacle's price near tip-off for tracked props of finished games not yet stored. `C`: build._books of the
-    closing main lines."""
+    """The reference book's price near tip-off for tracked props of finished games not yet stored. `C`: build._books
+    of the closing main lines."""
     if not R.height:
         return []
     done = set(have.select("game_id", "athlete_id", "market").iter_rows()) if have.height else set()
     out = []
-    for g, a, m, l in R.select("game_id", "athlete_id", "market", "line").unique().iter_rows():
+    for g, a, m, l, ref in R.sort("lock").unique(["game_id", "athlete_id", "market"], keep="last").select("game_id", "athlete_id", "market", "line", "ref").iter_rows():
         if g not in finished or (g, a, m) in done:
             continue
-        pin = (C.get((g, a, m)) or {}).get("pinnacle")
+        rb = (C.get((g, a, m)) or {}).get(ref or "fanduel")
         out.append({"game_id": g, "athlete_id": a, "market": m, "line": l,
-                    "p_close": float(pin["p_over"]) if pin and pin["line"] == l else None})
+                    "p_close": float(rb["p_over"]) if rb and rb["line"] == l else None})
     return out
 
 
@@ -256,8 +260,8 @@ def close_rows(R: pl.DataFrame, finished: set, have: pl.DataFrame, C: dict) -> l
 
 def bootstrap(picks: list[dict], hist: pl.DataFrame) -> int:
     """Rebuild rows for locks before this module existed from the board payload committed at each lock time
-    (git history; the workflow fetches full history only when ROWS is missing). Pinnacle's price, the best
-    DK/FD on its line, and the props model's chance read off the payload's quantiles."""
+    (git history; the workflow fetches full history only when ROWS is missing). The reference book's price, the
+    best DK/FD on its line, and the props model's chance read off the payload's quantiles."""
     locks = sorted({p["locked_at"][:16] for p in picks if p.get("kind") == "prop" and p.get("locked_at")})
     have = set(rows()["lock"].str.slice(0, 16).to_list()) if ROWS.exists() else set()
     locks = [k for k in locks if k not in have]
@@ -283,9 +287,11 @@ def bootstrap(picks: list[dict], hist: pl.DataFrame) -> int:
                 continue
             for m in p["markets"]:
                 b = m.get("books") or {}
-                q = b.get("Pinnacle")
-                if not q or q.get("over") is None or q.get("under") is None or m["market"] not in NP.MARKETS:
+                ok = {n: v for n, v in b.items() if v and v.get("line") is not None and v.get("over") is not None and v.get("under") is not None}
+                ref = next((n for n in ("FanDuel", "DraftKings") if n in ok), None)
+                if not ref or m["market"] not in NP.MARKETS:
                     continue
+                q = ok[ref]
                 io, iu = 1 / dec(q["over"]), 1 / dec(q["under"])
                 same = {n: b[n] for n in ("DraftKings", "FanDuel") if b.get(n) and b[n].get("line") == q["line"]
                         and b[n].get("over") is not None and b[n].get("under") is not None}
@@ -298,10 +304,10 @@ def bootstrap(picks: list[dict], hist: pl.DataFrame) -> int:
                 f = g.get("fair") or {}
                 new.append({"day": d["meta"]["generated"][:10], "lock": d["meta"]["generated"], "game_id": p["game_id"],
                             "athlete_id": p["id"], "name": p["name"], "team": p["team"], "opp": p["opp"], "home": g.get("home"),
-                            "market": m["market"], "line": float(q["line"]), "p_raw": io / (io + iu), "o_pin": dec(q["over"]),
+                            "market": m["market"], "line": float(q["line"]), "p_raw": io / (io + iu), "o_ref": dec(q["over"]),
                             "pm": pm, "games_now": int(p.get("games_now") or 0), "spread": f.get("margin"), "total": f.get("total"),
                             "bo_dec": dec(bo[1]["over"]) if bo[1] else None, "bo_book": bo[0],
-                            "bu_dec": dec(bu[1]["under"]) if bu[1] else None, "bu_book": bu[0], "p_sides": None})
+                            "bu_dec": dec(bu[1]["under"]) if bu[1] else None, "bu_book": bu[0], "p_sides": None, "ref": ref.lower()})
         if not locks:
             break
     by_lock: dict[str, list] = {}

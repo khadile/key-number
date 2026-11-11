@@ -47,7 +47,14 @@ MORNING, EVENING, LATE_TIP = time(10, 30), time(17, 30), time(18, 30)
 BOOKS = ["pinnacle", "draftkings", "fanduel"]
 SHOP = ["draftkings", "fanduel"]
 B2B_MARGIN = -2.2      # points of home margin per back-to-back (home minus away), 2020-21 to 2025-26
-PROPS_K = 0.0          # how far prop lines move toward the model between lock and close: measured once there is data
+# How far the props level moves from the market's toward the model's (log rate). 0 until 2026-11-10. The 2026-11-11
+# checkup measured it on 10,200 tracked props at the lock: result on the US books' chance plus log(model / market)
+# gave the model's disagreement a weight of +0.38 +- 0.17 (z 2.3; positive in 7 of 8 markets), about a tenth of the
+# way, and the 2022-24 replay at the open found 15%. Half the measured size, as for every measured nudge.
+PROPS_K = 0.05
+# NBA props picks before this day were priced against Pinnacle (nba/props.py REF_W): their EV at the close is not
+# comparable, so the props bet list judges only picks from this day on (it starts empty and earns its cells).
+PROPS_REF_FROM = "2026-11-11"
 POTD_N = 5
 # the bet list (model/betlist.py, user 2026-10-26): what lately has been worth staking; ten-day half-life
 LINES_BOARD, PROPS_BOARD = BL.Board(half_life=10, cap=4), BL.Board(half_life=10, cap=6)
@@ -291,7 +298,7 @@ def bet_cat(p: dict) -> str:
 def bet_list(rows: list[dict], results: list[dict], pool: list[dict], board: BL.Board, day: date, now: datetime, mid: str) -> dict:
     """The day's bet list from the pool, judged on every earlier graded pick (model/betlist.py)."""
     res = {r["id"]: r for r in results}
-    # a correction-only prop is judged at Pinnacle's raw close: at the corrected close it would grade itself by the
+    # a correction-only prop is judged at the reference's raw close: at the corrected close it would grade itself by the
     # same correction that made it a pick (user, 2026-10-28)
     close = lambda p: res[p["id"]].get("ev_close_raw" if p.get("edge") == "correction" else "ev_close")  # noqa: E731
     hist = [{"cat": bet_cat(p), "tier": BL.tier_of(p["ev"], board), "age": (day - date.fromisoformat(p["day"])).days,
@@ -432,7 +439,7 @@ def prop_closes(picks: list[dict], tips: dict, pmap: pl.DataFrame, finished: set
                 over, push, under = mix.probs(p["line"], lam)
                 pw = over if p["side"] == "over" else under
                 r.update(ev_close=round(pw * (p["dec"] - 1) - (1 - pw - push), 4), p_close=round(pw, 4))
-            lam_r, _ = pr.anchor(mix, bk, None)   # Pinnacle's raw close: the judge that does not assume the correction
+            lam_r, _ = pr.anchor(mix, bk, None)   # the reference's raw close: the judge that does not assume the correction
             if lam_r is not None:
                 over, push, under = mix.probs(p["line"], lam_r)
                 pw = over if p["side"] == "over" else under
@@ -697,7 +704,8 @@ def main() -> None:
         if f"{today}:props:potd" not in p_have:
             p_writes.append({"kind": "potd", "id": f"{today}:props:potd", "day": today.isoformat(), "picks": potd(pool), "at": now.isoformat()})
         if f"{today}:props:betlist" not in p_have:
-            p_writes.append(bet_list(p_existing, read(ledger.PROPS_RESULTS), pool, PROPS_BOARD, today, now, f"{today}:props:betlist"))
+            p_writes.append(bet_list([p for p in p_existing if (p.get("day") or "") >= PROPS_REF_FROM], read(ledger.PROPS_RESULTS), pool,
+                                     PROPS_BOARD, today, now, f"{today}:props:betlist"))
         if f"{today}:props:lottery" not in p_have:
             p_writes += parlays(pool, today, "props:", now, ("lottery",))
         # the props Golden Parlay: the +EV props most likely to cash together, +100 to +300, different games
@@ -945,6 +953,7 @@ def main() -> None:
                  "day_label": now.astimezone(ET).strftime("%A, %B ") + str(today.day), "generated": now.isoformat(),
                  "books": [BOOK_NAMES[b] for b in SHOP], "games_today": len(day_games),
                  "slots": {"morning": "10:30am ET", "evening": "5:30pm ET"}, "props_k": PROPS_K,
+                 "props_ref": NP.REF_W, "props_ref_from": PROPS_REF_FROM, "longshots_paused": LS.PAUSED,
                  "checkup_first": "2026-11-02", "dist": dinfo},
         "teams": tmeta,
         "games": cards,
