@@ -1043,8 +1043,15 @@ the close; week 9 went 2-6.
   its own record row ("Held"). Weeks before keep their stakes.
 - `pipeline/starters.played_qbs`: a game's starter is its first dropback by a quarterback (Baltimore's week 9
   opened with a Derrick Henry pass and labeled him the starter; 13 of 5,794 team-games since 2016).
-- Next step, not built: re-lock held games at Thursday's or Saturday's build once the injury report names the
-  starter (the backtest says the model's side is good there).
+- A second look for held games (user, 2026-11-11: "let's do those"; `board/build.py`, the block after `todo`): at
+  the game's last update before kickoff (Thursday, Saturday or Monday 10am ET, `props.pricing.lock_time`) the
+  model is rebuilt on the quarterback the injury report names. If it is then within 3 points of the market and
+  the held market has a +EV side at that moment's DraftKings/FanDuel prices, that side locks as a new pick
+  (`<held id>:relock`, `relock_of`, 1u; never a Pick of the Week or bet-list pick, both chosen Tuesday). The held
+  pick is never touched: it stays in the Held row; the record counts the market once, as its re-lock
+  (`ledger.record` drops superseded holds from the tallies; the category table has "Re-locked after a hold").
+  A `relook` line (`<game>:relook`) marks the game as looked at, whatever came of it, so it happens once.
+  `python -m board.build --dry-run --relock-study` replays it on the finished weeks (research.yml, nfl-dry-run).
 
 **NFL props: weeks 5-9 live 50-64, -18.9u; worth +0.1% +- 0.5 at Pinnacle's close** (the weeks 1-4 replay: +15.3u,
 +4.1%). The live picks had no closing value, so about -4% was the expectation; the rest of the loss is variance

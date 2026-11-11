@@ -5,6 +5,7 @@ name: research
 #
 #   exchange-probe   python -m pipeline.exchange_probe  (free OddsPapi calls: do the exchanges carry props?)
 #   nba-line-timing  python -m nba.line_timing          (the board's NBA line rule at other lock times)
+#   exchange-test    python -m nba.exchange_test        (exchange prop prices against FanDuel's, on results)
 #   nfl-dry-run      python -m board.build --dry-run --relock-study  (the whole NFL build, nothing written:
 #                    a test of new rules on real data, plus the held-pick replay)
 
@@ -18,6 +19,15 @@ on:
           - exchange-probe
           - nba-line-timing
           - nfl-dry-run
+          - exchange-test
+      games:
+        description: "exchange-test: how many recent games"
+        type: string
+        default: "40"
+      until:
+        description: "exchange-test: stop fetching at this UTC time (HH:MM), so it never overlaps a build"
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -39,7 +49,7 @@ jobs:
 
       # read only: the builds own this cache, a study never writes it back
       - name: Restore NBA data
-        if: inputs.job == 'nba-line-timing'
+        if: inputs.job == 'nba-line-timing' || inputs.job == 'exchange-test'
         uses: actions/cache/restore@v4
         with:
           path: data/nba
@@ -73,6 +83,31 @@ jobs:
           ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
           PYTHONIOENCODING: utf-8
         run: python -m board.build --dry-run --relock-study
+
+      - name: Restore exchange snapshots
+        if: inputs.job == 'exchange-test'
+        uses: actions/cache/restore@v4
+        with:
+          path: data/nba_x
+          key: nba-exchange-${{ github.run_id }}
+          restore-keys: nba-exchange-
+
+      - name: Exchange test
+        if: inputs.job == 'exchange-test'
+        env:
+          ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
+          PYTHONIOENCODING: utf-8
+          PYTHONUNBUFFERED: "1"
+          GAMES: ${{ inputs.games }}
+          UNTIL: ${{ inputs.until }}
+        run: python -m nba.exchange_test --games "$GAMES" ${UNTIL:+--until "$UNTIL"}
+
+      - name: Save exchange snapshots
+        if: always() && inputs.job == 'exchange-test'
+        uses: actions/cache/save@v4
+        with:
+          path: data/nba_x
+          key: nba-exchange-${{ github.run_id }}
 
       - name: Exchange probe
         if: inputs.job == 'exchange-probe'
