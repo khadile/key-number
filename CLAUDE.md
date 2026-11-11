@@ -725,9 +725,9 @@ budget with the NFL) comes after the pregame side is stable.
   own two-season record; after an absence, the summer included, he comes in
   short (`BACK_MIN`, fading over four games; validated out of sample on 2023-24
   and 2024-25). Counting ramp-up games at full minutes made things worse: kept
-  out. When DraftKings and FanDuel both sit on the same side of
-  Pinnacle's line, Pinnacle is taken as behind the news (its props update
-  ~100x less often) and the two of them set the level.
+  out. From 2026-11-11 the level is FanDuel's and DraftKings', not
+  Pinnacle's, and k is 0.05 (section 11): everything in this section that says
+  "Pinnacle" about props pricing describes the picks through 2026-11-10.
 - Schedule (`nba/slot.py`, `.github/workflows/nba.yml`, every 15 minutes in
   each window): 10:30am ET grades last night and locks the day's game lines,
   their Picks of the Day and parlays, and props for games before 6:30pm; 5:30pm
@@ -754,7 +754,7 @@ budget with the NFL) comes after the pregame side is stable.
   morning game lines, none on most days. The likely side of an alternate line carries the least margin (the
   vig sits on the long-shot side), so a ladder trailing Pinnacle can have value there. Legs are kind "alt"
   in nba_picks.jsonl, graded but kept out of the picks' record.
-- Long shots (`nba/longshots.py`): the "N+" rungs (archived in data/nba/odds/milestones) +200 and longer, priced
+- Long shots, PAUSED 2026-11-11 (section 11; rungs still graded) (`nba/longshots.py`): the "N+" rungs (archived in data/nba/odds/milestones) +200 and longer, priced
   at each props lock against the model's tail at two widths (the tail test on 2025-26: too wide for stars,
   too narrow for role players, and pricing at the market's level is narrower still). Up to 8 a night with
   10%+ value at both widths, 0.25u each in ledger/nba_longshots.jsonl, their own record. Every rung is also
@@ -977,6 +977,90 @@ overreaction to last week's blowout or viral game; non-QB injury line moves and 
 reverse line movement (tickets one way, line the other) and its timing; boosts that are +EV by arithmetic and
 same-game-parlay correlation pricing. NBA props at 1-2% EV became leans on 2026-10-28 (section 9). Also pending:
 a per-category stake (full / 0.25u probe / 0) once the bet list has a few weeks.
+
+## 11. Checkup 2026-11-11 (user: "complete model check and calibration"; NBA "needs an entire hotfix")
+
+Analysis scripts: session scratchpad `audit/` (not in the repo). Data: the ledgers, every NBA build's payload from
+git history (59,249 book prices on 11,051 tracked props at the lock, graded on hoopR), nflverse play-by-play.
+
+**NBA props: Pinnacle was the wrong reference.**
+- Record through 2026-11-09: 356-370, won 49.0% where the board said 53.2% and the prices needed 51.5% (-5.4%;
+  staked picks -7.2% on 581). Worse the bigger the stated edge (1-2% EV -2.2%, 2-4% -5.9%, 4-6% -7.9%, 6%+ -8.6%);
+  plus-money picks 105-161, minus-money 180-134. "EV at the close" read +1.9% because the close was Pinnacle's
+  too, with the correction that made the picks: at Pinnacle's raw close -1.0%.
+- Which book is right (tracked props at the lock, 2026-10-23 to 11-09): margin Pinnacle 7.0%, DraftKings 6.7%,
+  FanDuel 6.3%. Same line, all three (2,979): log loss Pinnacle 0.68890, DraftKings 0.68852, FanDuel 0.68816;
+  joint fit of the result on the three even-split chances: Pinnacle -0.52 +- 0.60, DraftKings +0.62 +- 0.55,
+  FanDuel +0.81 +- 0.66. Where the US books sat 2-4 points off Pinnacle on the same line, they were right (over hit
+  42.8% where Pinnacle said 51.2% and they said 48.5%; 50.0% where Pinnacle 46.6%, they 49.3%). FanDuel's level
+  read at DraftKings' different number beat DraftKings' own price (log loss 0.6856 vs 0.6870 and 0.6841 vs 0.6864);
+  DraftKings' level read at FanDuel's did not. Outside sources agree: Pikkit (Dec 2024, which books the others move
+  toward) ranks FanDuel first for NBA props and Pinnacle fifth, Pinnacle first for NFL props; Upside's 2026 study
+  puts the exchanges (Novig, Kalshi) above every sportsbook for props. OddsPapi lists both exchanges (untested here).
+- In the morning it is the other way round: by the evening lock DraftKings and FanDuel had moved 0.43 of the way to
+  Pinnacle's morning level, Pinnacle 0.19 toward theirs. Pinnacle posts sharp and goes stale; by 5:30pm it is behind.
+- Fix (`nba/props.py REF_W`): the level is FanDuel 0.6 / DraftKings 0.4 in log rate; Pinnacle only when neither has
+  the prop. The over shift is learned against FanDuel's price, DraftKings' when FanDuel has none (`nba/shade.py`,
+  rows_us.parquet rebuilt from the committed boards; first estimate pts -0.05, reb -0.03, ast -0.05, fg3 +0.03,
+  pra -0.07, pr -0.06, pa -0.05, ra -0.05 logit: overs hit 1-2 points under their even split at the US books
+  everywhere but threes). EV at the close follows the same reference. The props bet list counts only picks from
+  2026-11-11 (`PROPS_REF_FROM`): it starts empty.
+- k = 0.05 (`build.PROPS_K`): result on the US chance plus log(model mean / market level), 10,200 props: weight
+  +0.38 +- 0.17 on the model's disagreement (positive in 7 of 8 markets), about a tenth of the way; half taken.
+- What to expect: about 3 to 11 staked props a night, most at DraftKings, most unders that need the over shift.
+  Walk-forward on the 16 nights (shift learned from earlier nights only): 51 picks at 2%+, 27-24, +5.2u (+10% +- 15):
+  no proof either way. No reference tested made money at the lock on these nights (Pinnacle's -6.8% on 422, FanDuel
+  alone -6.2% on 309, the mix -2.2% on 68, each +- 5 to 12); the best US under at the model's side broke even
+  (-0.1% on ~7,000). Judge the new picks at the US close over three weeks; if they do not beat it, bench NBA props.
+- Tested and not used: staking only picks worth 2% with and without the over shift (9 in 16 nights: too few to be a
+  board); morning locks (FanDuel-referenced DraftKings picks at 2-4% were worth +1.0% +- 0.6 at the lock's FanDuel
+  level, 93 props: thin); the model's own side by confidence (unders at the best US price -0.9% to +2.0% by band,
+  rebound unders at 55%+ did not repeat this season).
+- Long shots paused (`longshots.PAUSED`): every rung +200 or longer graded against its price, no model: implied
+  4.0% hit 2.0%, 7.1% hit 4.2%, 14.3% hit 10.8%, 26.3% hit 21.3% (50,691 rungs; -19% to -51% betting all). The 164
+  flagged went 7-157, -25.0u on 41u. The calibration ledger goes on.
+
+**NBA game lines: sound, small.** +EV picks 25-23 (-2.1u), +1.8% +- 1.2 at Pinnacle's close; leans 131-149
+(-29.7u, -4.0% at the close, as built). Pinnacle does lead NBA spreads: DraftKings and FanDuel moved past Pinnacle's
+morning number by the evening (slopes 1.6 and 1.4, 116 games), Pinnacle never toward theirs. Morning gaps are 0.2
+to 0.3 points, so edges stay near 1%. No change. Since the 10-29 ratings fix the model's total leans (72% overs)
+closed at -6.1% +- 1.1, worse than a random lean: research only, as leans are.
+
+**NFL game lines: the quarterback blind spot at Tuesday's lock.** Live +EV picks 19-17-1, +9.4u, +0.3% +- 1.6 at
+the close; week 9 went 2-6.
+- Week 9's lock had the wrong starter in 5 of 15 games (BAL Huntley, Fagnano played; MIN Murray, Wentz; SEA
+  Darnold, Lock; CLE Watson, Sanders; PHI McKee, Milton). Four of the five starters had finished the week before
+  healthy: nothing on the field said so on Tuesday. The market knew (Baltimore: model -1.9, market -9). BAL ML
+  +385 and MIN +3.5 were Picks of the Week on those teams.
+- With the real starter known the model handles a change well (2018-2026 at the close: its side covered 56.1% +-
+  3.0 of 278 games where its team had changed quarterback, 57.7% in the holdout). The problem is Tuesday's
+  information, not the quarterback ratings.
+- The size of the disagreement flags it. +EV bets from the long backtest (real starters, closing prices) by
+  |model - market|: moneylines under 1.5 points +1.5% (485), 1.5 to 3 points +12% (393; +12.4% tuning, +11.5%
+  holdout), 3+ points -6.3% (406; -5.9%, -6.8%); spreads at 3+ points -6.5% (440; -8.8%, -3.3%).
+- Fix, from week 11 (`board/build.py GAP_HOLD`, `GAP_RULE_FROM`): a +EV spread or moneyline pick with the model 3+
+  points from the market is held: on the board, no stake, never a Pick of the Week, parlay leg or bet-list pick,
+  its own record row ("Held"). Weeks before keep their stakes.
+- `pipeline/starters.played_qbs`: a game's starter is its first dropback by a quarterback (Baltimore's week 9
+  opened with a Derrick Henry pass and labeled him the starter; 13 of 5,794 team-games since 2016).
+- Next step, not built: re-lock held games at Thursday's or Saturday's build once the injury report names the
+  starter (the backtest says the model's side is good there).
+
+**NFL props: weeks 5-9 live 50-64, -18.9u; worth +0.1% +- 0.5 at Pinnacle's close** (the weeks 1-4 replay: +15.3u,
++4.1%). The live picks had no closing value, so about -4% was the expectation; the rest of the loss is variance
+(z -2.0). Since the week 7 rule: 12-17, +0.9% +- 1.0 at the close; what the rule passed on 42-48, -0.1%: the rule
+holds. Good picks +2.3% +- 0.9 at the close against +EV-only -1.0% +- 0.6: the checks hold.
+- Overs are the leak: live overs 17-28 (-12.2u), -0.4% at the close; unders 33-36, +0.5%. The over premium report's
+  out-of-sample weeks (7 on): rushing overs hit 36.7% where the close said 50.0% (147), receiving yards 45.2% vs
+  50.2% (334), receptions 45.2% vs 49.0% (336), passing yards 51.2% vs 49.6% (86).
+- Fix, from week 10 (`props/section.py OVER_RULE_WEEK`, `clears`): an over must clear its bar after that build's
+  measured premium (rush about -9% EV, rec yds -7%, receptions -7%); unders get no credit from it, passing yards
+  no penalty. The shadow record keeps what this passes on.
+- Pinnacle stays the reference for NFL props (first in Pikkit's ranking; 2025's test here agreed).
+
+**Read at the next checkup:** NBA props from 2026-11-11 against the US close (the "From Nov 11" rows); held NFL
+picks against staked ones; NFL overs the rule passed on (shadow); whether OddsPapi carries Novig or Kalshi props
+(a sharper reference than any sportsbook, if it does).
 
 ## Layout
 

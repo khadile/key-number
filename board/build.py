@@ -31,6 +31,15 @@ from pipeline.odds_history import SHOP_BOOKS, archive, publish_time
 from props.pricing import lock_time
 
 LIVE_START_WEEK = 5  # first week whose picks were locked live; earlier 2026 weeks are simulated
+# A spread or moneyline pick whose model number sits 3+ points from the market's at the lock is held: shown, no
+# stake, never a Pick of the Week, parlay leg or bet-list pick (2026-11-11 checkup, from week 11). A gap that big
+# is usually news the model lacks, most often who plays quarterback: at week 9's Tuesday lock the model had the
+# wrong starter in 5 of 15 games (Baltimore: Huntley, Fagnano played; Minnesota: Murray, Wentz played), and two
+# Picks of the Week lost on them. With the real starters known, the 2018-2026 backtest's +EV bets at 3+ points
+# still lost: moneylines -25.6u on 406 (tuning years -5.9%, holdout -6.8%), spreads -28.6u on 440 (-8.8%, -3.3%),
+# while moneylines at 1.5 to 3 points made +12% in both halves (393 bets). Totals are not held (two +EV all year).
+GAP_HOLD = 3.0
+GAP_RULE_FROM = (2026, 11)
 BET_BOARD = BL.Board(half_life=3, cap=6)   # the bet list (model/betlist.py): three-week half-life, six a week
 
 
@@ -168,7 +177,7 @@ def _pick_rows(picks: list[dict], results: list[dict], verdict_by: dict | None =
             game = f"{away} at {home}"
         out.append({"week": p["week"], "market": market, "label": label, "game": game, "legs": legs,
                     "american": p.get("american"), "book": p.get("book_name"), "potw": bool(p.get("potw")), "bet": bool(p.get("bet")),
-                    **_stake(p), **vb.get(p["id"], {}),
+                    "hold": p.get("hold"), **_stake(p), **vb.get(p["id"], {}),
                     "p_win": p.get("p_win") if p.get("kind") != "parlay" else p.get("p"),
                     "ev": p.get("ev"), "result": r.get("result"),
                     # straight picks at 1u in the record, leans included (board/ledger.record)
@@ -340,6 +349,8 @@ def main() -> None:
             for market in ("spread", "total", "ml"):
                 if market in priced:
                     pk = priced[market]
+                    held = (market != "total" and pk["ev"] > 0 and (int(g["season"]), int(g["week"])) >= GAP_RULE_FROM
+                            and ref.get("spread") is not None and abs(m["model_margin"] - ref["spread"]) >= GAP_HOLD)
                     out.append({**pk, "kind": "pick", "id": f"{gid}:{market}", "game_id": gid,
                                 "season": int(g["season"]), "week": int(g["week"]),
                                 "book_name": BOOK_NAMES.get(pk["book"], pk["book"]),
@@ -349,9 +360,11 @@ def main() -> None:
                                 "market_spread": ref.get("spread"), "market_total": ref.get("total"),
                                 "locked_at": when.isoformat(), "potw": False,
                                 # a negative-EV side is a lean (no units); quarter Kelly tracked beside flat
-                                "risk": flat_risk(pk["ev"]), "kelly_u": kelly_units(pk["p_win"], pk["dec"], pk["p_push"])})
+                                "risk": 0.0 if held else flat_risk(pk["ev"]),
+                                "kelly_u": 0.0 if held else kelly_units(pk["p_win"], pk["dec"], pk["p_push"]),
+                                **({"hold": "gap"} if held else {})})
         if flag_potw:
-            top = picks_of_the_week(out)
+            top = picks_of_the_week([p for p in out if not p.get("hold")])
             ids = {p["id"] for p in top}
             for p in out:
                 p["potw"] = p["id"] in ids
@@ -362,7 +375,7 @@ def main() -> None:
         """The week's Golden Parlay (+150 to +300) and +EV Lottery (over +500), built
         from its positive-EV picks at their locked prices."""
         out = []
-        for par in build_parlays([p for p in picks if p.get("kind") == "pick"]):
+        for par in build_parlays([p for p in picks if p.get("kind") == "pick" and not p.get("hold")]):
             if par and par["type"] in want:
                 out.append({**par, "kind": "parlay", "id": f"{season_}_{week_:02d}:{par['type']}",
                             "season": season_, "week": week_, "risk": PARLAY_RISK,
@@ -440,7 +453,8 @@ def main() -> None:
             bl_hist = [{"cat": bet_cat(p), "tier": BL.tier_of(p["ev"], BET_BOARD), "age": week - p["week"],
                      "units": ledger.units_for(bl_graded[p["id"]]["result"], p["dec"], STRAIGHT_RISK),
                      "ev_close": ev_close(p, closes.get(p["game_id"]), pricer)}
-                    for p in sim + existing if p.get("kind") == "pick" and p["season"] == season and p["id"] in bl_graded]
+                    for p in sim + existing if p.get("kind") == "pick" and p["season"] == season and p["id"] in bl_graded
+                    and not p.get("hold")]
             bl_cells = BL.estimate(bl_hist, BET_BOARD)
             bl_cands = [{"id": p["id"], "cat": bet_cat(p), "tier": BL.tier_of(p["ev"], BET_BOARD), "ev": p["ev"]}
                      for p in new_locks if p["ev"] > 0 and p.get("risk", STRAIGHT_RISK) > 0]

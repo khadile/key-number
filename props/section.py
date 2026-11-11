@@ -43,6 +43,14 @@ EV_MIN = 0.0          # weeks 1-6: a prop is a pick when its best price has posi
 # would have added go to ledger/props_shadow.jsonl, off the books, to check on live data that they were worth nothing.
 RULE_WEEK = 7
 EV_FLOOR, EV_FLOOR_PRICE = 0.02, 0.04
+# From week 10 (2026-11-11 checkup): an over must clear its bar after the over premium measured that build
+# (props/shade.py: how much less often overs hit than Pinnacle's close says, by market). The premium was set aside
+# as a report on 2026-10-27 with weeks 7 on as its test; they confirmed it (rushing overs hit 36.7% where the close
+# said 50.0%, 147 props; receiving yards 45.2% vs 50.2%, 334; receptions 45.2% vs 49.0%, 336; passing yards none),
+# as 2025 and weeks 1-6 had. Live overs went 17-28 (-12.2u) and were worth -0.4% at the close; unders +0.5%. Only
+# a penalty: an under gets no credit from it (crediting unders is what filled the NBA board with correction picks),
+# and a market whose overs have hit more than priced (passing yards) gets none either.
+OVER_RULE_WEEK = 10
 # Matchup tags (user, 2026-10-22; CLAUDE.md 4b): a tag on passing-game props, never a check. In 2025, passing-game
 # overs against the softest fifth of defenses (what each allowed that position in that stat per game, season to
 # date, 3+ games) beat Pinnacle's close by 4.5 points beyond the market's usual miss, and unders against the
@@ -213,16 +221,25 @@ def edge_from(pk: dict, books: dict) -> str:
     return "better number" if rel > 0 else ("same number" if rel == 0 else "worse number")
 
 
-def clears(pk: dict, src: str, rule: bool) -> bool:
+def clears(pk: dict, src: str, rule: bool, over_cost: float = 0.0) -> bool:
     """The bar a prop's best price clears to be a pick: positive EV, or with the week-7 rule 2%+ and 4%+ unless
-    the edge is a better number than Pinnacle's."""
+    the edge is a better number than Pinnacle's. `over_cost`: the market's measured over premium as EV (negative
+    when overs hit less than priced); from OVER_RULE_WEEK an over clears on its EV less that."""
     if not rule:
         return pk["ev"] > EV_MIN
-    return pk["ev"] >= EV_FLOOR and (src == "better number" or pk["ev"] >= EV_FLOOR_PRICE)
+    ev = pk["ev"] + (min(over_cost, 0.0) if pk["side"] == "over" else 0.0)
+    return ev >= EV_FLOOR and (src == "better number" or ev >= EV_FLOOR_PRICE)
+
+
+def over_costs(shade: dict | None, week: int) -> dict[str, float]:
+    """market -> the over premium as EV, for clears(); empty before OVER_RULE_WEEK."""
+    if week < OVER_RULE_WEEK or not shade:
+        return {}
+    return {m: float(v.get("cost") or 0.0) for m, v in (shade.get("markets") or {}).items()}
 
 
 def make_picks(x: pl.DataFrame, samples: dict, books: dict, pricer: PropPricer, when_of: dict,
-               flag_potw: bool = True, rule: bool = False) -> list[dict]:
+               flag_potw: bool = True, rule: bool = False, over_cost: dict | None = None) -> list[dict]:
     """Best prop per tracked player (DK or FanDuel) that clears the bar (clears()), Picks of the Week flagged."""
     out = []
     for r in x.iter_rows(named=True):
@@ -235,7 +252,7 @@ def make_picks(x: pl.DataFrame, samples: dict, books: dict, pricer: PropPricer, 
             if not pk:
                 continue
             src = edge_from(pk, books[key])
-            if clears(pk, src, rule) and (best is None or kelly(pk) > kelly(best)):
+            if clears(pk, src, rule, (over_cost or {}).get(m, 0.0)) and (best is None or kelly(pk) > kelly(best)):
                 best = {**pk, "market": m, "edge_from": src}
         if not best:
             continue
@@ -460,7 +477,8 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
         if due:
             xd = xw.filter(pl.col("game_id").is_in(due))
             when = {g: now for g in due}
-            new_locks = make_picks(xd, s_week, now_b, pricer, when, flag_potw=False, rule=week >= RULE_WEEK)
+            new_locks = make_picks(xd, s_week, now_b, pricer, when, flag_potw=False, rule=week >= RULE_WEEK,
+                                   over_cost=over_costs(shade, week))
             if week >= RULE_WEEK:
                 # what the old rule would have added, off the books: is what the rule passes on worth nothing?
                 kept = {q["id"] for q in new_locks}
@@ -596,7 +614,7 @@ def build_section(season: int, week: int, games: pl.DataFrame, now: datetime, ma
                        "fair": round(priced["fair_median"], 1) if priced else None,
                        "lean": ({"side": priced["side"], "line": priced["line"], "book": BOOK_NAMES[priced["book"]],
                                  "american": american(priced["dec"]), "p": round(priced["p_win"], 3), "ev": round(priced["ev"], 4),
-                                 "edge_from": src, "clears": clears(priced, src, week >= RULE_WEEK)}
+                                 "edge_from": src, "clears": clears(priced, src, week >= RULE_WEEK, over_costs(shade, week).get(m, 0.0))}
                                 if priced else None),
                        "matchup": _mtag(mtab, r["opp"], r["position"], m),
                        "actual": stats.get((r["game_id"], r["gsis_id"]), {}).get(m)})

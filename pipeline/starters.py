@@ -65,8 +65,19 @@ def upcoming_qbs(season: int, week: int) -> pl.DataFrame:
 
 
 def played_qbs(plays: pl.DataFrame) -> pl.DataFrame:
-    """game_id, team, qb_id: each team's starting quarterback in each game played (its first dropback)."""
-    return (plays.filter(pl.col("qb_id").is_not_null()).sort("game_id", "posteam", "play_id")
+    """game_id, team, qb_id: each team's starting quarterback in each game played: its first dropback by a
+    quarterback. A trick play can open a game (Baltimore, 2026 week 9: Derrick Henry threw the first pass and
+    was labeled the starter; 13 of 5,794 team-games since 2016), so players listed at another position are
+    passed over when a quarterback also dropped back for the team that day."""
+    d = plays.filter(pl.col("qb_id").is_not_null())
+    f = RAW / "players.parquet"
+    if f.exists():
+        pos = pl.read_parquet(f, columns=["gsis_id", "position"]).drop_nulls("gsis_id").unique("gsis_id")
+        d = (d.join(pos.rename({"gsis_id": "qb_id"}), on="qb_id", how="left")
+              .with_columns(not_qb=(pl.col("position").is_not_null() & (pl.col("position") != "QB")).cast(pl.Int8)))
+    else:
+        d = d.with_columns(not_qb=pl.lit(0, pl.Int8))
+    return (d.sort("game_id", "posteam", "not_qb", "play_id")
             .group_by("game_id", "posteam", maintain_order=True).first()
             .select("game_id", team="posteam", qb_id="qb_id"))
 

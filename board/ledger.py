@@ -170,7 +170,9 @@ def record(picks: list[dict], results: list[dict]) -> dict:
         "lottery": _tally(lottery),
         "all": _tally(rows),
         # the same record split by the price: +EV picks, and negative-EV sides (leans on the board from week 6)
-        "split": {"pos": _tally([r for r in straight if r["ev"] > 0]), "neg": _tally([r for r in straight if r["ev"] <= 0])},
+        "split": {"pos": _tally([r for r in straight if r["ev"] > 0 and not r.get("hold")]), "neg": _tally([r for r in straight if r["ev"] <= 0]),
+                  # +EV picks held without a stake: the model 3+ points from the market at the lock (board/build.py GAP_HOLD)
+                  "held": _tally([r for r in straight if r["ev"] > 0 and r.get("hold")])},
         # quarter-Kelly sizing, its own record from week 1, apart from the flat one (model/staking.py). Each tally
         # carries the same picks' flat record ("flat"), so the two compare like for like; "since" is week 6 on.
         "kelly": {**{k: kt(v) for k, v in (("all", pos), ("ats", [r for r in pos if r["market"] == "spread"]),
