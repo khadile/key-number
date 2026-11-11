@@ -1052,6 +1052,19 @@ the close; week 9 went 2-6.
   (`ledger.record` drops superseded holds from the tallies; the category table has "Re-locked after a hold").
   A `relook` line (`<game>:relook`) marks the game as looked at, whatever came of it, so it happens once.
   `python -m board.build --dry-run --relock-study` replays it on the finished weeks (research.yml, nfl-dry-run).
+- **The hold rule did not pass its own test at Tuesday prices** (the replay, weeks 1-9 of 2026, Tuesday prices
+  and Tuesday information, run 2026-11-11 after the rule shipped): the 21 +EV spread and moneyline picks it would
+  have held went 13-8, +19.9u, and were worth +3.8% at the close (11 moneylines, so the units are mostly a few
+  underdogs). By the last update 7 of the 21 no longer had a +EV side (the market had come to the model), 11 were
+  still 3+ points away (9-2, -0.1% at the close from there) and 3 came within 3 points and would have re-locked
+  (1-2, -3.8% at the close). So this season a big Tuesday gap was more often the model early than the model
+  missing news; week 9's quarterbacks were the exception. The long backtest's -6% is at CLOSING prices, where a
+  gap that survives all the news is the model's error; it says nothing about Tuesday. 21 picks decide nothing
+  either way, and the rule has not applied to any pick yet (week 11 locks 2026-11-17): the user's call before
+  then, between keeping the hold, a higher bar, or a "check the news" tag with the stake left on. The second
+  look's own sample is 3 picks.
+- The dry run itself passed (research.yml run 43095049949, 2026-11-11): the whole NFL build with the hold, the
+  second look and the week 10 over rule ran on real data with nothing written.
 
 **NFL props: weeks 5-9 live 50-64, -18.9u; worth +0.1% +- 0.5 at Pinnacle's close** (the weeks 1-4 replay: +15.3u,
 +4.1%). The live picks had no closing value, so about -4% was the expectation; the rest of the loss is variance
@@ -1096,6 +1109,27 @@ log of a public repository is public: a study prints tallies, never prices. Jobs
   ever come back.
 - Matchbook: game lines only. `betfair-ex` and `polymarket` (global) must be asked for one book per call.
 - NFL not probed yet (the runner died first): run `exchange-probe` again with `--books` narrowed.
+
+**Novig against the sportsbooks, first read** (`nba/exchange_test.py`, 40 games 2026-11-05 to 11-11, 80 free calls
+in 16 minutes; each exchange's midpoint against each book's even split, same line, graded):
+- Coverage at 5:45pm ET: Novig has 2,849 of 3,276 tracked props (FanDuel 3,022, DraftKings 3,120, Pinnacle 1,015),
+  its two sides 3.6% apart on the main line (FanDuel 6.3%). Polymarket US has 171: too few to judge.
+- Log loss, Novig lower every time: against FanDuel 0.68755 vs 0.68830 (2,237), DraftKings 0.68590 vs 0.68759
+  (2,153), Pinnacle 0.68889 vs 0.69068 (770); ten minutes before the tip the same order (0.68951 vs 0.69054,
+  0.68725 vs 0.68821, 0.68795 vs 0.69001).
+- Joint fit of the result on both prices (5:45pm): FanDuel -0.01 +- 0.79 with Novig +1.19 +- 0.80; DraftKings +0.01
+  +- 0.63 with Novig +1.32 +- 0.62; Pinnacle -1.05 +- 1.16 with Novig +1.85 +- 1.16. Before the tip: FanDuel -0.38 /
+  Novig +1.18; DraftKings +0.49 / Novig +0.63. The weight goes to Novig, each fit about 1.5 to 2 standard errors.
+- Where they disagreed by 2+ points: Novig lower on the over than FanDuel (211), the over hit 42.7% (FanDuel said
+  50.3%, Novig 47.7%); Novig higher (111), the over hit 39.6% (FanDuel 48.9%, Novig 51.4%): Novig was right when
+  it was lower and wrong when it was higher. Against DraftKings it was right both ways (45.3% and 53.6%).
+- Overs hit about 3 points under every book's price, Novig's included (intercept -0.115 +- 0.044): the over shift
+  is still needed with an exchange as the level.
+- The best DraftKings/FanDuel side against Novig's price, same line: 2%+ at 5:45pm 64 bets about -9% (2-4% +4.5% +-
+  15, 4%+ -36% +- 23 on 21); before the tip 2-4% -22% +- 14 (48). Nothing there yet.
+- Read: Novig looks at least as sharp as FanDuel, on one week of games. Not enough to move the reference. Next:
+  backfill the season (Novig alone, ~160 calls, ~35 minutes) for about 12,000 props, and record Novig's price at
+  each props lock; change `REF_W` only if the weight still goes to Novig then, and judge by picks, not log loss.
 
 **NBA game lines: nothing to fix, tested on the full price history** (user: "why are there no changes even though
 the model is significantly underperforming?"; `nba/line_timing.py`, reports/nba_line_timing.json, 159 games

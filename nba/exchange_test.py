@@ -85,7 +85,9 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--games", type=int, default=40)
     ap.add_argument("--until", default=None, help="UTC HH:MM: stop fetching then and analyse what is in hand")
+    ap.add_argument("--books", default=",".join(EXCHANGES), help="exchanges to ask for, one call each per game")
     args = ap.parse_args()
+    EXCHANGES[:] = [b for b in args.books.split(",") if b]
     now = datetime.now(timezone.utc)
     stop = None
     if args.until:

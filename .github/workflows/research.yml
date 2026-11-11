@@ -24,6 +24,10 @@ on:
         description: "exchange-test: how many recent games"
         type: string
         default: "40"
+      books:
+        description: "exchange-test: exchanges to ask for (comma-separated; default novig.us,polymarket.us)"
+        type: string
+        default: ""
       until:
         description: "exchange-test: stop fetching at this UTC time (HH:MM), so it never overlaps a build"
         type: string
@@ -111,7 +115,8 @@ jobs:
           PYTHONUNBUFFERED: "1"
           GAMES: ${{ inputs.games }}
           UNTIL: ${{ inputs.until }}
-        run: python -m nba.exchange_test --games "$GAMES" ${UNTIL:+--until "$UNTIL"}
+          BOOKS: ${{ inputs.books }}
+        run: python -m nba.exchange_test --games "$GAMES" ${UNTIL:+--until "$UNTIL"} ${BOOKS:+--books "$BOOKS"}
 
       - name: Save exchange snapshots
         if: always() && inputs.job == 'exchange-test'

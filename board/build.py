@@ -447,7 +447,12 @@ def main() -> None:
             study_out["rows"].append({"set": name.strip(), "n": len(ps), "w": w, "l": l, "units": round(sum(u), 2),
                                       "ev": round(float(np.mean([q["ev"] for q in ps])), 4) if ps else None,
                                       "ev_close": round(float(np.mean(ec)), 4) if ec else None, "ev_close_n": len(ec),
-                                      "ml": sum(q["market"] == "ml" for q in ps), "by_week": dict(sorted(Counter(q["week"] for q in ps).items()))})
+                                      "ml": sum(q["market"] == "ml" for q in ps), "by_week": dict(sorted(Counter(q["week"] for q in ps).items())),
+                                      # each pick, without its price: how far the model stood from the market, and how it went
+                                      "picks": [{"week": q["week"], "market": q["market"], "dog": q["dec"] > 2.0,
+                                                 "gap": round(abs(q["model_margin"] - q["market_spread"]), 1), "ev": q["ev"],
+                                                 "ev_close": ev_close(q, closes.get(q["game_id"]), pricer), "result": r["result"]}
+                                                for q, r in zip(ps, gr)]})
         (REPORTS / "nfl_relock_study.json").write_text(json.dumps(study_out, indent=1), encoding="utf-8")
 
     # --- public betting splits (pipeline/action_network.py, user 2026-10-26): context on the cards and on each pick as
