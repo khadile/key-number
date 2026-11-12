@@ -1,0 +1,442 @@
+{
+ "weeks": [
+  1,
+  9
+ ],
+ "at": "2026-11-12T02:24:49.940508+00:00",
+ "rows": [
+  {
+   "set": "held on Tuesday",
+   "n": 21,
+   "w": 13,
+   "l": 8,
+   "units": 19.9,
+   "ev": 0.0565,
+   "ev_close": 0.0383,
+   "ev_close_n": 21,
+   "ml": 11,
+   "by_week": {
+    "1": 2,
+    "2": 5,
+    "3": 3,
+    "4": 3,
+    "6": 2,
+    "7": 2,
+    "9": 4
+   },
+   "picks": [
+    {
+     "week": 1,
+     "market": "ml",
+     "dog": true,
+     "gap": 3.2,
+     "ev": 0.0626,
+     "ev_close": -0.033,
+     "result": "L"
+    },
+    {
+     "week": 1,
+     "market": "ml",
+     "dog": true,
+     "gap": 5.4,
+     "ev": 0.0417,
+     "ev_close": -0.0096,
+     "result": "W"
+    },
+    {
+     "week": 2,
+     "market": "ml",
+     "dog": true,
+     "gap": 4.8,
+     "ev": 0.0135,
+     "ev_close": 0.0569,
+     "result": "W"
+    },
+    {
+     "week": 2,
+     "market": "spread",
+     "dog": false,
+     "gap": 5.1,
+     "ev": 0.0285,
+     "ev_close": 0.0169,
+     "result": "W"
+    },
+    {
+     "week": 2,
+     "market": "ml",
+     "dog": true,
+     "gap": 5.1,
+     "ev": 0.1775,
+     "ev_close": 0.0417,
+     "result": "W"
+    },
+    {
+     "week": 2,
+     "market": "spread",
+     "dog": false,
+     "gap": 3.3,
+     "ev": 0.0456,
+     "ev_close": 0.0071,
+     "result": "W"
+    },
+    {
+     "week": 2,
+     "market": "ml",
+     "dog": true,
+     "gap": 3.3,
+     "ev": 0.1037,
+     "ev_close": 0.0105,
+     "result": "W"
+    },
+    {
+     "week": 3,
+     "market": "spread",
+     "dog": false,
+     "gap": 4.4,
+     "ev": 0.0488,
+     "ev_close": 0.0583,
+     "result": "W"
+    },
+    {
+     "week": 3,
+     "market": "ml",
+     "dog": true,
+     "gap": 6.1,
+     "ev": 0.0889,
+     "ev_close": 0.1257,
+     "result": "L"
+    },
+    {
+     "week": 3,
+     "market": "spread",
+     "dog": false,
+     "gap": 3.9,
+     "ev": 0.0608,
+     "ev_close": -0.0389,
+     "result": "W"
+    },
+    {
+     "week": 4,
+     "market": "spread",
+     "dog": false,
+     "gap": 3.7,
+     "ev": 0.0185,
+     "ev_close": -0.0308,
+     "result": "W"
+    },
+    {
+     "week": 4,
+     "market": "ml",
+     "dog": true,
+     "gap": 3.7,
+     "ev": 0.0802,
+     "ev_close": -0.0378,
+     "result": "W"
+    },
+    {
+     "week": 4,
+     "market": "ml",
+     "dog": true,
+     "gap": 3.5,
+     "ev": 0.1013,
+     "ev_close": 0.1363,
+     "result": "L"
+    },
+    {
+     "week": 6,
+     "market": "spread",
+     "dog": false,
+     "gap": 3.6,
+     "ev": 0.0664,
+     "ev_close": 0.1699,
+     "result": "L"
+    },
+    {
+     "week": 6,
+     "market": "ml",
+     "dog": true,
+     "gap": 4.4,
+     "ev": 0.0275,
+     "ev_close": -0.0596,
+     "result": "W"
+    },
+    {
+     "week": 7,
+     "market": "spread",
+     "dog": false,
+     "gap": 4.6,
+     "ev": 0.0031,
+     "ev_close": 0.2614,
+     "result": "W"
+    },
+    {
+     "week": 7,
+     "market": "ml",
+     "dog": true,
+     "gap": 3.1,
+     "ev": 0.0179,
+     "ev_close": 0.0079,
+     "result": "L"
+    },
+    {
+     "week": 9,
+     "market": "spread",
+     "dog": false,
+     "gap": 10.7,
+     "ev": 0.0249,
+     "ev_close": -0.0193,
+     "result": "L"
+    },
+    {
+     "week": 9,
+     "market": "ml",
+     "dog": true,
+     "gap": 10.7,
+     "ev": 0.1273,
+     "ev_close": 0.0997,
+     "result": "L"
+    },
+    {
+     "week": 9,
+     "market": "spread",
+     "dog": false,
+     "gap": 5.3,
+     "ev": 0.001,
+     "ev_close": 0.0898,
+     "result": "W"
+    },
+    {
+     "week": 9,
+     "market": "spread",
+     "dog": false,
+     "gap": 3.0,
+     "ev": 0.0463,
+     "ev_close": -0.0495,
+     "result": "L"
+    }
+   ]
+  },
+  {
+   "set": "re-locked (within 3 at the last update)",
+   "n": 3,
+   "w": 1,
+   "l": 2,
+   "units": -0.12,
+   "ev": 0.0247,
+   "ev_close": -0.0382,
+   "ev_close_n": 3,
+   "ml": 2,
+   "by_week": {
+    "2": 1,
+    "4": 1,
+    "9": 1
+   },
+   "picks": [
+    {
+     "week": 2,
+     "market": "ml",
+     "dog": true,
+     "gap": 2.6,
+     "ev": 0.0288,
+     "ev_close": -0.002,
+     "result": "W"
+    },
+    {
+     "week": 4,
+     "market": "ml",
+     "dog": true,
+     "gap": 2.5,
+     "ev": 0.0004,
+     "ev_close": -0.0728,
+     "result": "L"
+    },
+    {
+     "week": 9,
+     "market": "spread",
+     "dog": true,
+     "gap": 1.9,
+     "ev": 0.0448,
+     "ev_close": -0.0398,
+     "result": "L"
+    }
+   ]
+  },
+  {
+   "set": "still 3+ at the last update",
+   "n": 11,
+   "w": 9,
+   "l": 2,
+   "units": 15.03,
+   "ev": 0.0556,
+   "ev_close": -0.0011,
+   "ev_close_n": 11,
+   "ml": 6,
+   "by_week": {
+    "1": 2,
+    "2": 4,
+    "3": 3,
+    "4": 1,
+    "9": 1
+   },
+   "picks": [
+    {
+     "week": 1,
+     "market": "ml",
+     "dog": true,
+     "gap": 3.7,
+     "ev": 0.0101,
+     "ev_close": -0.033,
+     "result": "L"
+    },
+    {
+     "week": 1,
+     "market": "ml",
+     "dog": true,
+     "gap": 4.4,
+     "ev": 0.0872,
+     "ev_close": -0.0679,
+     "result": "W"
+    },
+    {
+     "week": 2,
+     "market": "spread",
+     "dog": false,
+     "gap": 5.1,
+     "ev": 0.0109,
+     "ev_close": -0.0005,
+     "result": "W"
+    },
+    {
+     "week": 2,
+     "market": "ml",
+     "dog": true,
+     "gap": 5.1,
+     "ev": 0.1519,
+     "ev_close": 0.019,
+     "result": "W"
+    },
+    {
+     "week": 2,
+     "market": "spread",
+     "dog": false,
+     "gap": 3.3,
+     "ev": 0.0204,
+     "ev_close": -0.0191,
+     "result": "W"
+    },
+    {
+     "week": 2,
+     "market": "ml",
+     "dog": true,
+     "gap": 3.3,
+     "ev": 0.0301,
+     "ev_close": -0.0569,
+     "result": "W"
+    },
+    {
+     "week": 3,
+     "market": "spread",
+     "dog": false,
+     "gap": 3.9,
+     "ev": 0.0708,
+     "ev_close": 0.0583,
+     "result": "W"
+    },
+    {
+     "week": 3,
+     "market": "ml",
+     "dog": true,
+     "gap": 4.6,
+     "ev": 0.1392,
+     "ev_close": 0.0006,
+     "result": "L"
+    },
+    {
+     "week": 3,
+     "market": "spread",
+     "dog": false,
+     "gap": 4.2,
+     "ev": 0.0005,
+     "ev_close": 0.0703,
+     "result": "W"
+    },
+    {
+     "week": 4,
+     "market": "ml",
+     "dog": true,
+     "gap": 4.2,
+     "ev": 0.059,
+     "ev_close": -0.0114,
+     "result": "W"
+    },
+    {
+     "week": 9,
+     "market": "spread",
+     "dog": false,
+     "gap": 3.3,
+     "ev": 0.0316,
+     "ev_close": 0.0287,
+     "result": "W"
+    }
+   ]
+  },
+  {
+   "set": "re-locked, same side",
+   "n": 3,
+   "w": 1,
+   "l": 2,
+   "units": -0.12,
+   "ev": 0.0247,
+   "ev_close": -0.0382,
+   "ev_close_n": 3,
+   "ml": 2,
+   "by_week": {
+    "2": 1,
+    "4": 1,
+    "9": 1
+   },
+   "picks": [
+    {
+     "week": 2,
+     "market": "ml",
+     "dog": true,
+     "gap": 2.6,
+     "ev": 0.0288,
+     "ev_close": -0.002,
+     "result": "W"
+    },
+    {
+     "week": 4,
+     "market": "ml",
+     "dog": true,
+     "gap": 2.5,
+     "ev": 0.0004,
+     "ev_close": -0.0728,
+     "result": "L"
+    },
+    {
+     "week": 9,
+     "market": "spread",
+     "dog": true,
+     "gap": 1.9,
+     "ev": 0.0448,
+     "ev_close": -0.0398,
+     "result": "L"
+    }
+   ]
+  },
+  {
+   "set": "re-locked, other side",
+   "n": 0,
+   "w": 0,
+   "l": 0,
+   "units": 0,
+   "ev": null,
+   "ev_close": null,
+   "ev_close_n": 0,
+   "ml": 0,
+   "by_week": {},
+   "picks": []
+  }
+ ]
+}
