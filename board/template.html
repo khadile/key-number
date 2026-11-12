@@ -426,6 +426,7 @@ details.acc > summary h3 { font-size: 18px; font-weight: 700; }
 details.acc > summary .chev { margin-left: auto; font: 700 22px/1 var(--f-display); color: var(--muted); }
 details.acc[open] > summary .chev { transform: rotate(90deg); }
 details.acc > .acc-body { padding: 4px 18px 18px; display: grid; gap: 14px; min-width: 0; }
+tr.tot td { border-top: 2px solid var(--line); background: var(--surface-2); }
 .gaccs { display: grid; gap: 12px; }
 .gacc > summary .mu { display: inline-flex; align-items: center; gap: 6px; }
 .gacc > summary .at { color: var(--muted); font-size: 13px; }
@@ -1083,8 +1084,8 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <div class="gauge-lbl"><span>${term("win", "Win chance")} <b>${pct(p, 1)}</b></span><span>${term("need", "Needs")} <b>${pct(need, 1)}</b></span></div></div>`;
   }
   // Cumulative units by week, one line for the whole record (weeks before launch included).
-  function unitsChart(A, specs, xlab) {
-    const xl = xlab || ((w) => "W" + w), xt = xlab || ((w) => "week " + w);
+  function unitsChart(A, specs, xlab, xtip) {
+    const xl = xlab || ((w) => "W" + w), xt = xtip || xlab || ((w) => "week " + w);
     const cum = (weeks, get) => { let c = 0; return weeks.map((w) => { const r = get(w); c += r.units; return { wk: w.week, u: c, r }; }); };
     const series = (specs || (A && A.weeks.length ? [{ name: "Units", cls: "ser-live", weeks: A.weeks, get: (w) => w.all }] : []))
       .filter((s) => s.weeks && s.weeks.length).map((s) => ({ ...s, pts: cum(s.weeks, s.get) }));
@@ -2898,7 +2899,25 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   }
 
   // ---------- records
-  let nRecDay = null, npRecDay = null;
+  let nRecDay = null, npRecDay = null, nRecMonth = null, npRecMonth = null;
+  // Months (user, 2026-11-12: "anything showing days be put into months"): the NBA plays almost every day, so each
+  // day-based view groups its days by month: month tabs over the day tabs, the day-by-day table one section per
+  // month with its totals, the units chart labeled at the start of each month.
+  const monthOf = (d) => d.slice(0, 7);
+  const monthName = (m, long) => new Date(m + "-15T12:00:00").toLocaleDateString("en-US", { month: long ? "long" : "short", ...(long ? { year: "numeric" } : {}) });
+  const monthsOpen = new Set((() => { try { return JSON.parse(localStorage.getItem("kn-nba-months") || "[]"); } catch (e) { return []; } })());
+  function saveMonths() { try { localStorage.setItem("kn-nba-months", JSON.stringify([...monthsOpen])); } catch (e) { /* blocked storage: it still works for this visit */ } }
+  function sumT(ts) {   // tallies added up: record, units, and EV at the close weighted by how many picks have one
+    const o = { w: 0, l: 0, p: 0, n: 0, units: 0, ev_close: null, ev_close_n: 0 };
+    let ec = 0;
+    for (const t of ts) {
+      if (!t || !t.n) continue;
+      o.w += t.w; o.l += t.l; o.p += t.p || 0; o.n += t.n; o.units += t.units || 0;
+      if (t.ev_close != null && t.ev_close_n) { ec += t.ev_close * t.ev_close_n; o.ev_close_n += t.ev_close_n; }
+    }
+    if (o.ev_close_n) o.ev_close = ec / o.ev_close_n;
+    return o;
+  }
   // The NBA record pages in the NFL record's format (user, 2026-10-22): picks by day grouped by bet type, each
   // group with its own subtotal; a day-by-day table with a column per bet type; units over time.
   const NCATS = [["spread", "Spread"], ["total", "Over/under"], ["ml", "Moneyline"], ["parlay", "Parlays"]];
@@ -2906,24 +2925,42 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   const nCat = (r) => (r.legs && r.legs.length ? "parlay" : ["pra", "pr", "pa", "ra"].includes(r.market) ? "combo" : r.market);
   const mdShort = (d) => `${+d.slice(5, 7)}/${+d.slice(8, 10)}`;
   function nDayBrowser(rows, which, cats) {
-    const days = [...new Set(rows.map((r) => r.day))].sort().slice(-21);   // oldest first, like NFL's weeks; opens on the latest
-    if (!days.length) return '<p class="note">Picks show up here as they lock.</p>';
+    const all = [...new Set(rows.map((r) => r.day))].sort();   // oldest first, like NFL's weeks; opens on the latest
+    if (!all.length) return '<p class="note">Picks show up here as they lock.</p>';
+    const months = [...new Set(all.map(monthOf))];
+    let mon = which === "lines" ? nRecMonth : npRecMonth;
+    if (!months.includes(mon)) mon = months[months.length - 1];
+    const days = all.filter((d) => monthOf(d) === mon);
     let cur = which === "lines" ? nRecDay : npRecDay;
     if (!days.includes(cur)) cur = days[days.length - 1];
+    const monthRows = rows.filter((r) => monthOf(r.day) === mon);
     const rs = rows.filter((r) => r.day === cur).map((r) => ({ ...r, potw: !!r.potd }));
     const sections = cats.map(([k, name]) => {
       const g = rs.filter((r) => nCat(r) === k).sort((a, b) => (b.potw - a.potw) || ((a.risk === 0) - (b.risk === 0)) || ((b.ev || 0) - (a.ev || 0)));
       return g.length ? `<div class="box"><h3>${name} <span class="note">${subtotal(g)}</span></h3>${catTable(g, k === "parlay", { ev: true, final: which === "props", tag: "POTD" })}</div>` : "";
     }).join("");
-    return `<div class="pills" role="tablist" aria-label="Day">${days.map((d) => `<button class="pill" data-nday="${which}:${d}" aria-pressed="${d === cur}">${esc(dayShort(d))}</button>`).join("")}</div>
+    return `${months.length > 1 ? `<div class="pills" role="tablist" aria-label="Month">${months.map((m) => `<button class="pill" data-nmonth="${which}:${m}" aria-pressed="${m === mon}">${esc(monthName(m))}</button>`).join("")}</div>` : ""}
+      <p class="note">${esc(monthName(mon, true))}: ${subtotal(monthRows) || "no picks"}.</p>
+      <div class="pills" role="tablist" aria-label="Day">${days.map((d) => `<button class="pill" data-nday="${which}:${d}" aria-pressed="${d === cur}">${esc(dayShort(d))}</button>`).join("")}</div>
       <p class="note">${esc(dayShort(cur))}: ${subtotal(rs) || "no picks"}.</p>${sections}`;
   }
-  function nDayTable(R, cols, extra) {   // extra: [label, key] a second record beside All (the +EV picks, the 2%+ props)
+  function nDayTable(R, cols, extra, which) {   // extra: [label, key] a second record beside All (the +EV picks, the 2%+ props)
     const D_ = R.days || [];   // oldest first, like NFL's weeks
     if (!D_.length) return '<p class="note">Nothing graded yet.</p>';
-    return `<div class="scroll"><table class="t"><thead><tr><th>Day</th>${cols.map(([, k]) => `<th class="num">${k}</th>`).join("")}<th class="num">${term("potd", "Picks of the day")}</th>${extra ? `<th class="num">${extra[0]}</th><th class="num">Their units</th>` : ""}<th class="num">All picks</th><th class="num">Units</th><th class="num">${term("evclose", "EV at the close")}</th></tr></thead><tbody>
-      ${D_.map((d) => `<tr><td>${esc(dayShort(d.day))}</td>${cols.map(([c]) => `<td class="num">${rec(d[c])}</td>`).join("")}<td class="num">${rec(d.potd)}</td>${extra ? `<td class="num">${rec(d[extra[1]])}</td><td class="num ${cls(d[extra[1]] && d[extra[1]].units)}">${d[extra[1]] && d[extra[1]].n ? units(d[extra[1]].units) : "–"}</td>` : ""}<td class="num">${rec(d.all)}</td><td class="num ${cls(d.all.units)}">${units(d.all.units)}</td><td class="num">${evPct(d.all.ev_close)}</td></tr>`).join("")}
-    </tbody></table></div>`;
+    const head = `<thead><tr><th>Day</th>${cols.map(([, k]) => `<th class="num">${k}</th>`).join("")}<th class="num">${term("potd", "Picks of the day")}</th>${extra ? `<th class="num">${extra[0]}</th><th class="num">Their units</th>` : ""}<th class="num">All picks</th><th class="num">Units</th><th class="num">${term("evclose", "EV at the close")}</th></tr></thead>`;
+    const row = (d, lab, total) => `<tr${total ? ' class="tot"' : ""}><td>${total ? `<b>${esc(lab)}</b>` : esc(lab)}</td>${cols.map(([c]) => `<td class="num">${rec(d[c])}</td>`).join("")}<td class="num">${rec(d.potd)}</td>${extra ? `<td class="num">${rec(d[extra[1]])}</td><td class="num ${cls(d[extra[1]] && d[extra[1]].units)}">${d[extra[1]] && d[extra[1]].n ? units(d[extra[1]].units) : "–"}</td>` : ""}<td class="num">${rec(d.all)}</td><td class="num ${cls(d.all.units)}">${units(d.all.units)}</td><td class="num">${evPct(d.all.ev_close)}</td></tr>`;
+    const keys = [...cols.map(([c]) => c), "potd", "all", ...(extra ? [extra[1]] : [])];
+    const months = [...new Set(D_.map((d) => monthOf(d.day)))].reverse();   // newest month first; days within it oldest first
+    const latest = months[0];
+    return `<div class="gaccs">${months.map((m) => {
+      const ds = D_.filter((d) => monthOf(d.day) === m);
+      const tot = Object.fromEntries(keys.map((k) => [k, sumT(ds.map((d) => d[k]))]));
+      const key = `${which || "x"}:${m}`;
+      const open = m === latest || monthsOpen.has(key);
+      return `<details class="acc nmon" data-nmon="${key}"${m === latest ? " data-latest" : ""}${open ? " open" : ""}><summary><h3>${esc(monthName(m, true))}</h3>
+          <span class="note">${rec(tot.all)} · <span class="${cls(tot.all.units)}">${units(tot.all.units)}</span>${tot.all.ev_close != null ? ` · ${evPct(tot.all.ev_close)} at the close` : ""} · ${ds.length} day${ds.length === 1 ? "" : "s"}</span>${chev}</summary>
+        <div class="acc-body"><div class="scroll"><table class="t">${head}<tbody>${ds.map((d) => row(d, dayShort(d.day))).join("")}${ds.length > 1 ? row(tot, "Month", true) : ""}</tbody></table></div></div></details>`;
+    }).join("")}</div>`;
   }
   function nUnitsChart(R, second) {   // all picks, one subset, and quarter Kelly, cumulative by day
     const days = R.days || [];
@@ -2933,9 +2970,25 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     return unitsChart(null, [{ name: "All picks at 1u", cls: "ser-live", weeks: W, get: (w) => w.all },
                              ...(second && W.some((w) => w[second[1]]) ? [{ name: second[0], cls: "ser-sub", weeks: W, get: (w) => w[second[1]] || none }] : []),
                              ...(W.some((w) => w.kelly) ? [{ name: "Quarter Kelly", cls: "ser-kelly", weeks: W, get: (w) => w.kelly || none }] : [])],
-                      (i) => mdShort(days[i - 1].day));
+                      (i) => {   // a label at each month's first game day; every day stays a point with its tooltip
+                        const d = days[i - 1].day, prev = i > 1 ? days[i - 2].day : null;
+                        return !prev || monthOf(prev) !== monthOf(d) ? monthName(monthOf(d)) : "";
+                      }, (i) => dayShort(days[i - 1].day));
   }
+  // a month section opened or closed stays that way on this device (the latest month always opens)
+  app.addEventListener("toggle", (e) => {
+    const d = e.target;
+    if (!d.matches || !d.matches("details.nmon") || d.hasAttribute("data-latest")) return;   // the latest month always opens
+    if (d.open) monthsOpen.add(d.dataset.nmon); else monthsOpen.delete(d.dataset.nmon);
+    saveMonths();
+  }, true);
   app.addEventListener("click", (e) => {
+    const mb = e.target.closest && e.target.closest("[data-nmonth]");
+    if (mb) {
+      const [w, m] = mb.dataset.nmonth.split(":");
+      if (w === "lines") { nRecMonth = m; nRecDay = null; renderNbaRecord(); } else { npRecMonth = m; npRecDay = null; renderNbaPropsRecord(); }
+      return;
+    }
     const b = e.target.closest && e.target.closest("[data-nday]");
     if (!b) return;
     const [which, d] = b.dataset.nday.split(":");
@@ -2984,7 +3037,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
         ["Picks of the day", (r) => r.potd], ["+EV picks", (r) => !isPar(r) && r.ev > 0], ["Leans", (r) => r.risk === 0], ["Parlays", isPar]], "day")}${blCells(N.betlist && N.betlist.lines && { ...N.betlist.lines, half: "10 days" })}</section>
       <section class="sec"><header><h2>Units over time</h2></header><div class="box">${nUnitsChart(R, ["+EV picks", "pos"]) || '<p class="note">Builds up as picks are graded.</p>'}</div></section>
       <section class="sec"><header><h2>Picks by day</h2></header>${nDayBrowser(N.record.rows, "lines", NCATS)}</section>
-      <section class="sec"><header><h2>Day by day</h2></header>${nDayTable(R, [["ats", "ATS"], ["ou", "O/U"], ["ml", "Moneyline"]], ["+EV picks", "pos"])}</section>
+      <section class="sec"><header><h2>Day by day <em>by month</em></h2></header>${nDayTable(R, [["ats", "ATS"], ["ou", "O/U"], ["ml", "Moneyline"]], ["+EV picks", "pos"], "lines")}</section>
       <section class="sec"><header><h2>Calibration</h2></header><p class="note">When a pick is given a 55% chance, it should win about 55% of the time.</p>${nCal(R)}</section>`;
   }
 
@@ -3138,7 +3191,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
         ${[...mk, ["Overs", R.over], ["Unders", R.under]].map(([k, r]) => `<tr><td>${k}</td><td class="num">${rec(r)}</td><td class="num ${cls(r && r.units)}">${r && r.n ? units(r.units) : "–"}</td><td class="num">${r && r.n ? pct(r.roi, 1) : "–"}</td><td class="num">${r && r.n ? evPct(r.ev) : "–"}</td><td class="num">${r && r.n ? evPct(r.ev_close) : "–"}</td></tr>`).join("")}
       </tbody></table></div><p class="note">Overs and unders are kept apart from day one: books shade popular overs, and the first checkup tests whether unders carry the edge.</p></section>
       <section class="sec"><header><h2>Picks by day</h2></header>${nDayBrowser(N.props.record.rows, "props", NPCATS)}</section>
-      <section class="sec"><header><h2>Day by day</h2></header>${nDayTable(R, [["pts", "Points"], ["reb", "Rebounds"], ["ast", "Assists"], ["fg3", "3-pointers"], ["combo", "Combos"]], ["2%+ EV", "big"])}</section>
+      <section class="sec"><header><h2>Day by day <em>by month</em></h2></header>${nDayTable(R, [["pts", "Points"], ["reb", "Rebounds"], ["ast", "Assists"], ["fg3", "3-pointers"], ["combo", "Combos"]], ["2%+ EV", "big"], "props")}</section>
       <section class="sec"><header><h2>Calibration</h2></header>${nCal(R)}</section>
       ${lsCalSection()}`;
   }
