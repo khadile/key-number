@@ -41,7 +41,7 @@ def team_games(seasons) -> pl.DataFrame:
         (pl.col("team_home_away") == "home").alias("is_home"),
         pl.col("team_score").cast(pl.Float64).alias("pts"), pl.col("opponent_team_score").cast(pl.Float64).alias("opp_pts"),
         (pl.col("field_goals_attempted") + 0.44 * pl.col("free_throws_attempted") - pl.col("offensive_rebounds")
-         + pl.col("total_turnovers")).cast(pl.Float64).alias("poss_t"))
+         + pl.coalesce("total_turnovers", "turnovers")).cast(pl.Float64).alias("poss_t"))   # 2017-18 has no team total
     t = t.join(t.select("game_id", "team", pl.col("poss_t").alias("poss_o")), left_on=["game_id", "opp"], right_on=["game_id", "team"])
     t = (t.join(sched, on="game_id", how="left")
          .with_columns(poss=(pl.col("poss_t") + pl.col("poss_o")) / 2,

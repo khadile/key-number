@@ -1,24 +1,25 @@
-"""Walk-forward test of the NBA game model against closing lines (hoopR's consensus closes, 2020-21 on).
+"""Walk-forward test of the NBA game model against closing lines.
 
-Before each game date the ratings are refit on earlier games only; the day's games are projected and compared
-with the consensus close (about 9 books, 5 minutes before tip) and the result.
+The model is nba/strength.py: team ratings refit before every date, both sides' available players valued from
+their box scores, rest, and for totals the league's recent scoring level, weighed by a ridge. Each season is
+predicted with weights fitted on the seasons before it only, so nothing in a prediction has seen its own season.
 
-    python -m nba.backtest                 # 2021-2026 seasons, default parameters
-    python -m nba.backtest --grid          # tune half-life / last-season weight / ridge on 2021-2023
+    python -m nba.backtest            # seasons 2020-21 on -> reports/nba_backtest.parquet, a line per season
+    python -m nba.backtest --train    # also refit nba/model_weights.json on every finished season (the live weights)
 """
 import argparse
-import itertools
 import json
 
 import numpy as np
 import polars as pl
 
 from config import REPORTS
-from nba.data import load
-from nba.model import fit, team_games
-from nba.players import fit_values, lineup_value, player_games
+from nba import strength as ST
+from nba.data import CURRENT, load
 
 OUT = REPORTS / "nba_backtest.parquet"
+FIRST = 2018           # first season in the frame (its player history is 2016-17)
+MIN_TRAIN = 2000       # games behind a season's weights
 
 
 def closes() -> pl.DataFrame:
@@ -27,52 +28,15 @@ def closes() -> pl.DataFrame:
     return c.filter(pl.col("close_spread").is_not_null())
 
 
-def _baselines(pg: pl.DataFrame, v: dict, upto, games: int = 15, half_life: float = 20.0) -> dict:
-    """Each team's recent lineups as played (actual minutes x values), newer counting more, before `upto`."""
-    rec = (pg.filter((pl.col("date") < upto) & (pl.col("min") > 0))
-             .with_columns(val=pl.col("min") / 48.0 * pl.col("athlete_id").replace_strict(v, default=0.0, return_dtype=pl.Float64))
-             .group_by("team", "game_id", "date").agg(pl.col("val").sum())
-             .sort("date").group_by("team").tail(games)
-             .with_columns(w=0.5 ** ((upto - pl.col("date")).dt.total_days() / half_life)))
-    b = rec.group_by("team").agg(base=(pl.col("val") * pl.col("w")).sum() / pl.col("w").sum())
-    return dict(zip(b["team"], b["base"]))
-
-
-def run(seasons=range(2021, 2027), lineups: bool = True, **params) -> pl.DataFrame:
-    tg = team_games(range(min(seasons) - 2, max(seasons) + 1))
-    pg = player_games(range(min(seasons) - 2, max(seasons) + 1)) if lineups else None
-    homes = tg.filter(pl.col("home") >= 0).filter(pl.col("is_home") | (pl.col("home") == 0))
-    homes = homes.unique("game_id", keep="first")   # one row per game, the home side (neutral: either)
-    rest = tg.select("game_id", "team", "rest")
-    played = (pg.filter(pl.col("min") > 0).group_by("game_id", "team").agg(pl.col("athlete_id"))
-              if lineups else None)
-    who = {(g, t): ids for g, t, ids in played.iter_rows()} if lineups else {}
+def run(seasons=range(2021, CURRENT + 1), F: pl.DataFrame | None = None) -> pl.DataFrame:
+    F = ST.with_env(ST.frame(range(FIRST, max(seasons) + 1))) if F is None else F
     out = []
-    for season in seasons:
-        g = homes.filter(pl.col("season") == season)
-        vals, vals_at = None, None
-        for d in sorted(g["date"].unique()):
-            r = fit(tg, d, season, **params)
-            if r is None:
-                continue
-            if lineups and (vals is None or (d - vals_at).days >= 7):
-                vals, vals_at = fit_values(pg, tg, d, season), d
-            base = _baselines(pg, vals.v, d) if lineups else {}
-            for x in g.filter(pl.col("date") == d).iter_rows(named=True):
-                p = r.project(x["team"], x["opp"], neutral=x["home"] == 0)
-                if p is None:
-                    continue
-                adj = 0.0
-                if lineups:
-                    ah = lineup_value(vals, who.get((x["game_id"], x["team"]), [])) - base.get(x["team"], 0.0)
-                    aa = lineup_value(vals, who.get((x["game_id"], x["opp"]), [])) - base.get(x["opp"], 0.0)
-                    adj = (ah - aa) * p[2] / 100
-                out.append({"game_id": x["game_id"], "season": season, "date": d, "home": x["team"], "away": x["opp"],
-                            "model_margin": p[0] + adj, "team_margin": p[0], "lineup_adj": adj, "model_total": p[1], "pace": p[2],
-                            "result": x["pts"] - x["opp_pts"], "total": x["pts"] + x["opp_pts"]})
-    df = pl.DataFrame(out)
-    df = (df.join(rest.rename({"team": "home", "rest": "home_rest"}), on=["game_id", "home"], how="left")
-            .join(rest.rename({"team": "away", "rest": "away_rest"}), on=["game_id", "away"], how="left"))
+    for s in seasons:
+        tr, te = F.filter(pl.col("season") < s), F.filter(pl.col("season") == s)
+        if te.height and tr.height >= MIN_TRAIN:
+            out.append(ST.predict(ST.train(tr), te))
+    df = pl.concat(out).select("game_id", "season", "date", "home", "away", "model_margin", "team_margin", "lineup_adj", "rest_adj",
+                               "model_total", "tm_total", "pace", "result", "total", "home_rest", "away_rest")
     starts = df.group_by("season").agg(pl.col("date").min().alias("opener"))
     return (df.join(closes(), on="game_id", how="left").join(starts, on="season")
               .with_columns(day=(pl.col("date") - pl.col("opener")).dt.total_days()))
@@ -85,11 +49,14 @@ def report(df: pl.DataFrame) -> dict:
     beta = float((gap * res).sum() / (gap ** 2).sum())
     tgap, tres = (c["model_total"] - c["close_total"]).to_numpy(), (c["total"] - c["close_total"]).to_numpy()
     tbeta = float((tgap * tres).sum() / (tgap ** 2).sum())
-    side = np.sign(gap)
-    cover = np.where(res == 0, np.nan, (np.sign(res) == side).astype(float))
+    cover = np.where(res == 0, np.nan, (np.sign(res) == np.sign(gap)).astype(float))
+    tcover = np.where(tres == 0, np.nan, (np.sign(tres) == np.sign(tgap)).astype(float))
+    # straight up: how often the model's favorite and the market's favorite won
+    won = lambda x: float(((np.sign(c[x].to_numpy()) == np.sign(c["result"].to_numpy())) & (c["result"].to_numpy() != 0)).mean())
     out = {"games": c.height, "mae_margin_model": mae("model_margin", "result"), "mae_margin_close": mae("close_spread", "result"),
            "mae_total_model": mae("model_total", "total"), "mae_total_close": mae("close_total", "total"),
-           "beta_spread": beta, "beta_total": tbeta, "model_side_cover": float(np.nanmean(cover))}
+           "beta_spread": beta, "beta_total": tbeta, "model_side_cover": float(np.nanmean(cover)),
+           "model_total_cover": float(np.nanmean(tcover)), "winner_model": won("model_margin"), "winner_close": won("close_spread")}
     early = c.filter(pl.col("day") < 21)
     if early.height > 30:
         g2, r2 = (early["model_margin"] - early["close_spread"]).to_numpy(), (early["result"] - early["close_spread"]).to_numpy()
@@ -100,22 +67,20 @@ def report(df: pl.DataFrame) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--grid", action="store_true")
+    ap.add_argument("--train", action="store_true", help="refit nba/model_weights.json on every finished season")
     a = ap.parse_args()
-    if a.grid:
-        best = []
-        for hl, pw, lam in itertools.product((25, 45, 80), (0.2, 0.35, 0.6), (10, 30, 80)):
-            r = report(run(range(2021, 2024), half_life=hl, prev_weight=pw, lam=lam, lam_p=lam))
-            best.append((r["mae_margin_model"], r["mae_total_model"], hl, pw, lam))
-            print(f"hl {hl:3d} prev {pw:.2f} lam {lam:3d}: margin MAE {r['mae_margin_model']:.3f} (close {r['mae_margin_close']:.3f}) "
-                  f"total MAE {r['mae_total_model']:.3f} (close {r['mae_total_close']:.3f})", flush=True)
-        print("best by margin MAE:", sorted(best)[:3])
-        return
-    df = run()
+    F = ST.with_env(ST.frame(range(FIRST, CURRENT + 1)))
+    df = run(F=F)
     df.write_parquet(OUT)
+    fmt = lambda r: json.dumps({k: round(v, 3) if isinstance(v, float) else v for k, v in r.items()})
     for s in sorted(df["season"].unique()):
-        print(s, json.dumps({k: round(v, 3) if isinstance(v, float) else v for k, v in report(df.filter(pl.col("season") == s)).items()}))
-    print("ALL", json.dumps({k: round(v, 3) if isinstance(v, float) else v for k, v in report(df).items()}))
+        if df.filter((pl.col("season") == s) & pl.col("close_spread").is_not_null()).height > 30:
+            print(s, fmt(report(df.filter(pl.col("season") == s))))
+    print("ALL", fmt(report(df)))
+    if a.train:
+        W = ST.train(F.filter(pl.col("season") < CURRENT))
+        ST.WEIGHTS.write_text(json.dumps(W, indent=1), encoding="utf-8")
+        print(f"weights: {W['games']} games, seasons {W['seasons']} -> {ST.WEIGHTS.name}")
 
 
 if __name__ == "__main__":
