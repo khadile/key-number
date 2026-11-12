@@ -726,8 +726,9 @@ budget with the NFL) comes after the pregame side is stable.
   short (`BACK_MIN`, fading over four games; validated out of sample on 2023-24
   and 2024-25). Counting ramp-up games at full minutes made things worse: kept
   out. From 2026-11-11 the level is FanDuel's and DraftKings', not
-  Pinnacle's, and k is 0.05 (section 11): everything in this section that says
-  "Pinnacle" about props pricing describes the picks through 2026-11-10.
+  Pinnacle's, and k is 0.05 (section 11); from 2026-11-12 the exchange Novig
+  leads it (section 12): everything in this section that says "Pinnacle" about
+  props pricing describes the picks through 2026-11-10.
 - Schedule (`nba/slot.py`, `.github/workflows/nba.yml`, every 15 minutes in
   each window): 10:30am ET grades last night and locks the day's game lines,
   their Picks of the Day and parlays, and props for games before 6:30pm; 5:30pm
@@ -1135,6 +1136,31 @@ in 16 minutes; each exchange's midpoint against each book's even split, same lin
 - Read: Novig looks at least as sharp as FanDuel, on one week of games. Not enough to move the reference. Next:
   backfill the season (Novig alone, ~160 calls, ~35 minutes) for about 12,000 props, and record Novig's price at
   each props lock; change `REF_W` only if the weight still goes to Novig then, and judge by picks, not log loss.
+
+**The season (157 games, 2026-10-20 to 11-11): Novig leads the props level from 2026-11-12** (`nba/props.py REF_W`
+Novig 0.7 / FanDuel 0.2 / DraftKings 0.1 over the books that have the prop; the user's "complete reign", section 13).
+- 5:45pm ET, same line: against FanDuel (8,935) log loss 0.68818 vs 0.68881, joint fit Novig +1.02 +- 0.39, FanDuel
+  +0.06 +- 0.39; against DraftKings (8,476) 0.68661 vs 0.68826, Novig +1.34 +- 0.31, DraftKings -0.15; against Pinnacle
+  (3,924) 0.68627 vs 0.68841, Novig +2.27 +- 0.51, Pinnacle -1.20. Ten minutes before the tip: against FanDuel +1.53
+  +- 0.39 / -0.63; DraftKings +0.68 +- 0.29 / +0.36.
+- Disagreements of 2+ points: Novig lower on the over than FanDuel (1,079) the over hit 46.2% (FanDuel 50.1%, Novig
+  47.5%); Novig HIGHER (361) it hit 44.9% (FanDuel 48.5%, Novig 51.1%): wrong that way, as in the first read, which
+  is why the books keep 30% of the level. Against DraftKings Novig was right both ways (45.9% and 52.6%).
+- The best DraftKings/FanDuel side against Novig's price at 5:45pm: 0-2% EV +1.2% +- 3.7 (730 bets), 2-4% +15.0% +- 7.2
+  (199, won 56.8%), 4%+ -5.5% +- 12.4 (77); 2%+ together about +9% +- 6. Ten minutes before the tip the same bets
+  made nothing (2-4% -0.5% +- 6.6): the books have caught up by then. The edge, if it is one, is DraftKings and
+  FanDuel lagging the exchange in the evening, exactly when the board locks. First reference to test above zero at
+  the lock (Pinnacle -6.8%, FanDuel-led about -2%); still within two standard errors of nothing.
+- Overs hit about 1.5 points under every price, Novig's too (intercept -0.06): the learned over shift stays, still
+  measured at FanDuel/DraftKings (`ref_book`), applied to every book's over chance.
+- How it runs: `nba/odds.archive_exchange` asks for `novig.us` alone, once per game per build, and keeps only each
+  tracked prop's last price as of now (a game not started) or as of five minutes before the tip (once started: the
+  close), in data/nba/odds/novig/ (Actions cache); `load_props` reads the snapshots beside the core books as a thin
+  history under the book name "novig". A failed call only means that game is priced from FanDuel and DraftKings.
+  Novig is never a book to bet at: picks are still DraftKings or FanDuel. Anchor labels: novig+fd+dk, novig+fd, ...
+- Judge it at the lock and at the close over two weeks (the props Record page's "From Nov 12: Novig-led level" rows);
+  the over shift and the 2% stake floor are unchanged. If the staked picks do not beat the close, the reference is
+  not the problem and NBA props get benched as planned.
 
 **NBA game lines: nothing to fix, tested on the full price history** (user: "why are there no changes even though
 the model is significantly underperforming?"; `nba/line_timing.py`, reports/nba_line_timing.json, 159 games

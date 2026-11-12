@@ -574,6 +574,10 @@ def main() -> None:
         from nba import data, odds
         data.refresh()
         odds.archive(ahead_hours=30)   # the rest of today's slate from any build time (16 hours missed tonight's games at 1am)
+        try:   # the exchange's props (the level's lead book, nba/props.py REF_W); without them the US books set it
+            odds.archive_exchange(ahead_hours=30)
+        except Exception as e:
+            print(f"novig props unavailable: {type(e).__name__}: {e}")
     sched = schedule()
     print(f"NBA {today}: {sched.filter(pl.col('day') == today).height} games today")
     if not a.offline:
@@ -974,7 +978,7 @@ def main() -> None:
                  "day_label": now.astimezone(ET).strftime("%A, %B ") + str(today.day), "generated": now.isoformat(),
                  "books": [BOOK_NAMES[b] for b in SHOP], "games_today": len(day_games),
                  "slots": {"morning": "10:30am ET", "evening": "5:30pm ET"}, "props_k": PROPS_K,
-                 "props_ref": NP.REF_W, "props_ref_from": PROPS_REF_FROM, "longshots_paused": LS.PAUSED,
+                 "props_ref": NP.REF_W, "props_ref_from": PROPS_REF_FROM, "props_novig_from": "2026-11-12", "longshots_paused": LS.PAUSED,
                  "checkup_first": "2026-11-02", "dist": dinfo,
                  "lines_k": lines_k, "model_from": "2026-11-12"},
         "teams": tmeta,

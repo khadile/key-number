@@ -2991,7 +2991,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   // ---------- props: today
   function npWhy(p) {
     const win = p.p_win / Math.max(1 - (p.p_push || 0), 1e-9);
-    return `Market middle ${num(p.market_median, 1)} (${{ "fd+dk": "FanDuel and DraftKings no-vig, FanDuel counting more", fanduel: "FanDuel no-vig", draftkings: "DraftKings no-vig", pinnacle: "Pinnacle no-vig", "dk/fd": "DraftKings and FanDuel, no Pinnacle line" }[p.anchor] || "DraftKings and FanDuel: Pinnacle's line was behind both"}); model middle ${num(p.model_median, 1)} on ${num(p.exp_min, 1)} minutes. ${p.book_name} ${am(p.american)} wins ${pct(win, 1)} and needs ${pct(1 / p.dec, 1)}. EV ${evPct(p.ev)}.${p.risk === 0 ? " Under 2% EV: a lean, no stake; the record counts it at 1u." : ` Stake 1u; quarter Kelly ${stakeU(p.kelly_u)}.`}`;
+    return `Market middle ${num(p.market_median, 1)} (${{ "novig+fd+dk": "Novig's exchange price, with FanDuel and DraftKings no-vig", "novig+fd": "Novig's exchange price, with FanDuel no-vig", "novig+dk": "Novig's exchange price, with DraftKings no-vig", novig: "Novig's exchange price", "fd+dk": "FanDuel and DraftKings no-vig, FanDuel counting more", fanduel: "FanDuel no-vig", draftkings: "DraftKings no-vig", pinnacle: "Pinnacle no-vig", "dk/fd": "DraftKings and FanDuel, no Pinnacle line" }[p.anchor] || "DraftKings and FanDuel: Pinnacle's line was behind both"}); model middle ${num(p.model_median, 1)} on ${num(p.exp_min, 1)} minutes. ${p.book_name} ${am(p.american)} wins ${pct(win, 1)} and needs ${pct(1 / p.dec, 1)}. EV ${evPct(p.ev)}.${p.risk === 0 ? " Under 2% EV: a lean, no stake; the record counts it at 1u." : ` Stake 1u; quarter Kelly ${stakeU(p.kelly_u)}.`}`;
   }
   function npChip(p) {
     if (!p) return "";
@@ -3084,7 +3084,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     }).join("");
     app.innerHTML = `
       <section class="hello"><h1>NBA props · ${esc(N.meta.day_label)}</h1>
-        <p class="lede">Each team's five starters and sixth man: points, rebounds, assists, threes and the combos. The market sets the level: FanDuel's and DraftKings' no-vig prices, FanDuel counting more (they price NBA props better than Pinnacle, the reference until Nov 10). The model sets the shape of each player's range. A pick is the one market per player where one of the two pays 1% or more over that level; 2% or more for a stake.</p></section>
+        <p class="lede">Each team's five starters and sixth man: points, rebounds, assists, threes and the combos. The market sets the level: the exchange Novig's price leads, with FanDuel's and DraftKings' no-vig prices behind it (on this season's games Novig told more about results than either book, and all three more than Pinnacle, the reference until Nov 10). The model sets the shape of each player's range. A pick is the one market per player where one of the two pays 1% or more over that level; 2% or more for a stake.</p></section>
       <section class="sec"><header><h2>Record <em>${esc(N.meta.label)} season</em></h2><a class="more" href="#nba-props-record">Full record →</a></header>
         ${npStrip(R)}${nKelly(R.kelly, "props")}</section>
       <section class="sec"><header><h2>Today's best</h2></header>${nBest(potd, PR.parlays, "props")}</section>
@@ -3098,7 +3098,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     const sets = [["All props", () => true], ["Picks of the day", (r) => r.potd], ["Bet list", (r) => r.bet], ["Price gap", (r) => r.edge === "price"], ["Correction only", (r) => r.edge === "correction"]];
     if (!g(() => true).length) return "";
     return `<h3 style="margin-top:1.2rem">At the raw close</h3><div class="scroll"><table class="t"><thead><tr><th>Set</th><th class="num">EV at the raw close</th></tr></thead><tbody>${sets.map(([n, f]) => `<tr><td>${n}</td><td class="num">${cell(g(f))}</td></tr>`).join("")}</tbody></table></div>
-      <p class="note">The EV-at-the-close column above applies the learned over correction to the closing price, so a wrong correction would still look like an edge there. This one uses the close's even split as it stands, for picks graded from 2026-10-28 on. Through Nov 10 the close was Pinnacle's; from Nov 11 it is FanDuel's and DraftKings'.</p>`;
+      <p class="note">The EV-at-the-close column above applies the learned over correction to the closing price, so a wrong correction would still look like an edge there. This one uses the close's even split as it stands, for picks graded from 2026-10-28 on. Through Nov 10 the close was Pinnacle's; from Nov 11 it is FanDuel's and DraftKings', led by Novig from Nov 12.</p>`;
   }
   function npShade(sh, shadow) {
     if (!sh) return "";
@@ -3128,6 +3128,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
         ["Overs", (r) => !isPar(r) && r.side === "over"], ["Unders", (r) => !isPar(r) && r.side === "under"],
         ["Picks of the day", (r) => r.potd], ["2%+ EV", (r) => !isPar(r) && r.ev >= 0.02], ["1–2% EV", (r) => !isPar(r) && r.ev < 0.02],
         ["Price gap (beats the market's raw price)", (r) => r.edge === "price"], ["Correction only", (r) => r.edge === "correction"],
+        ["From Nov 12: Novig-led level", (r) => !isPar(r) && r.day >= (N.meta.props_novig_from || "9")], ["…staked", (r) => !isPar(r) && r.risk !== 0 && r.day >= (N.meta.props_novig_from || "9")],
         ["From Nov 11: FanDuel-led level", (r) => !isPar(r) && r.day >= (N.meta.props_ref_from || "9")], ["…staked", (r) => !isPar(r) && r.risk !== 0 && r.day >= (N.meta.props_ref_from || "9")],
         ["Through Nov 10: Pinnacle's level", (r) => !isPar(r) && r.day < (N.meta.props_ref_from || "9")], ["Parlays", isPar]], "day")}${blCells(N.betlist && N.betlist.props && { ...N.betlist.props, half: "10 days" })}
         ${npRawClose(N.props.record.rows || [])}</section>

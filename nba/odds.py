@@ -31,9 +31,13 @@ from pipeline.oddspapi import CACHE, _get
 
 TOURNAMENT, SPORT = 132, 11
 ODDS = DATA / "nba" / "odds"
-HIST, PROPS, MILESTONES = ODDS / "history", ODDS / "props", ODDS / "milestones"
-for _p in (HIST, PROPS, MILESTONES):
+HIST, PROPS, MILESTONES, NOVIG = ODDS / "history", ODDS / "props", ODDS / "milestones", ODDS / "novig"
+for _p in (HIST, PROPS, MILESTONES, NOVIG):
     _p.mkdir(parents=True, exist_ok=True)
+# Novig, the exchange (2026-11-12): on 157 games its midpoint told more about tracked props than FanDuel's or
+# DraftKings' price at the evening lock (nba/exchange_test.py), so it leads the props' level (nba/props.py REF_W).
+# Its history is 5 to 10 million price points a game: it is asked for alone and only snapshots are kept.
+X_BOOK, X_NAME = "novig.us", "novig"
 FIXTURES, MARKETS, PLAYERS = CACHE / f"fixtures_t{TOURNAMENT}.json", CACHE / f"markets_s{SPORT}.json", CACHE / f"players_s{SPORT}.json"
 CORE = "pinnacle,draftkings,fanduel"
 SHOP_BOOKS = ["draftkings", "fanduel"]
@@ -104,6 +108,69 @@ def archive(only: list[int] | None = None, past_hours: int = 40, ahead_hours: in
             _write(lp, pl.DataFrame(lrow, schema=PROP_SCHEMA, orient="row").with_columns(pl.col("ts").str.to_datetime(time_zone="UTC")))
         n["saved"] += 1
     print(f"nba odds: saved {n['saved']}, already complete {n['skipped']}, unavailable {n['missing']}")
+
+
+def _snapshot(h: dict, pmap: dict, fid: str, cut: datetime) -> list[tuple]:
+    """Each tracked prop outcome's last price at or before `cut`, as PROP_SCHEMA rows under the book name X_NAME."""
+    mark = cut.strftime("%Y-%m-%dT%H:%M:%S")
+    rows = []
+    for b in h.get("bookmakers", {}).values():
+        for m in b.get("markets", {}).values():
+            for oid, o in m.get("outcomes", {}).items():
+                info = pmap.get(int(oid))
+                if not info:
+                    continue
+                for pid, pts in o.get("players", {}).items():
+                    if pid == "0":
+                        continue
+                    last = None
+                    for p in pts:
+                        t = p["createdAt"]
+                        if t[:19] <= mark and (last is None or t >= last["createdAt"]):
+                            last = p
+                    if last:
+                        lim = last.get("limit")
+                        rows.append((fid, X_NAME, info[0], info[1], info[2], int(pid), last["createdAt"], float(last["price"]),
+                                     bool(last["active"]), None if lim is None else float(lim)))
+    return rows
+
+
+def archive_exchange(past_hours: int = 40, ahead_hours: int = 30) -> None:
+    """Novig's tracked props for the games a build prices: a snapshot as of now for a game not yet started (each
+    build adds one), and one at five minutes before the tip once it has started (the close, for EV at the close).
+    One free call a game; a failure only means that game's props are priced from FanDuel and DraftKings."""
+    idx = fixture_index().filter(pl.col("start") >= datetime.fromisoformat(SEASON_START).replace(tzinfo=timezone.utc))
+    now = datetime.now(timezone.utc)
+    idx = idx.filter((pl.col("start") <= now + timedelta(hours=ahead_hours)) & (pl.col("start") >= now - timedelta(hours=past_hours)))
+    pmap = _markets(True)
+    n = {"snapshots": 0, "closes": 0, "skipped": 0, "missing": 0}
+    for r in idx.iter_rows(named=True):
+        fid, tip = r["fixture_id"], r["tip"]
+        f = NOVIG / f"{fid}.parquet"
+        old = pl.read_parquet(f) if f.exists() else None
+        started = tip <= now
+        if started and old is not None and (old["snap"] == "close").any():
+            n["skipped"] += 1
+            continue
+        h = None
+        for i in range(2):
+            h = _get("historical-odds", {"fixtureId": fid, "bookmakers": X_BOOK}, billable=False)
+            if "error" not in h:
+                break
+            h = None
+        if not h:
+            n["missing"] += 1
+            continue
+        rows = _snapshot(h, pmap, fid, tip - timedelta(minutes=5) if started else now)
+        del h
+        if not rows:
+            n["missing"] += 1
+            continue
+        new = (pl.DataFrame(rows, schema=PROP_SCHEMA, orient="row").with_columns(pl.col("ts").str.to_datetime(time_zone="UTC"))
+                 .with_columns(snap=pl.lit("close" if started else "live")))
+        _write(f, pl.concat([old, new]).unique(["market", "handicap", "outcome", "player", "ts"], keep="last") if old is not None else new)
+        n["closes" if started else "snapshots"] += 1
+    print(f"novig props: {n['snapshots']} snapshots, {n['closes']} closes, already closed {n['skipped']}, unavailable {n['missing']}")
 
 
 OVERROUND = (1.0, 1.15)   # a real two-way market: both sides' implied chances sum to 100-115%
@@ -214,7 +281,11 @@ def load_props(game_ids: list[int], pmap: pl.DataFrame, pregame_only: bool = Tru
     files = [PROPS / f"{fid}.parquet" for fid in idx["fixture_id"] if (PROPS / f"{fid}.parquet").exists()]
     if not files:
         return pl.DataFrame()
-    P = (pl.scan_parquet(files).filter(pl.col("market").is_in(list(PROP_MARKETS)))
+    xfiles = [NOVIG / f"{fid}.parquet" for fid in idx["fixture_id"] if (NOVIG / f"{fid}.parquet").exists()]
+    raw = pl.scan_parquet(files).select(list(PROP_SCHEMA))
+    if xfiles:   # the exchange's snapshots read as a thin price history: the last one at or before a cut is its price then
+        raw = pl.concat([raw, pl.scan_parquet(xfiles).select(list(PROP_SCHEMA))], how="vertical_relaxed")
+    P = (raw.filter(pl.col("market").is_in(list(PROP_MARKETS)))
          .with_columns(market=pl.col("market").replace_strict(PROP_MARKETS)).collect()
          .join(idx.select("fixture_id", "game_id", pl.col("tip").alias("kickoff")), on="fixture_id")
          .join(pmap.rename({"op_id": "player"}), on="player", how="inner")

@@ -416,7 +416,19 @@ def unshade(p_over: float, market: str | None) -> float:
 # 2024: FanDuel first for NBA props, Pinnacle fifth). The board's picks against Pinnacle's price had gone 356-370
 # at a stated 53.2% (won 49.0%), worse the bigger the stated edge. So the level is FanDuel's and DraftKings', FanDuel
 # counting more; Pinnacle sets it only when neither has the prop (then nothing can be bet anyway).
-REF_W = {"fanduel": 0.6, "draftkings": 0.4}
+#
+# 2026-11-12: Novig, the exchange, leads the level. The same test on the season (157 games, its midpoint at 5:45pm ET
+# against each book's even split on the same line, nba/exchange_test.py): against FanDuel, Novig's weight +1.02 +-
+# 0.39 with FanDuel's +0.06 (8,935 props; log loss 0.68818 vs 0.68881); against DraftKings +1.34 +- 0.31 with
+# DraftKings' -0.15 (8,476; 0.68661 vs 0.68826); against Pinnacle +2.27 with -1.20 (3,924). Its two sides sit 3.7%
+# apart where the books' sit 6.3-6.7%. The best DraftKings/FanDuel side against Novig's price at that lock returned
+# +1.2% +- 3.7 at 0-2% EV (730 bets), +15.0% +- 7.2 at 2-4% (199), -5.5% +- 12.4 at 4%+ (77): the first reference
+# that tested above zero at the lock, not yet proof. Ten minutes before the tip the same bets returned nothing
+# (-0.5% at 2-4%): the books have caught up by then, so the edge is the books lagging the exchange in the evening.
+# Where Novig stood ABOVE FanDuel on the over it was wrong (361 props, the over hit 44.9% where it said 51.1%), so
+# FanDuel and DraftKings keep a share. Novig is never a book to bet at here: DraftKings and FanDuel only.
+REF_W = {"novig": 0.7, "fanduel": 0.2, "draftkings": 0.1}
+_SHORT = {"novig": "novig", "fanduel": "fd", "draftkings": "dk"}
 
 
 def ref_book(books: dict[str, dict]) -> str | None:
@@ -426,10 +438,10 @@ def ref_book(books: dict[str, dict]) -> str | None:
 
 @dataclass
 class PropPricerNba:
-    """The market's level from FanDuel's and DraftKings' no-vig prices (REF_W; each book's line and price turned
-    into the rate at which the count gives that chance, averaged in logs), moved toward the model by k (in log
-    rate), priced at DraftKings and FanDuel. A pick is one of the two hanging a number or a price the other's
-    level beats: with one US book alone there is nothing to shop, so nothing clears."""
+    """The market's level from Novig's midpoint and FanDuel's and DraftKings' no-vig prices (REF_W; each book's line
+    and price turned into the rate at which the count gives that chance, averaged in logs over the books that have
+    the prop), moved toward the model by k (in log rate), priced at DraftKings and FanDuel. A pick is one of the
+    two hanging a number or a price that level beats."""
     k: float = 0.0
 
     def anchor(self, mix: Mix, books: dict[str, dict], market: str | None = None) -> tuple[float | None, str | None]:
@@ -439,7 +451,7 @@ class PropPricerNba:
                 return None, None
             return mix.solve(books["pinnacle"]["line"], unshade(books["pinnacle"]["p_over"], market)), "pinnacle"
         logs = sum(w * np.log(mix.solve(books[b]["line"], unshade(books[b]["p_over"], market))) for b, w in use)
-        return float(np.exp(logs / sum(w for _, w in use))), "fd+dk" if len(use) == 2 else use[0][0]
+        return float(np.exp(logs / sum(w for _, w in use))), use[0][0] if len(use) == 1 else "+".join(_SHORT[b] for b, _ in use)
 
     def price(self, mix: Mix, books: dict[str, dict], market: str | None = None) -> dict | None:
         lam_m, src = self.anchor(mix, books, market)

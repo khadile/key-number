@@ -26,7 +26,7 @@ from pipeline.odds_history import CACHE, HIST, SHOP_BOOKS, fixture_index, lines_
 BOOK_NAMES = {
     "pinnacle": "Pinnacle", "draftkings": "DraftKings", "fanduel": "FanDuel", "betmgm": "BetMGM",
     "caesars": "Caesars", "espnbet": "ESPN BET", "fanatics": "Fanatics", "betrivers": "BetRivers",
-    "hardrockbet": "Hard Rock",
+    "hardrockbet": "Hard Rock", "novig": "Novig",
 }
 
 
