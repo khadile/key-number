@@ -401,3 +401,5 @@
 {"id": "401909964:total", "result": "L", "units": -1.0, "clv": 0.0, "ev_close": -0.0406, "p_close": 0.5023, "graded_at": "2026-11-11T15:48:45.409938+00:00"}
 {"id": "401909965:spread", "result": "W", "units": 0.901, "graded_at": "2026-11-11T15:48:45.409938+00:00"}
 {"id": "401909965:total", "result": "W", "units": 0.9259999999999999, "graded_at": "2026-11-11T15:48:45.409938+00:00"}
+{"id": "401909966:spread", "result": "L", "units": -1.0, "clv": 0.5, "ev_close": -0.0364, "p_close": 0.5134, "close_margin": 3.07, "close_total": 228.2, "graded_at": "2026-11-12T02:34:04.974014+00:00"}
+{"id": "401909966:total", "result": "L", "units": -1.0, "clv": 0.5, "ev_close": -0.0044, "p_close": 0.5159, "close_margin": 3.07, "close_total": 228.2, "graded_at": "2026-11-12T02:34:04.974014+00:00"}
