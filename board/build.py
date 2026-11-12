@@ -32,18 +32,18 @@ from pipeline.odds_history import SHOP_BOOKS, archive, publish_time
 from props.pricing import lock_time
 
 LIVE_START_WEEK = 5  # first week whose picks were locked live; earlier 2026 weeks are simulated
-# A spread or moneyline pick whose model number sits 3+ points from the market's at the lock is held: shown, no
-# stake, never a Pick of the Week, parlay leg or bet-list pick (2026-11-11 checkup, from week 11). A gap that big
-# is usually news the model lacks, most often who plays quarterback: at week 9's Tuesday lock the model had the
-# wrong starter in 5 of 15 games (Baltimore: Huntley, Fagnano played; Minnesota: Murray, Wentz played), and two
-# Picks of the Week lost on them. With the real starters known, the 2018-2026 backtest's +EV bets at 3+ points
-# still lost: moneylines -25.6u on 406 (tuning years -5.9%, holdout -6.8%), spreads -28.6u on 440 (-8.8%, -3.3%),
-# while moneylines at 1.5 to 3 points made +12% in both halves (393 bets). Totals are not held (two +EV all year).
-GAP_HOLD = 3.0
+# A spread or moneyline pick whose model number sits 7+ points from the market's at the lock is held: shown, no
+# stake, never a Pick of the Week, parlay leg or bet-list pick (from week 11). A gap that size is news the model
+# lacks, nearly always the quarterback: week 9's Baltimore picks stood 10.7 points off (the model had Huntley, the
+# market knew Fagnano) and lost. The bar was 3 points for one day (2026-11-11), on the long backtest's -6% for 3+
+# point gaps; that backtest is at CLOSING prices, and the replay at Tuesday prices went the other way: this
+# season's 21 picks at 3+ points went 13-8, +19.9u, +3.8% at the close (3 to 4 points 5-5, 4 to 5.5 points 8-0),
+# the market coming to the model more often than not. Only the 10.7-point game was news. Totals are not held.
+GAP_HOLD = 7.0
 GAP_RULE_FROM = (2026, 11)
 # A held game gets one second look, at its last board update before kickoff (Thursday, Saturday or Monday 10am ET:
 # props.pricing.lock_time), when the injury report has named the quarterback and the model is rebuilt on him.
-# If the model is then within 3 points of the market and the held market has a +EV side at the prices of that
+# If the model is then within GAP_HOLD points of the market and the held market has a +EV side at the prices of that
 # moment, that side is locked as a new pick ("<held id>:relock", 1u, never a Pick of the Week or bet-list pick);
 # the held pick stays in the ledger and in the Held row, and the record counts the market once, as its re-lock.
 # A "relook" line marks the game as looked at, whatever came of it. Evidence: with the real starter the model's
@@ -422,7 +422,7 @@ def main() -> None:
         # would lock (that moment's prices, the real starters). Tallies only.
         groups: dict[str, list[dict]] = {"held on Tuesday": [], "re-locked (within 3 at the last update)": [],
                                          "still 3+ at the last update": [], "  re-locked, same side": [], "  re-locked, other side": []}
-        far = lambda q: q.get("market_spread") is not None and abs(q["model_margin"] - q["market_spread"]) >= GAP_HOLD
+        far = lambda q: q.get("market_spread") is not None and abs(q["model_margin"] - q["market_spread"]) >= 3.0   # the study's own bar
         for wk in sorted(finished["week"].unique()):
             fw = finished.filter(pl.col("week") == wk)
             tue = [q for q in make_picks(fw, at_publish, pub_by, False) if q["market"] != "total" and q["ev"] > 0 and far(q)]

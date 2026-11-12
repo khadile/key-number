@@ -1038,8 +1038,8 @@ the close; week 9 went 2-6.
 - The size of the disagreement flags it. +EV bets from the long backtest (real starters, closing prices) by
   |model - market|: moneylines under 1.5 points +1.5% (485), 1.5 to 3 points +12% (393; +12.4% tuning, +11.5%
   holdout), 3+ points -6.3% (406; -5.9%, -6.8%); spreads at 3+ points -6.5% (440; -8.8%, -3.3%).
-- Fix, from week 11 (`board/build.py GAP_HOLD`, `GAP_RULE_FROM`): a +EV spread or moneyline pick with the model 3+
-  points from the market is held: on the board, no stake, never a Pick of the Week, parlay leg or bet-list pick,
+- Fix, from week 11 (`board/build.py GAP_HOLD`, `GAP_RULE_FROM`; the bar became 7 points on 2026-11-12, below): a
+  +EV spread or moneyline pick with the model 3+ points from the market is held: on the board, no stake, never a Pick of the Week, parlay leg or bet-list pick,
   its own record row ("Held"). Weeks before keep their stakes.
 - `pipeline/starters.played_qbs`: a game's starter is its first dropback by a quarterback (Baltimore's week 9
   opened with a Derrick Henry pass and labeled him the starter; 13 of 5,794 team-games since 2016).
@@ -1063,6 +1063,11 @@ the close; week 9 went 2-6.
   either way, and the rule has not applied to any pick yet (week 11 locks 2026-11-17): the user's call before
   then, between keeping the hold, a higher bar, or a "check the news" tag with the stake left on. The second
   look's own sample is 3 picks.
+- **The bar is 7 points, not 3** (2026-11-12, `GAP_HOLD`; nothing had locked under the 3-point bar). The replay's
+  picks one by one (reports/nfl_relock_study.json): 3 to 4 points 5-5, +1.4% at the close; 4 to 5.5 points 8-0,
+  +5.7%; beyond that 0-3, two of them the week 9 Baltimore game at 10.7 points, the only one that was missing
+  news. Ordinary disagreements of 3 to 6 points were this season's best picks; a hold now catches only a gap no
+  ordinary disagreement reaches. The second look applies to those.
 - The dry run itself passed (research.yml run 43095049949, 2026-11-11): the whole NFL build with the hold, the
   second look and the week 10 over rule ran on real data with nothing written.
 
