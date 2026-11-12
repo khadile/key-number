@@ -38,6 +38,7 @@ for _p in (HIST, PROPS, MILESTONES, NOVIG):
 # DraftKings' price at the evening lock (nba/exchange_test.py), so it leads the props' level (nba/props.py REF_W).
 # Its history is 5 to 10 million price points a game: it is asked for alone and only snapshots are kept.
 X_BOOK, X_NAME = "novig.us", "novig"
+X_MIN_PRICE, X_MAX_PRICE = 1.02, 51.0   # outside this an exchange "price" is an empty side (1.00) or a stub
 FIXTURES, MARKETS, PLAYERS = CACHE / f"fixtures_t{TOURNAMENT}.json", CACHE / f"markets_s{SPORT}.json", CACHE / f"players_s{SPORT}.json"
 CORE = "pinnacle,draftkings,fanduel"
 SHOP_BOOKS = ["draftkings", "fanduel"]
@@ -284,7 +285,12 @@ def load_props(game_ids: list[int], pmap: pl.DataFrame, pregame_only: bool = Tru
     xfiles = [NOVIG / f"{fid}.parquet" for fid in idx["fixture_id"] if (NOVIG / f"{fid}.parquet").exists()]
     raw = pl.scan_parquet(files).select(list(PROP_SCHEMA))
     if xfiles:   # the exchange's snapshots read as a thin price history: the last one at or before a cut is its price then
-        raw = pl.concat([raw, pl.scan_parquet(xfiles).select(list(PROP_SCHEMA))], how="vertical_relaxed")
+        # An exchange posts 1.00 for a side nobody is offering (2026-11-12: a 1.00 Novig price reached the board and
+        # crashed the evening build at the price display). Such a side is no quote: marked inactive, so the prop has
+        # no Novig price at that moment rather than a near-certain one in the level.
+        xs = pl.scan_parquet(xfiles).select(list(PROP_SCHEMA)).with_columns(
+            active=pl.col("active") & pl.col("price").is_between(X_MIN_PRICE, X_MAX_PRICE))
+        raw = pl.concat([raw, xs], how="vertical_relaxed")
     P = (raw.filter(pl.col("market").is_in(list(PROP_MARKETS)))
          .with_columns(market=pl.col("market").replace_strict(PROP_MARKETS)).collect()
          .join(idx.select("fixture_id", "game_id", pl.col("tip").alias("kickoff")), on="fixture_id")

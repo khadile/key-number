@@ -30,7 +30,9 @@ BOOK_NAMES = {
 }
 
 
-def american(dec: float) -> int:
+def american(dec: float) -> int | None:
+    if dec is None or not dec > 1.0:   # no real price (an exchange's empty side is 1.00): shown as none, never a crash
+        return None
     return int(round((dec - 1) * 100)) if dec >= 2 else int(round(-100 / (dec - 1)))
 
 
