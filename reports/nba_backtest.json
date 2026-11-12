@@ -1,0 +1,56 @@
+{
+ "games": 7251,
+ "mae_margin_model": 10.719,
+ "mae_margin_close": 10.5,
+ "mae_total_model": 14.564,
+ "mae_total_close": 14.242,
+ "beta_spread": -0.05,
+ "beta_total": 0.065,
+ "model_side_cover": 0.49,
+ "model_total_cover": 0.511,
+ "winner_model": 0.666,
+ "winner_close": 0.679,
+ "beta_spread_first3wk": 0.272,
+ "games_first3wk": 921,
+ "seasons": "2020-21 to 2025-26",
+ "tune": {
+  "games": 3540,
+  "mae_margin_model": 10.531,
+  "mae_margin_close": 10.349,
+  "mae_total_model": 14.568,
+  "mae_total_close": 14.196,
+  "beta_spread": 0.08,
+  "beta_total": 0.045,
+  "model_side_cover": 0.495,
+  "model_total_cover": 0.514,
+  "winner_model": 0.651,
+  "winner_close": 0.666,
+  "beta_spread_first3wk": 0.336,
+  "games_first3wk": 462
+ },
+ "hold": {
+  "games": 3711,
+  "mae_margin_model": 10.899,
+  "mae_margin_close": 10.645,
+  "mae_total_model": 14.56,
+  "mae_total_close": 14.286,
+  "beta_spread": -0.162,
+  "beta_total": 0.086,
+  "model_side_cover": 0.486,
+  "model_total_cover": 0.508,
+  "winner_model": 0.679,
+  "winner_close": 0.692,
+  "beta_spread_first3wk": 0.212,
+  "games_first3wk": 459
+ },
+ "old": {
+  "tune": {
+   "mae_margin": 10.833,
+   "mae_total": 14.71
+  },
+  "hold": {
+   "mae_margin": 11.262,
+   "mae_total": 14.804
+  }
+ }
+}

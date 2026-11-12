@@ -129,17 +129,25 @@ def _kelly(rows: list[dict]) -> dict:
 
 
 def record_games(picks: list[dict], results: list[dict]) -> dict:
-    rows = [r for r in _graded(picks, results) if r.get("kind") != "alt"]   # a Ladder leg counts only in its Ladder
-    st = [r for r in rows if r.get("kind") == "pick"]
-    days = sorted({r["day"] for r in rows})
+    graded = [r for r in _graded(picks, results) if r.get("kind") != "alt"]   # a Ladder leg counts only in its Ladder
+    every = [r for r in graded if r.get("kind") == "pick"]
+    # The record is the staked picks (2026-11-12, user: "filter picks and choose the best one"): a lean is the
+    # model's side at a price already against it, never staked, and a record that counted 291 of them at 1u read
+    # -31u while the picks with a stake were about even. Leans are tallied apart ("split.neg") and still feed the
+    # model's own scorecard (with_model, and the line-move learning in nba/build.py).
+    st = [r for r in every if r["ev"] > 0]
+    rows = st + [r for r in graded if r.get("kind") == "parlay"]
+    days = sorted({r["day"] for r in graded})
     return {
         "ats": _tally([r for r in st if r["market"] == "spread"]), "ou": _tally([r for r in st if r["market"] == "total"]),
         "ml": _tally([r for r in st if r["market"] == "ml"]), "potd": _tally([r for r in st if r.get("potd")]),
         "parlay": _tally([r for r in rows if r.get("kind") == "parlay" and r.get("type") == "golden"]),
         "lottery": _tally([r for r in rows if r.get("kind") == "parlay" and r.get("type") == "lottery"]),
-        "all": _tally(rows), "split": {"pos": _tally([r for r in st if r["ev"] > 0]), "neg": _tally([r for r in st if r["ev"] <= 0])},
-        "with_model": {"with": _tally([r for r in st if r.get("with_model") is True]),
-                       "against": _tally([r for r in st if r.get("with_model") is False])},
+        "all": _tally(rows), "split": {"pos": _tally(st), "neg": _tally([r for r in every if r["ev"] <= 0])},
+        "with_model": {"with": _tally([r for r in every if r.get("with_model") is True]),
+                       "against": _tally([r for r in every if r.get("with_model") is False])},
+        # the rebuilt model's sides (2026-11-12 on), leans included: its scorecard against results and the close
+        "model_v2": _tally([r for r in every if r.get("model_v") == 2 and r.get("with_model") is True]),
         "kelly": _kelly(rows),
         "days": [{"day": d, "all": _tally([r for r in rows if r["day"] == d]),
                   "pos": _tally([r for r in st if r["day"] == d and r["ev"] > 0]),

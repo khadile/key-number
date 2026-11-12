@@ -160,37 +160,55 @@ def finals_and_stats() -> tuple[dict[int, tuple[int, int]], dict[tuple[int, int]
 
 def game_models(games: list[dict], today: date, roster: pl.DataFrame, out_ids: set[int], prof: pl.DataFrame,
                 sched: pl.DataFrame) -> dict[int, dict]:
-    from nba.model import fit, team_games
-    from nba.players import baseline, fit_values, lineup_value, player_games
-    tg = team_games(range(SEASON - 2, SEASON + 1))
-    r = fit(tg, today, SEASON)
-    if r is None:
-        return {}
-    pg = player_games(range(SEASON - 2, SEASON + 1))
-    vals = fit_values(pg, tg, today, SEASON)
-    prev = {}
-    for g in sched.sort("tip").iter_rows(named=True):     # each team's previous game day, for back-to-backs
-        for t in (g["home"], g["away"]):
-            prev.setdefault(t, []).append(g["day"])
-    def rest(team: str, day: date) -> int:
-        before = [d for d in prev.get(team, []) if d < day]
-        return min((day - max(before)).days, 7) if before else 7
+    """The game model (nba/strength.py, rebuilt 2026-11-12): team ratings, the players available tonight valued from
+    their box scores, rest, and for totals the league's recent scoring level."""
+    from nba import strength as ST
+    return ST.live(games, today, roster, out_ids, sched, SEASON)
+
+
+# How much of the model the price takes, learned from THIS season (user, 2026-11-12: "play for shorter term edges").
+# Results are too noisy to learn from in weeks (a spread misses by 12 points); line moves are not. For each game
+# locked with the rebuilt model, the build compares where the model stood against Pinnacle's fair number at the
+# morning lock with where Pinnacle closed: k = how far the line moved toward the model, newer games counting more
+# (half-life K_HALF days), pulled toward zero by a prior worth K_PRIOR games, kept within 0..K_MAX. The fair
+# number is then Pinnacle's plus k of the way to the model. It starts at zero and has to be earned; if lines stop
+# moving the model's way it decays back. EV at the close stays against Pinnacle's own close, so k never grades itself.
+MODEL_V = 2
+K_HALF, K_PRIOR, K_MAX = 14.0, 60, 0.3
+K_VAR = {"spread": 5.8, "total": 17.6}     # the model-market gap's variance (backtest), to size the prior
+
+
+def learn_k(picks: list[dict], results: list[dict], today: date) -> dict:
+    res = {r["id"]: r for r in results}
     out = {}
-    for g in games:
-        p = r.project(g["home"], g["away"], neutral=g["neutral"])
-        if p is None:
-            continue
-        margin, total, pace = p
-        hr, ar = rest(g["home"], g["day"]), rest(g["away"], g["day"])
-        b2b = B2B_MARGIN * (float(hr == 1) - float(ar == 1))
-        adj = 0.0
-        for team, sign in ((g["home"], 1), (g["away"], -1)):
-            mins = NP.expected_minutes(prof, roster, team, out_ids, today)
-            top = [a for a, _ in sorted(mins.items(), key=lambda kv: -kv[1])[:10]]
-            adj += sign * (lineup_value(vals, top) - baseline(vals, pg, team, today))
-        out[g["game_id"]] = {"margin": margin + b2b + adj * pace / 100, "team_margin": margin, "b2b": b2b,
-                             "lineup": adj * pace / 100, "total": total, "pace": pace, "pace_factor": pace / r.mu_p,
-                             "rest": {"home": hr, "away": ar}}
+    for market, mk, fk, ck in (("spread", "model_margin", "mkt_margin", "close_margin"), ("total", "model_total", "mkt_total", "close_total")):
+        num = den = 0.0
+        n = toward = moved = 0
+        for p in picks:
+            r = res.get(p.get("id"))
+            if (p.get("kind") != "pick" or p.get("market") != market or p.get("model_v") != MODEL_V or not r
+                    or r.get(ck) is None or p.get(mk) is None or p.get(fk) is None):
+                continue
+            w = 0.5 ** ((today - date.fromisoformat(p["day"])).days / K_HALF)
+            gap, move = p[mk] - p[fk], r[ck] - p[fk]
+            num, den, n = num + w * gap * move, den + w * gap * gap, n + 1
+            if abs(move) >= 0.25 and gap:
+                moved, toward = moved + 1, toward + int((move > 0) == (gap > 0))
+        k = num / (den + K_PRIOR * K_VAR[market])
+        out[market] = {"k": round(float(min(K_MAX, max(0.0, k))), 3), "raw": round(num / den, 3) if den else None,
+                       "games": n, "moved": moved, "toward": toward}
+    return out
+
+
+def blend(fair: dict, model: dict | None, k: dict) -> dict:
+    """The fair numbers with the model's share: Pinnacle's plus k of the way to the model. The market's own
+    numbers are kept (mkt_margin, mkt_total): they are what k is learned against."""
+    out = dict(fair)
+    for name, key, market in (("margin", "margin", "spread"), ("total", "total", "total")):
+        if name in fair:
+            out[f"mkt_{name}"] = fair[name]
+            if model and model.get(key) is not None:
+                out[name] = fair[name] + k[market]["k"] * (model[key] - fair[name])
     return out
 
 
@@ -204,6 +222,8 @@ def game_picks(g: dict, books: dict, fair: dict, model: dict | None, pricer: Gam
                     "home": g["home"], "away": g["away"], "book_name": BOOK_NAMES.get(p["book"], p["book"]),
                     "p_win": round(p["p_win"], 4), "p_push": round(p["p_push"], 4), "ev": round(p["ev"], 4), "dec": round(p["dec"], 4),
                     "fair_margin": _f(fair.get("margin")), "fair_total": _f(fair.get("total")), "fair_p_home": _f(fair.get("p_home"), 4),
+                    "mkt_margin": _f(fair.get("mkt_margin", fair.get("margin"))), "mkt_total": _f(fair.get("mkt_total", fair.get("total"))),
+                    "model_v": MODEL_V if model else None,
                     "market_spread": (books.get("pinnacle") or {}).get("spread"), "market_total": (books.get("pinnacle") or {}).get("total"),
                     "model_margin": _f((model or {}).get("margin")), "model_total": _f((model or {}).get("total")),
                     "locked_at": now.isoformat(), "risk": flat_risk(p["ev"]), "kelly_u": kelly_units(p["p_win"], p["dec"], p["p_push"])})
@@ -409,6 +429,10 @@ def game_closes(picks: list[dict], tips: dict, fmap: dict, pricer: GamePricer, f
         if ps:
             r["ev_close"] = round(ps[0] * (p["dec"] - 1) - (1 - ps[0] - ps[1]), 4)
             r["p_close"] = round(ps[0], 4)
+        if fair.get("margin_src") == "pinnacle":     # where Pinnacle closed: what learn_k measures the model against
+            r["close_margin"] = _f(fair.get("margin"))
+        if fair.get("total_src") == "pinnacle":
+            r["close_total"] = _f(fair.get("total"))
         out[p["id"]] = r
     return out
 
@@ -531,14 +555,9 @@ def _angles_card() -> dict:
 
 
 def _backtest_card() -> dict:
-    p = REPORTS / "nba_backtest.parquet"
-    if not p.exists():
-        return {}
-    from nba.backtest import report
-    df = pl.read_parquet(p)
-    r = report(df)
-    lo, hi = int(df["season"].min()), int(df["season"].max())
-    return {k: (round(v, 3) if isinstance(v, float) else v) for k, v in r.items()} | {"seasons": f"{lo - 1}-{lo % 100:02d} to {hi - 1}-{hi % 100:02d}"}
+    """The walk-forward test's tallies (python -m nba.backtest writes reports/nba_backtest.json)."""
+    p = REPORTS / "nba_backtest.json"
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
 
 
 def main() -> None:
@@ -597,11 +616,13 @@ def main() -> None:
 
     day_games = [g for g in sched.filter(pl.col("day") == today).iter_rows(named=True)]
     models = game_models(day_games, today, roster, out_ids, prof, sched) if day_games else {}
+    lines_k = learn_k(read(ledger.PICKS), read(ledger.RESULTS), today)
+    print("lines k:", {m: (v["k"], v["games"]) for m, v in lines_k.items()})
     lines_now, fair_now, lines_obj = {}, {}, {}
     for g in day_games:
         L = lines_obj[g["game_id"]] = NbaLines(fmap.get(g["game_id"]), g["tip"])
         lines_now[g["game_id"]] = L.all_at(now, BOOKS)
-        fair_now[g["game_id"]] = pricer.fair(lines_now[g["game_id"]])
+        fair_now[g["game_id"]] = blend(pricer.fair(lines_now[g["game_id"]]), models.get(g["game_id"]), lines_k)
 
     # --- public betting splits (pipeline/action_network.py, user 2026-10-26): context on the cards and on each pick as
     # it locks, never a pricing input; saved raw at every build (data/nba, Actions cache) for the public-tax study
@@ -804,7 +825,7 @@ def main() -> None:
                 {"home": st["home_score"], "away": st["away_score"]} if st.get("state") == "in" else None),
             "fair": {"margin": _f(fair.get("margin"), 1), "total": _f(fair.get("total"), 1), "p_home": _f(fair.get("p_home"), 3),
                      "src": fair.get("margin_src")},
-            "model": {"margin": _f(m["margin"], 1), "total": _f(m["total"], 1), "team": _f(m["team_margin"], 1),
+            "model": {"margin": _f(m["margin"], 1), "total": _f(m["total"], 1), "team": _f(m.get("team_part", m["team_margin"]), 1),
                       "b2b": _f(m["b2b"], 1), "lineup": _f(m["lineup"], 1), "pace": _f(m["pace"], 1), "rest": m["rest"]} if m else None,
             "books": [{"book": BOOK_NAMES.get(b, b), "sharp": b == "pinnacle", "spread": r.get("spread"),
                        "spread_home": american(r["spread_price_a"]) if "spread_price_a" in r else None,
@@ -954,7 +975,8 @@ def main() -> None:
                  "books": [BOOK_NAMES[b] for b in SHOP], "games_today": len(day_games),
                  "slots": {"morning": "10:30am ET", "evening": "5:30pm ET"}, "props_k": PROPS_K,
                  "props_ref": NP.REF_W, "props_ref_from": PROPS_REF_FROM, "longshots_paused": LS.PAUSED,
-                 "checkup_first": "2026-11-02", "dist": dinfo},
+                 "checkup_first": "2026-11-02", "dist": dinfo,
+                 "lines_k": lines_k, "model_from": "2026-11-12"},
         "teams": tmeta,
         "games": cards,
         "parlays": daily(game_rows, g_results, ""),

@@ -1160,6 +1160,57 @@ the model is significantly underperforming?"; `nba/line_timing.py`, reports/nba_
   main line (the Ladder's alternates, team totals). Otherwise NBA lines stay a small line-shopping side at about
   +1%, which will look flat for months: 2 picks a day at +1% earn about 0.02u a day against +-1.5u of noise.
 
+## 13. The NBA game model rebuilt; short-term learning (user, 2026-11-12)
+
+The user, 2026-11-11/12: Claude has "complete reign" to upgrade the models; "the goal is to tighten that and
+increase our accuracy"; "having no change on NBA game lines when they're not performing well is a mistake"; price
+shopping is fine but the model itself should predict better; and "you probably won't find edges in past season that
+carry over — it's smarter to play for shorter term edges". Standing instruction: improve the models' accuracy and
+the filtering of picks without waiting to be asked, test honestly, and let this season's evidence, not multi-year
+history, decide what gets weight.
+
+**The model (`nba/strength.py`; `nba/model_weights.json`; `python -m nba.backtest --train`).**
+- Each player: pre-game rates per minute (points, shots, threes, free throws, rebounds, assists, steals, blocks,
+  turnovers, fouls, on-court plus-minus), exponentially weighted over the games he was available for (half-life 40),
+  shrunk toward last season's league rate (400 minutes), and expected minutes (half-life 15 available games, a
+  dressed-and-unused game counting zero). A team: those rates summed over the players available tonight at their
+  expected minutes scaled to 240. The ridge weighs the team ratings' margin (nba/model.py, unchanged), the
+  home-minus-away player sums and rest; totals use the sums, measured against the league's last 12 game days.
+- AVAILABLE, not "played": the old lineup adjustment used who got minutes, and a blowout empties both benches, so
+  the game's result leaked into its own inputs (its disagreements with the close covered 46% on the holdout). In the
+  backtest available = played or DNP-coach's decision; live = roster minus Out/Doubtful, cut to 13 by expected minutes.
+- Walk-forward (each season on weights from the seasons before it; frame from 2017-18, which needed the players'
+  turnovers for possessions), mean absolute error: margin tune 2020-21 to 2022-23 10.83 -> 10.53 (close 10.35),
+  holdout 2023-24 to 2025-26 11.26 -> 10.90 (10.64); total 14.71 -> 14.57 (14.20) and 14.80 -> 14.56 (14.29); straight
+  up 66.6% against the close's 67.9%. Horizons are flat (25-70 games, 200-800 minutes); longer minute memory helped.
+- It does NOT beat the closing line: its side covered 49.0% of 7,251 spreads and 51.1% of totals; at 3+ points from
+  the close 48.9% / 46.8% (tune / holdout) on spreads, 50.4% / 52.1% on totals. First three weeks of a season:
+  spread weight +0.27 (921 games, about 1.5 standard errors), the one place history hints at it. Do not sell it as
+  an edge against the close; it is a better number, and the input to what follows.
+- reports/nba_backtest.json feeds the page (the parquet is gitignored). The live path was checked against the
+  backtest on 2026-11-08's games (margins within 0.4, totals within 0.2).
+
+**How the model earns a share of the price, this season (`nba/build.py learn_k`, `blend`).** Results cannot teach
+anything in weeks (a spread misses by 12 points); line moves can (a move's noise is about a point). Every game
+locked with the rebuilt model (`model_v` 2 on the pick) records the model and Pinnacle's fair number at the morning
+lock (`mkt_margin`, `mkt_total`); grading records where Pinnacle closed (`close_margin`, `close_total`). Each build:
+k = sum(w x gap x move) / (sum(w x gap^2) + prior), gap = model - market at the lock, move = close - market at the
+lock, w halving every 14 days, the prior worth 60 games, clipped to 0..0.3, for spreads and totals apart. The fair
+number is Pinnacle's plus k of the way to the model; EV at the close stays against Pinnacle's own close. k starts
+at 0 (no game has locked on the new model before 2026-11-12) and reaches about half its measured value after two
+weeks. This is the NFL board's k, measured daily. Read `meta.lines_k` (k, raw, games, moves toward) at checkups;
+if raw stays at or below zero for a month, the model has no say and that is the answer.
+
+**The NBA lines record counts staked picks only** (`nba/ledger.record_games`, from 2026-11-12, all dates): 291 leans
+at 1u made the record read -31u while the 50 staked picks were -4.1u (+1.5% at the close). Leans are still locked
+(they carry the model's morning numbers that k learns from, and `with_model`), shown with no stake, tallied apart
+(`split.neg`, `model_v2`: the rebuilt model's sides since the rebuild). The NFL record keeps its 2026-10-18 rule.
+
+**Next for NBA lines, in order:** (1) read k after two weeks; (2) softer markets than the main line for line
+shopping (first halves, team totals: the history endpoint already returns them, the archive drops them);
+(3) Kalshi/Polymarket as the reference (lead-lag against Pinnacle); (4) play-by-play lineups for a true
+plus-minus, the remaining 0.25 points to the close being mostly information the box score lacks.
+
 ## Layout
 
 ```
@@ -1174,8 +1225,9 @@ live/       espn.py, feeds.py, model.py, decide.py, engine.py (+ page.html),
 model/      ratings.py, qb.py, features.py, project.py, probs.py, blend.py
 board/      build.py, market.py (pricing), ledger.py, defense.py, detail.py,
             weather.py, render.py (both payloads + template.html -> nfl_board.html)
-nba/        data.py (hoopR), espn.py, odds.py (OddsPapi), model.py + players.py
-            (ratings, APM), backtest.py, lines.py, props.py, ledger.py, build.py, slot.py
+nba/        data.py (hoopR), espn.py, odds.py (OddsPapi), model.py (team ratings) + strength.py
+            (the game model: players available, weights), backtest.py, lines.py, props.py, ledger.py,
+            build.py, slot.py; players.py (the old APM lineup adjustment, unused since 2026-11-12)
 backtest/   run.py, clv.py, parlays.py, trends.py, speeds.py -> reports/
 ledger/     picks.jsonl (append-only)
 board/      JSON -> HTML

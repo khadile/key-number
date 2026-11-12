@@ -136,8 +136,8 @@ def side_features(cur: pl.DataFrame, ids: list[int], prior: dict[str, float]) ->
 # ---------------------------------------------------------------- the frame the weights are fitted on
 
 def _homes(tg: pl.DataFrame) -> pl.DataFrame:
-    real = tg.group_by("season", "team").len().filter(pl.col("len") >= 20).select("season", "team")   # not the All-Star sides
-    t = tg.join(real, on=["season", "team"]).join(real.rename({"team": "opp"}), on=["season", "opp"])
+    real = tg.group_by("team").len().filter(pl.col("len") >= 40)["team"].to_list()   # the 30 clubs, not the All-Star sides
+    t = tg.filter(pl.col("team").is_in(real) & pl.col("opp").is_in(real))
     return t.filter(pl.col("is_home") | (pl.col("home") == 0)).unique("game_id", keep="first").sort("date", "game_id")
 
 
@@ -297,5 +297,6 @@ def live(games: list[dict], today: date, roster: pl.DataFrame, out_ids: set[int]
     for x in P.iter_rows(named=True):
         hr, ar = meta[x["game_id"]]
         out[x["game_id"]] = {"margin": x["model_margin"], "team_margin": x["team_margin"], "b2b": x["rest_adj"], "lineup": x["lineup_adj"],
+                             "team_part": x["model_margin"] - x["lineup_adj"] - x["rest_adj"],
                              "total": x["model_total"], "pace": x["pace"], "pace_factor": x["pace"] / r.mu_p, "rest": {"home": hr, "away": ar}}
     return out

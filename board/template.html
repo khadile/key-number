@@ -2845,10 +2845,11 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   function nModel(g) {
     const m = g.model;
     if (!m) return "";
-    const parts = [`team ratings ${fav(g.home, g.away, m.team, 1)}`];
-    if (m.b2b) parts.push(`back-to-back ${signed(m.b2b, 1)} for ${esc(g.home)}`);
-    if (Math.abs(m.lineup || 0) >= 0.1) parts.push(`who plays ${signed(m.lineup, 1)} for ${esc(g.home)}`);
-    return `<p class="note">Model: ${parts.join(", ")}, so ${fav(g.home, g.away, m.margin, 1)}; total ${num(m.total, 1)} at ${num(m.pace, 1)} possessions. Rest: ${esc(g.away)} ${m.rest.away >= 7 ? "7+" : m.rest.away} days, ${esc(g.home)} ${m.rest.home >= 7 ? "7+" : m.rest.home}. The model does not set prices (it has not beaten closing lines); it picks the side of a lean.</p>`;
+    const parts = [`team ratings and home court ${fav(g.home, g.away, m.team, 1)}`];
+    if (Math.abs(m.lineup || 0) >= 0.1) parts.push(`the players available ${signed(m.lineup, 1)} for ${esc(g.home)}`);
+    if (Math.abs(m.b2b || 0) >= 0.1) parts.push(`rest ${signed(m.b2b, 1)} for ${esc(g.home)}`);
+    const K = (N.meta.lines_k || {}), ks = K.spread ? K.spread.k : 0, kt = K.total ? K.total.k : 0;
+    return `<p class="note">Model: ${parts.join(", ")}, so ${fav(g.home, g.away, m.margin, 1)}; total ${num(m.total, 1)} at ${num(m.pace, 1)} possessions. Rest: ${esc(g.away)} ${m.rest.away >= 7 ? "7+" : m.rest.away} days, ${esc(g.home)} ${m.rest.home >= 7 ? "7+" : m.rest.home}. ${ks || kt ? `The fair number takes ${pct(ks, 0)} of the model on the spread and ${pct(kt, 0)} on the total, the share this season's line moves have earned it.` : "The fair number is still the market's alone: the model's share is learned from this season's line moves and starts at zero."}</p>`;
   }
   function nInj(g) {
     const list = (t, xs) => xs.length ? `<div><b>${nbadge(t, 1)}</b><ul class="inj">${xs.map((x) => `<li>${stChip(x.status)}<span>${esc(x.name)}${x.detail ? ` <span class="note">${esc(x.detail.slice(0, 120))}</span>` : ""}</span></li>`).join("")}</ul></div>` : "";
@@ -2973,11 +2974,10 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     const R = N.record.live, W = R.with_model || {};
     const t = (r) => (r && r.n ? `${rec(r)}, <span class="${cls(r.units)}">${units(r.units)}</span>` : "none graded");
     app.innerHTML = `
-      <section class="hello"><h1>NBA game lines record</h1><p class="lede">Every pick at 1u, leans included, graded at the price it locked at.</p></section>
+      <section class="hello"><h1>NBA game lines record</h1><p class="lede">The picks with a stake, at 1u, graded at the price they locked at.</p></section>
       <section class="sec"><header><h2>Season to date</h2></header>${nStrip(R)}
-        <p class="note">Every pick counts at 1u here, ${term("lean", "leans")} included, so this is the model's full record; the board gives leans no stake because their price is against them.</p>
-        ${leansNote(R)}
-        <p class="note">Picks on the model's side went ${t(W.with)}; picks against it (the price alone) went ${t(W.against)}. The first checkup reads this to see whether the model's early-season lean is worth anything.</p>
+        <p class="note">Changed Thu, Nov 12: this record is the staked picks only. A ${term("lean", "lean")} is the model's side at a price already against it and never carried a stake; ${R.split && R.split.neg.n ? `the ${R.split.neg.n} graded so far went ${t(R.split.neg)} and used to be counted here` : "they are tallied apart"}.</p>
+        <p class="note">The game model was rebuilt on Nov 12 (who is available, valued from the box score). Its sides since then, leans included: ${t(R.model_v2)}. Before the rebuild, picks on the old model's side went ${t(W.with)} and picks against it ${t(W.against)}.</p>
         ${nKelly(R.kelly, "picks")}</section>
       <section class="sec"><header><h2>By category <em>closing line value</em></h2></header>${closeByCat(N.record.rows || [], [
         ["Bet list", (r) => r.bet], ["Spread", (r) => r.market === "spread"], ["Over/under", (r) => r.market === "total"], ["Moneyline", (r) => r.market === "ml"],
@@ -3152,13 +3152,16 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   }
   function renderNbaModel() {
     if (!N) return noNba();
-    const B = (N.model || {}).backtest || {}, d = N.meta.dist || {};
-    app.innerHTML = `<section class="hello"><h1>How the NBA board works</h1><p class="lede">The market sets the price; the board looks for the books that are off it. The model is shown, and decides a lean, but it has not earned the right to move a number.</p></section>
+    const B = (N.model || {}).backtest || {}, d = N.meta.dist || {}, K = N.meta.lines_k || {};
+    app.innerHTML = `<section class="hello"><h1>How the NBA board works</h1><p class="lede">The market sets the price; the board looks for the books that are off it. The model moves the number only as far as this season's line moves say it has earned.</p></section>
       <div class="prose">
         <h3>The price</h3>
-        <p>Each game's fair line is Pinnacle's, with its margin taken out (${term("novig", "no-vig")}). The chance of covering any other number comes from how ${num(d.games, 0)} games since 2020-21 landed around their closing lines (a spread lands within ±${num(d.sigma_margin, 1)} points two times in three, a total within ±${num(d.sigma_total, 1)}). A pick is the side and book, DraftKings or FanDuel, with the most expected value at those chances: that is line shopping. When no side has value, the pick is the model's side as a ${term("lean", "lean")}: no stake, counted at 1u in the record.</p>
-        <h3>Why the model does not set the price</h3>
-        <p>Over six seasons of walk-forward tests (${esc(B.seasons || "2020-21 to 2025-26")}), team ratings plus who plays missed the final margin by ${num(B.mae_margin_model, 2)} points on average against the closing line's ${num(B.mae_margin_close, 2)}, and added nothing the close did not already know (β ${num(B.beta_spread, 2)}). In each season's first three weeks it did a little better (β ${num(B.beta_spread_first3wk, 2)} over ${num(B.games_first3wk, 0)} games), not enough to trust. So the board records whether each pick sat on the model's side, and the first checkup reads that.</p>
+        <p>Each game's fair line is Pinnacle's, with its margin taken out (${term("novig", "no-vig")}). The chance of covering any other number comes from how ${num(d.games, 0)} games since 2020-21 landed around their closing lines (a spread lands within ±${num(d.sigma_margin, 1)} points two times in three, a total within ±${num(d.sigma_total, 1)}). A pick is the side and book, DraftKings or FanDuel, with the most expected value at those chances: that is line shopping. When no side has value, the model's side is shown as a ${term("lean", "lean")}: no stake, and not in the record.</p>
+        <h3>The game model</h3>
+        <p>Rebuilt Nov 12. Each player carries what he has produced per minute (scoring, shooting, rebounds, assists, steals, blocks, turnovers, fouls, and how his team did with him on the floor), weighted toward his recent games and pulled toward the league when he has played little, and the minutes he usually gets. A team is those numbers added up over the players available tonight, so a star ruled out changes the projection the moment the injury report does. Team ratings, rest, and for totals the league's scoring level over its last 12 game days are weighed with it; the weights are fitted on finished seasons and every season is tested on weights from the seasons before it.</p>
+        <p>${B.hold ? `On the three seasons held out (2023-24 to 2025-26) it missed the final margin by ${num(B.hold.mae_margin_model, 2)} points on average, against ${num(B.old.hold.mae_margin, 2)} for the model it replaced and ${num(B.hold.mae_margin_close, 2)} for the closing line; totals ${num(B.hold.mae_total_model, 2)} against ${num(B.old.hold.mae_total, 2)} and ${num(B.hold.mae_total_close, 2)}. It picks the winner ${pct(B.hold.winner_model, 1)} of the time, the closing line ${pct(B.hold.winner_close, 1)}.` : ""} That is most of the way to the closing line, not past it: against the close its side covered ${pct(B.model_side_cover, 1)} of ${num(B.games, 0)} spreads and ${pct(B.model_total_cover, 1)} of totals.</p>
+        <h3>How the model earns a say in the price</h3>
+        <p>Results are too noisy to learn from quickly: a spread misses by 12 points. Line moves are not. For every game since the rebuild the board compares where the model stood against Pinnacle at the morning lock with where Pinnacle closed. If lines move toward the model, the fair number takes that share of the model (never more than 30%), newer games counting more; if they stop, the share fades back to zero. ${K.spread ? `Today: spreads ${pct(K.spread.k, 0)} (${K.spread.games} games, ${K.spread.toward} of ${K.spread.moved} moves toward the model), totals ${pct(K.total.k, 0)} (${K.total.games} games, ${K.total.toward} of ${K.total.moved}).` : ""} Picks are still judged at Pinnacle's own close.</p>
         <h3>Props</h3>
         <p>Each team's five starters and sixth man, in eight markets. Minutes come from his recent games, counted in league game days so the summer does not age last season (which counts for less as this one fills in), with a teammate ruled out handing over his minutes. After time out, the summer included, he plays fewer minutes for a few games: in 2023-24 and 2024-25 (out of sample) the first game back ran 4.5 to 5.3 minutes under a player's usual and fading over four games, and the board takes that off. Each stat per minute is pulled toward his own record over two seasons, itself pulled toward his position's average. Given minutes, a stat is a negative binomial whose spread was measured on 2025-26 starters: the ranges held 50% of outcomes in their middle half and 79% in their 10–90% band. The market sets the level: the model's rate is scaled until it gives FanDuel's and DraftKings' no-vig chances at their lines (FanDuel counts 60%, DraftKings 40%), then moved 5% of the way to the model's own rate. Through Nov 10 the level was Pinnacle's; on 10,208 tracked props graded this season Pinnacle's price added nothing to the two US books', and where they disagreed with it they were right. A pick is the one market per player with 1% or more of value at DraftKings or FanDuel (2% for a stake), which now means one of the two is off the other.</p>
         <h3>When things lock</h3>
@@ -3170,7 +3173,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
           <li>Unders: books shade popular overs; overs and unders are recorded apart.</li>
           <li>The Golden Parlay's legs: the likely side of an alternate line carries the least margin (opening night, FanDuel's 70-90% alternate totals cost 0-3% against the fair line, the long-shot side 15-35%), so when a book's whole ladder trails Pinnacle those legs can have value.</li>
           <li>Long shots: every "N+" rung is graded against its price. Through Nov 9 the books overpriced every band (a rung priced at 14% hit 11%), so nothing is flagged or staked now; the grading goes on.</li>
-          <li>The model's early-season lean, while ratings still carry last season.</li>
+          <li>The rebuilt game model: whether this season's lines move toward it (the share above), and its sides against results.</li>
           <li>Back-to-backs and rest, a teammate's props when a starter sits, and referee crews on totals: next, as data comes in.</li></ul>
         <h3>Checkups</h3>
         <p>Every other Monday from ${esc(dayShort(N.meta.checkup_first))}: what the record and EV at the close say, morning against evening locks replayed on the same games, and what to change.</p>

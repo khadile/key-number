@@ -18,6 +18,9 @@ from nba import strength as ST
 from nba.data import CURRENT, load
 
 OUT = REPORTS / "nba_backtest.parquet"
+CARD = REPORTS / "nba_backtest.json"      # tallies for the board's "How it works" (the parquet is not committed)
+# the model this one replaced (team ratings + who got minutes), same walk-forward, for the page's comparison
+OLD = {"tune": {"mae_margin": 10.833, "mae_total": 14.710}, "hold": {"mae_margin": 11.262, "mae_total": 14.804}}
 FIRST = 2018           # first season in the frame (its player history is 2016-17)
 MIN_TRAIN = 2000       # games behind a season's weights
 
@@ -77,6 +80,11 @@ def main() -> None:
         if df.filter((pl.col("season") == s) & pl.col("close_spread").is_not_null()).height > 30:
             print(s, fmt(report(df.filter(pl.col("season") == s))))
     print("ALL", fmt(report(df)))
+    rnd = lambda r: {k: round(v, 3) if isinstance(v, float) else v for k, v in r.items()}
+    lo, hi = int(df["season"].min()), int(df.filter(pl.col("close_spread").is_not_null())["season"].max())
+    CARD.write_text(json.dumps({**rnd(report(df)), "seasons": f"{lo - 1}-{lo % 100:02d} to {hi - 1}-{hi % 100:02d}",
+                                "tune": rnd(report(df.filter(pl.col("season") <= 2023))), "hold": rnd(report(df.filter(pl.col("season") >= 2024))),
+                                "old": OLD}, indent=1), encoding="utf-8")
     if a.train:
         W = ST.train(F.filter(pl.col("season") < CURRENT))
         ST.WEIGHTS.write_text(json.dumps(W, indent=1), encoding="utf-8")
