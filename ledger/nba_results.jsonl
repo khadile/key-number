@@ -424,3 +424,11 @@
 {"id": "401909967:alt:total:under:232.5:fanduel", "result": "W", "units": 0.41999999999999993, "graded_at": "2026-11-12T13:48:33.232536+00:00"}
 {"id": "401909970:alt:total:under:240.5:fanduel", "result": "L", "units": -1.0, "graded_at": "2026-11-12T13:48:33.232536+00:00"}
 {"id": "2026-11-11:golden", "result": "L", "units": -0.5, "graded_at": "2026-11-12T13:48:33.232536+00:00"}
+{"id": "401909976:spread", "result": "L", "units": -1.0, "clv": 1.5, "ev_close": 0.0671, "p_close": 0.5501, "close_margin": 7.07, "close_total": 223.4, "graded_at": "2026-11-13T15:51:29.458615+00:00"}
+{"id": "401909976:total", "result": "W", "units": 0.9099999999999999, "clv": 1.0, "ev_close": -0.0038, "p_close": 0.5216, "close_margin": 7.07, "close_total": 223.4, "graded_at": "2026-11-13T15:51:29.458615+00:00"}
+{"id": "401909977:spread", "result": "W", "units": 0.9259999999999999, "clv": 0.5, "ev_close": 0.0031, "p_close": 0.5208, "close_margin": -9.86, "close_total": 223.0, "graded_at": "2026-11-13T15:51:29.458615+00:00"}
+{"id": "401909977:total", "result": "L", "units": -1.0, "clv": -2.5, "ev_close": -0.1373, "p_close": 0.4447, "close_margin": -9.86, "close_total": 223.0, "graded_at": "2026-11-13T15:51:29.458615+00:00"}
+{"id": "401909978:spread", "result": "W", "units": 0.877, "clv": 0.0, "ev_close": -0.0616, "p_close": 0.5, "close_margin": 5.5, "close_total": 226.0, "graded_at": "2026-11-13T15:51:29.458615+00:00"}
+{"id": "401909978:total", "result": "L", "units": -1.0, "clv": 0.5, "ev_close": -0.0447, "p_close": 0.5109, "close_margin": 5.5, "close_total": 226.0, "graded_at": "2026-11-13T15:51:29.458615+00:00"}
+{"id": "401909979:spread", "result": "L", "units": -1.0, "clv": -0.5, "ev_close": -0.0626, "p_close": 0.4867, "close_margin": 6.13, "close_total": 214.89, "graded_at": "2026-11-13T15:51:29.458615+00:00"}
+{"id": "401909979:total", "result": "W", "units": 0.893, "clv": -0.5, "ev_close": -0.068, "p_close": 0.4924, "close_margin": 6.13, "close_total": 214.89, "graded_at": "2026-11-13T15:51:29.458615+00:00"}
