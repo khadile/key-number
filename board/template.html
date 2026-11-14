@@ -3803,7 +3803,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <section class="sec"><header><h2>By month</h2></header>${rows.length ? cMonths(rows, false, true) : '<p class="note">Flags show up here once their games are graded. Until then, the replay below has the season so far.</p>'}</section>
       ${R && R.rows && R.rows.length ? `<section class="sec"><header><h2>Replay <em>${esc(cMd(R.from))}–${esc(cMd(R.to))}, before tracking began</em></h2></header>
         <p class="note">${cReplayNote(R)}</p>${cReplayTable(R)}
-        ${cMonths(R.rows, true, !rows.length)}</section>` : ""}`;
+        ${cMonths(R.rows, true, false)}</section>` : ""}`;
   }
   function renderNcaabModel() {
     if (!C) return noNcaab();
