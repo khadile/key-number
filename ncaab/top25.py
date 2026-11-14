@@ -267,9 +267,18 @@ def report(G: pl.DataFrame) -> dict:
 
 
 def main() -> None:
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--season", type=int, help="one season only (end year: 2027 = 2026-27)")
+    a = ap.parse_args()
     G = games()
+    out = OUT
+    if a.season:
+        G = G.filter(pl.col("season") == a.season)
+        out = REPORTS / f"ncaab_top25_{a.season}.json"
+        print(f"season {a.season - 1}-{str(a.season)[2:]} only, games through {G['date'].max()}")
     R = report(G)
-    OUT.write_text(json.dumps(R, indent=1, default=str), encoding="utf-8")
+    out.write_text(json.dumps(R, indent=1, default=str), encoding="utf-8")
     print(f"{R['games']} games with exactly one ranked team, {R['with_close']} with a closing spread; providers {R['providers']}")
     print(f"line moves Nov-Dec (unranked underdog): {R['moves']}")
     group = None
@@ -280,7 +289,7 @@ def main() -> None:
         cv = "–" if r["cover"] is None else f"{100 * r['cover']:.1f}% ± {100 * r['se']:.1f}"
         roi = "–" if r["roi"] is None else f"{100 * r['roi']:+.1f}% (at -110 {100 * r['roi_110']:+.1f}%)"
         print(f"  {r['set']:52} n {r['n']:5d}  {r['w']}-{r['l']}-{r['p']}  covered {cv}  ROI {roi}  vs line {r['margin_vs_line']}")
-    print(f"\nwrote {OUT}")
+    print(f"\nwrote {out}")
 
 
 if __name__ == "__main__":

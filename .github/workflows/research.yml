@@ -26,6 +26,10 @@ on:
         description: "exchange-test: how many recent games"
         type: string
         default: "40"
+      season:
+        description: "ncaab-top25: one season only (end year, 2027 = 2026-27); empty for every season"
+        type: string
+        default: ""
       books:
         description: "exchange-test: exchanges to ask for (comma-separated; default novig.us,polymarket.us)"
         type: string
@@ -140,7 +144,8 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
           PYTHONUNBUFFERED: "1"
-        run: python -m ncaab.top25
+          SEASON: ${{ inputs.season }}
+        run: python -m ncaab.top25 ${SEASON:+--season "$SEASON"}
 
       - name: Save college data
         if: always() && inputs.job == 'ncaab-top25'
@@ -154,7 +159,7 @@ jobs:
         run: |
           git config user.name "key-number-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add reports/ncaab_top25.json
+          git add reports/ncaab_top25*.json
           git commit -m "College Top 25 study $(TZ=America/New_York date +%Y-%m-%d)" || echo "nothing to commit"
           for i in 1 2 3 4 5; do git pull --rebase -q && git push && break; sleep 15; done
 
