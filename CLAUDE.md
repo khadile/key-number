@@ -1255,7 +1255,8 @@ How it works). Paper only (user's choice): every flag is recorded at 1u, no stak
 - The user's own theory (unranked underdogs cover against the Top 25 early in the season, `ncaab/top25.py`) did not
   hold: Nov-Dec 2022-26 718-703 (50.5%, -3.6% at -110); this season 27-32.
 - ESPN only (scoreboard, the book of record's lines and closes; reachable from Actions, not from a cloud session).
-  Four firings a day; a game locks once per lead at the first firing that sees it before the tip with a line
+  Every half hour 15:07-23:37 UTC (the first day's single 15:37 firing was dropped by GitHub; a run commits only when
+  it locked or graded something or the page is 3+ hours old); a game locks once per lead at the first run that sees it before the tip with a line
   (`ledger/ncaab_flags.jsonl`, append-only), graded the next firing after it ends (`ncaab_results.jsonl`: result
   at the locked spread, the closing spread, points of line value, and EV at the close = the chance of covering the
   locked number if the close is fair, the margin's spread around the close 11 points). Caches in data/ncaab

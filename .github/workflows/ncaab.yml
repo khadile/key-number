@@ -4,15 +4,16 @@ name: ncaab
 # slate and graded at the closing line. Paper only, no stake. ESPN (scores and lines) is reachable from Actions,
 # not from a cloud session's container.
 #
-# Four firings a day (10:37am, 1:37pm, 4:37pm and 6:37pm ET in winter): each locks the games with a line that
-# have not started (once per game and lead, whichever firing sees it first) and grades the finished ones. Extra
-# or dropped firings are harmless: nothing locks twice.
+# Every half hour from 10am to 6:30pm ET in winter (15:07-23:37 UTC), because GitHub drops scheduled firings (the
+# first day's 15:37 firing never ran): each run locks the games with a line that have not started (once per game
+# and lead, whichever run sees it first) and grades the finished ones, so extra or dropped firings are harmless.
+# A run commits and publishes only when it locked or graded something, or the page is 3+ hours old.
 #
 # data/ncaab (the scoreboard and line caches) lives in the Actions cache; every part of it can be read again.
 
 on:
   schedule:
-    - cron: "37 15,18,21,23 * * *"
+    - cron: "7,37 15-23 * * *"
   workflow_dispatch:
     inputs:
       no_lock:
@@ -55,7 +56,24 @@ jobs:
           PYTHONIOENCODING: utf-8
         run: python -m ncaab.build ${{ inputs.no_lock && '--no-lock' || '' }}
 
+      - name: Anything new?
+        id: news
+        run: |
+          python - <<'EOF'
+          import json, os, subprocess
+          from datetime import datetime, timezone
+          old = subprocess.run(["git", "show", "HEAD:board/ncaab_data.json"], capture_output=True, text=True).stdout
+          age = 1e9
+          if old.strip():
+              age = (datetime.now(timezone.utc) - datetime.fromisoformat(json.loads(old)["meta"]["generated"])).total_seconds()
+          ledger = subprocess.run(["git", "status", "--porcelain", "--", "ledger"], capture_output=True, text=True).stdout.strip()
+          go = bool(ledger) or age > 3 * 3600
+          print(f"ledger changed: {bool(ledger)}; page age {age / 3600:.1f} h -> {'commit' if go else 'skip'}")
+          open(os.environ["GITHUB_OUTPUT"], "a").write(f"commit={'true' if go else 'false'}\n")
+          EOF
+
       - name: Save the ledger and the payload
+        if: steps.news.outputs.commit == 'true' || inputs.no_lock
         run: |
           git config user.name "key-number-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -66,6 +84,7 @@ jobs:
 
       # pages.yml renders the page from every sport's committed payload, one deploy at a time
       - name: Publish the page
+        if: steps.news.outputs.commit == 'true' || inputs.no_lock
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run pages.yml --ref main
