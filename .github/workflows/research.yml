@@ -22,6 +22,7 @@ on:
           - nfl-dry-run
           - exchange-test
           - ncaab-top25
+          - ncaab-explore
       games:
         description: "exchange-test: how many recent games"
         type: string
@@ -132,7 +133,7 @@ jobs:
           key: nba-exchange-${{ github.run_id }}
 
       - name: Restore college data
-        if: inputs.job == 'ncaab-top25'
+        if: inputs.job == 'ncaab-top25' || inputs.job == 'ncaab-explore'
         uses: actions/cache/restore@v4
         with:
           path: data/ncaab
@@ -147,19 +148,26 @@ jobs:
           SEASON: ${{ inputs.season }}
         run: python -m ncaab.top25 ${SEASON:+--season "$SEASON"}
 
+      - name: College early-season angles
+        if: inputs.job == 'ncaab-explore'
+        env:
+          PYTHONIOENCODING: utf-8
+          PYTHONUNBUFFERED: "1"
+        run: python -m ncaab.explore
+
       - name: Save college data
-        if: always() && inputs.job == 'ncaab-top25'
+        if: always() && (inputs.job == 'ncaab-top25' || inputs.job == 'ncaab-explore')
         uses: actions/cache/save@v4
         with:
           path: data/ncaab
           key: ncaab-${{ github.run_id }}
 
       - name: Save the college report
-        if: inputs.job == 'ncaab-top25'
+        if: inputs.job == 'ncaab-top25' || inputs.job == 'ncaab-explore'
         run: |
           git config user.name "key-number-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add reports/ncaab_top25*.json
+          git add reports/ncaab_*.json
           git commit -m "College Top 25 study $(TZ=America/New_York date +%Y-%m-%d)" || echo "nothing to commit"
           for i in 1 2 3 4 5; do git pull --rebase -q && git push && break; sleep 15; done
 
