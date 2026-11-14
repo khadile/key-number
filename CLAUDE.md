@@ -1267,6 +1267,10 @@ How it works). Paper only (user's choice): every flag is recorded at 1u, no stak
   record or the model rating (like the NFL's weeks 1-4 replay); its own section on the Record page, split into the
   days the leads were found on (through `FOUND_TO` 2026-11-11: in-sample) and the days after.
   `gh workflow run ncaab.yml -f no_lock=true` grades and refreshes the page without locking anything.
+- Division I games only, as in the study (`d1_teams`: the 365 teams hoopR's schedule gives a conference): ESPN's
+  scoreboard also lists Division I teams' games against lower divisions, and counting those (as the game and as a
+  team's last game) had made the first replay disagree with the study (fade the cover 156 flags through Nov 11, the
+  study 118).
 
 **Model rating** (`board/rating.py`; "Ratings" in the top switch beside NFL / NBA / NCAAB, not under any sport (user,
 2026-11-14: one page for every model); each card links to its record; scored in `board/render.py` at every

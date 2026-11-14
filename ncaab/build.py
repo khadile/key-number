@@ -42,7 +42,7 @@ from zoneinfo import ZoneInfo
 import polars as pl
 
 from config import LEDGER, ROOT
-from ncaab.top25 import CORE, DIR, _am, _dig, _json, _num
+from ncaab.top25 import CORE, DIR, HOOPR, UA, _am, _dig, _json, _num
 
 ET = ZoneInfo("America/New_York")
 SEASON, SEASON_START = 2027, date(2026, 11, 2)
@@ -51,7 +51,8 @@ BOARD = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-b
 FLAGS, RESULTS = LEDGER / "ncaab_flags.jsonl", LEDGER / "ncaab_results.jsonl"
 OUT = ROOT / "board" / "ncaab_data.json"
 SB = DIR / "scoreboard.parquet"
-LINES = DIR / "lines.parquet"
+LINES = DIR / "lines_v2.parquet"   # v2: the close falls back to the item's own spread, as the study read it
+D1 = DIR / "d1_teams.json"
 SIGMA = 11.0     # how far a college final margin lands from the closing spread (points, one standard deviation)
 LIVE_FROM = date(2026, 11, 14)   # the tracker's first day: games before it are the replay
 FOUND_TO = "2026-11-11"          # the explore study's last day: replayed games through it are in-sample
@@ -75,6 +76,32 @@ def append(p, rows: list[dict]) -> None:
 
 
 # ---------------------------------------------------------------- data
+
+def d1_teams(today: date) -> set[int] | None:
+    """Division I teams: those hoopR's schedule gives a conference (365). The leads were found on Division I games
+    only, with each team's last game being its last Division I game, so the tracker keeps to the same games: ESPN's
+    scoreboard also lists Division I teams' games against lower divisions. Read once a day, cached."""
+    have = json.loads(D1.read_text()) if D1.exists() else None
+    if have and have.get("day") == today.isoformat():
+        return set(have["ids"])
+    try:
+        import io
+        with urllib.request.urlopen(urllib.request.Request(HOOPR.format(s=SEASON), headers=UA), timeout=120) as r:
+            x = pl.read_parquet(io.BytesIO(r.read()))
+        ids = set()
+        for side in ("home", "away"):
+            ids |= set(x.filter(pl.col(f"{side}_conference_id").cast(pl.Int64, strict=False).is_not_null())[f"{side}_id"].cast(pl.Int64).to_list())
+        if len(ids) > 300:
+            D1.write_text(json.dumps({"day": today.isoformat(), "ids": sorted(ids)}))
+            return ids
+        print(f"hoopR listed only {len(ids)} Division I teams")
+    except OSError as e:
+        print(f"hoopR schedule: {e}")
+    if have:
+        return set(have["ids"])
+    print("WARNING: no Division I list: every game counts")
+    return None
+
 
 def _day(d: date) -> list[dict]:
     j = _json(BOARD.format(d=d.strftime("%Y%m%d")))
@@ -133,8 +160,10 @@ def _line(gid: int) -> dict:
             w = o.get(when) or {}
             row[f"{when}_spread_{side}"] = _num(_dig(w, "pointSpread", "american"))
             row[f"{when}_price_{side}"] = _am(_dig(w, "spread", "american"))
-    if row.get("current_spread_home") is None and it.get("spread") is not None:   # the item's own line, home side
-        row["current_spread_home"], row["current_spread_away"] = float(it["spread"]), -float(it["spread"])
+    if it.get("spread") is not None:   # the item's own line (home side) when a slot is empty, as ncaab/explore.py read it
+        for when in ("current", "close"):
+            if row.get(f"{when}_spread_home") is None:
+                row[f"{when}_spread_home"], row[f"{when}_spread_away"] = float(it["spread"]), -float(it["spread"])
     return row
 
 
@@ -311,6 +340,11 @@ def main() -> None:
     now = datetime.now(timezone.utc)
     today = now.astimezone(ET).date()
     sb = scoreboard(today)
+    d1 = d1_teams(today)
+    if d1:
+        n = sb.height
+        sb = sb.filter(pl.col("home_id").is_in(list(d1)) & pl.col("away_id").is_in(list(d1)))
+        print(f"Division I games: {sb.height} of {n}")
     L = lines(sb, today)
     seq = last_games(sb, L)
     flags = [f for f in read(FLAGS) if f.get("kind") == "flag"]
