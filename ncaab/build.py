@@ -5,9 +5,10 @@ The leads come from ncaab/explore.py (reports/ncaab_explore_2027.json): every si
 pair, scored on this season's games and checked against both halves of the season and the same weeks of the last
 four seasons. One idea held up:
 
-- fade_cover: a team that covered the spread in its last game is faded: bet its opponent. This season (through
-  Nov 11) 74-44 against the close; the same weeks of the last four seasons 399-329 (54.8%). Only when exactly one
-  of the two teams covered its last game (both, and the game says nothing).
+- fade_cover: a team that covered the spread in its last game by under 10 points is faded: bet its opponent. This
+  season (through Nov 11) 74-44 against the close; the same weeks of the last four seasons 399-329 (54.8%). Only
+  when exactly one of the two teams did (both, and the game says nothing). Covering by 10 or more was its own
+  bucket in the study and did not fade (backing those teams went 41-35, past seasons 255-266).
 - big_win (weaker, tracked beside it): back a team that won its last game by 20 or more. This season 94-63, past
   seasons 427-393 (52.1%). Only when exactly one team did.
 
@@ -57,7 +58,7 @@ SIGMA = 11.0     # how far a college final margin lands from the closing spread 
 LIVE_FROM = date(2026, 11, 14)   # the tracker's first day: games before it are the replay
 FOUND_TO = "2026-11-11"          # the explore study's last day: replayed games through it are in-sample
 ANGLES = {
-    "fade_cover": {"name": "Fade the cover", "rule": "Bet against a team that covered the spread in its last game (only when its opponent did not).",
+    "fade_cover": {"name": "Fade the cover", "rule": "Bet against a team that covered the spread in its last game by under 10 points (only when its opponent did not).",
                    "season": {"w": 74, "l": 44}, "past": {"w": 399, "l": 329}, "p": 0.548},
     "big_win": {"name": "Back the big win", "rule": "Back a team that won its last game by 20 or more (only when its opponent did not).",
                 "season": {"w": 94, "l": 63}, "past": {"w": 427, "l": 393}, "p": 0.521},
@@ -189,9 +190,14 @@ def lines(sb: pl.DataFrame, today: date) -> pl.DataFrame:
 
 # ---------------------------------------------------------------- the leads
 
-def last_games(sb: pl.DataFrame, L: pl.DataFrame) -> pl.DataFrame:
-    """Each team's games in order with the result against the closing line (null when the game had none)."""
+def last_games(sb: pl.DataFrame, L: pl.DataFrame, d1: set[int] | None = None) -> pl.DataFrame:
+    """Each team's games in order, every game as in ncaab/explore.py (one against a lower division too: its margin
+    counts for "won by 20+"), with the result against the closing line, null when the game had none. The study
+    fetched lines only for Division I games, so a game against a lower division has none here either."""
     g = sb.filter(pl.col("done") & pl.col("home_score").is_not_null()).join(L.select("game_id", "close_spread_home", "close_spread_away"), on="game_id", how="left")
+    if d1:
+        lower = ~(pl.col("home_id").is_in(list(d1)) & pl.col("away_id").is_in(list(d1)))
+        g = g.with_columns(pl.when(lower).then(None).otherwise(pl.col(c)).alias(c) for c in ("close_spread_home", "close_spread_away"))
     long = pl.concat([
         g.select("game_id", "tip", pl.col("home_id").alias("tid"), (pl.col("home_score") - pl.col("away_score")).alias("margin"), pl.col("close_spread_home").alias("spread")),
         g.select("game_id", "tip", pl.col("away_id").alias("tid"), (pl.col("away_score") - pl.col("home_score")).alias("margin"), pl.col("close_spread_away").alias("spread"))])
@@ -204,7 +210,7 @@ def flags_for(game: dict, prev: dict, line: dict, now: datetime) -> list[dict]:
     # has the fact and the other does not (no previous game, an unlined one, or the opposite result all count as not)
     out = []
     ph, pa = prev.get(game["home_id"]), prev.get(game["away_id"])
-    cov = lambda p: bool(p) and p["ats"] is not None and p["ats"] > 0
+    cov = lambda p: bool(p) and p["ats"] is not None and 0 < p["ats"] < 10      # the study's "covered" (10+ was its own bucket)
     big = lambda p: bool(p) and p["margin"] is not None and p["margin"] >= 20
     picks = []
     if cov(ph) != cov(pa):
@@ -339,14 +345,12 @@ def main() -> None:
     a = ap.parse_args()
     now = datetime.now(timezone.utc)
     today = now.astimezone(ET).date()
-    sb = scoreboard(today)
+    every = scoreboard(today)              # every game: each team's sequence, as in the study
     d1 = d1_teams(today)
-    if d1:
-        n = sb.height
-        sb = sb.filter(pl.col("home_id").is_in(list(d1)) & pl.col("away_id").is_in(list(d1)))
-        print(f"Division I games: {sb.height} of {n}")
+    sb = every.filter(pl.col("home_id").is_in(list(d1)) & pl.col("away_id").is_in(list(d1))) if d1 else every
+    print(f"Division I games (flagged and graded): {sb.height} of {every.height}")
     L = lines(sb, today)
-    seq = last_games(sb, L)
+    seq = last_games(every, L, d1)
     flags = [f for f in read(FLAGS) if f.get("kind") == "flag"]
     have = {f["id"] for f in flags}
     new = []

@@ -1249,8 +1249,8 @@ How it works). Paper only (user's choice): every flag is recorded at 1u, no stak
 - The leads come from `ncaab/explore.py` (research.yml job `ncaab-explore`): every fact and pair of facts about a
   game, scored on this season's games (467 with a close through Nov 11, 655 conditions, ~30 expected by chance),
   kept only if both halves of the season and the same weeks of the last four seasons agree. Seven of the eight that
-  passed were one idea: **fade the cover** (bet against a team that covered its last game, only when its opponent
-  did not): this season 74-44, the past four seasons' same weeks 399-329 (54.8%). Tracked beside it, weaker:
+  passed were one idea: **fade the cover** (bet against a team that covered its last game by under 10 points, only
+  when its opponent did not; covering by 10+ was its own bucket and did not fade): this season 74-44, the past four seasons' same weeks 399-329 (54.8%). Tracked beside it, weaker:
   **back the big win** (won its last game by 20+, only when its opponent did not): 94-63, past 427-393 (52.1%).
 - The user's own theory (unranked underdogs cover against the Top 25 early in the season, `ncaab/top25.py`) did not
   hold: Nov-Dec 2022-26 718-703 (50.5%, -3.6% at -110); this season 27-32.
@@ -1267,10 +1267,11 @@ How it works). Paper only (user's choice): every flag is recorded at 1u, no stak
   record or the model rating (like the NFL's weeks 1-4 replay); its own section on the Record page, split into the
   days the leads were found on (through `FOUND_TO` 2026-11-11: in-sample) and the days after.
   `gh workflow run ncaab.yml -f no_lock=true` grades and refreshes the page without locking anything.
-- Division I games only, as in the study (`d1_teams`: the 365 teams hoopR's schedule gives a conference): ESPN's
-  scoreboard also lists Division I teams' games against lower divisions, and counting those (as the game and as a
-  team's last game) had made the first replay disagree with the study (fade the cover 156 flags through Nov 11, the
-  study 118).
+- Matching the study exactly (the first replay did not: 156 fade-the-cover flags through Nov 11 against its 118).
+  Flags and grades only Division I vs Division I games (`d1_teams`: the 365 teams hoopR's schedule gives a
+  conference; the study fetched lines only for those). A team's last game is its last game of any kind: one against
+  a lower division counts its margin ("won by 20+") but has no line, so it is never a cover. "Covered" is 0 to 10
+  points against the close, as the study's bucket was.
 
 **Model rating** (`board/rating.py`; "Ratings" in the top switch beside NFL / NBA / NCAAB, not under any sport (user,
 2026-11-14: one page for every model); each card links to its record; scored in `board/render.py` at every
