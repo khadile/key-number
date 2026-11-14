@@ -175,3 +175,5 @@
 {"id": "2026_09_BUF_MIN:total", "result": "L", "units": -1.0, "clv": 0.5, "graded_at": "2026-11-10T15:23:30.674566+00:00"}
 {"id": "2026_09:golden", "result": "L", "units": -0.5, "clv": null, "graded_at": "2026-11-10T15:23:30.674566+00:00"}
 {"id": "2026_09:lottery", "result": "L", "units": -0.5, "clv": null, "graded_at": "2026-11-10T15:23:30.674566+00:00"}
+{"id": "2026_10_WAS_NYG:spread", "result": "W", "units": 0.909, "clv": 1.0, "graded_at": "2026-11-14T15:20:48.488092+00:00"}
+{"id": "2026_10_WAS_NYG:total", "result": "W", "units": 0.909, "clv": -1.0, "graded_at": "2026-11-14T15:20:48.488092+00:00"}
