@@ -50,3 +50,4 @@ data/nba/
 # published, so the two sports' builds never collide on it
 board/nfl_board.html
 data/nba_x/
+data/ncaab/

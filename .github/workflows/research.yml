@@ -5,6 +5,7 @@ name: research
 #
 #   exchange-probe   python -m pipeline.exchange_probe  (free OddsPapi calls: do the exchanges carry props?)
 #   nba-line-timing  python -m nba.line_timing          (the board's NBA line rule at other lock times)
+#   ncaab-top25      python -m ncaab.top25                (unranked teams against the Top 25, at the closing spread)
 #   exchange-test    python -m nba.exchange_test        (exchange prop prices against FanDuel's, on results)
 #   nfl-dry-run      python -m board.build --dry-run --relock-study  (the whole NFL build, nothing written:
 #                    a test of new rules on real data, plus the held-pick replay)
@@ -20,6 +21,7 @@ on:
           - nba-line-timing
           - nfl-dry-run
           - exchange-test
+          - ncaab-top25
       games:
         description: "exchange-test: how many recent games"
         type: string
@@ -124,6 +126,37 @@ jobs:
         with:
           path: data/nba_x
           key: nba-exchange-${{ github.run_id }}
+
+      - name: Restore college data
+        if: inputs.job == 'ncaab-top25'
+        uses: actions/cache/restore@v4
+        with:
+          path: data/ncaab
+          key: ncaab-${{ github.run_id }}
+          restore-keys: ncaab-
+
+      - name: College Top 25 study
+        if: inputs.job == 'ncaab-top25'
+        env:
+          PYTHONIOENCODING: utf-8
+          PYTHONUNBUFFERED: "1"
+        run: python -m ncaab.top25
+
+      - name: Save college data
+        if: always() && inputs.job == 'ncaab-top25'
+        uses: actions/cache/save@v4
+        with:
+          path: data/ncaab
+          key: ncaab-${{ github.run_id }}
+
+      - name: Save the college report
+        if: inputs.job == 'ncaab-top25'
+        run: |
+          git config user.name "key-number-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/ncaab_top25.json
+          git commit -m "College Top 25 study $(TZ=America/New_York date +%Y-%m-%d)" || echo "nothing to commit"
+          for i in 1 2 3 4 5; do git pull --rebase -q && git push && break; sleep 15; done
 
       - name: Exchange probe
         if: inputs.job == 'exchange-probe'
