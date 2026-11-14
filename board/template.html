@@ -427,6 +427,32 @@ details.acc > summary .chev { margin-left: auto; font: 700 22px/1 var(--f-displa
 details.acc[open] > summary .chev { transform: rotate(90deg); }
 details.acc > .acc-body { padding: 4px 18px 18px; display: grid; gap: 14px; min-width: 0; }
 tr.tot td { border-top: 2px solid var(--line); background: var(--surface-2); }
+.clogo { width: 22px; height: 22px; object-fit: contain; vertical-align: middle; }
+.rate-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.rate-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.rate-top { display: flex; align-items: center; gap: 10px; }
+.rate-top h3 { font-size: 18px; font-weight: 700; }
+.rate-head { display: flex; align-items: center; gap: 14px; }
+.rate-head .note { margin: 4px 0 0; }
+.rate-score { font: 800 46px/1 var(--f-display); letter-spacing: -0.03em; min-width: 64px; }
+.tierpill { display: inline-block; font: 700 12.5px var(--f-body); padding: 3px 10px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); white-space: nowrap; }
+.rbars { display: grid; gap: 8px; }
+.rbar { display: grid; grid-template-columns: 112px 1fr 30px; gap: 4px 10px; align-items: center; font-size: 13px; }
+.rbar.shown { opacity: 0.75; }
+.rbar.shown .trk .fill { background: var(--muted); } .rbar.shown b { color: var(--ink-2); }
+.rbar .rn { color: var(--ink-2); }
+.rbar .rt { grid-column: 2 / 4; font-size: 12px; color: var(--muted); }
+.rbar .trk { position: relative; height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.rbar .trk .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--muted); }
+.rbar .trk .mid { position: absolute; left: 45%; top: -2px; bottom: -2px; width: 2px; background: var(--line); z-index: 1; }
+.rbar b { text-align: right; font-variant-numeric: tabular-nums; }
+.t-worse { color: var(--bad); } .tierpill.t-worse, .trk .fill.t-worse { background: var(--bad-fill); color: #fff; }
+.t-noedge { color: var(--bad); } .tierpill.t-noedge { background: var(--bad-soft); color: var(--bad); } .trk .fill.t-noedge { background: var(--bad-soft); }
+.t-unproven { color: var(--ink-2); } .tierpill.t-unproven { background: var(--surface-2); color: var(--ink-2); } .trk .fill.t-unproven { background: var(--muted); }
+.t-some { color: var(--gold); } .tierpill.t-some { background: var(--gold-soft); color: var(--gold); } .trk .fill.t-some { background: var(--gold-fill); }
+.t-solid { color: var(--good); } .tierpill.t-solid { background: var(--good-soft); color: var(--good); } .trk .fill.t-solid { background: var(--good-fill); }
+.t-strong { color: var(--good); } .tierpill.t-strong, .trk .fill.t-strong { background: var(--good-fill); color: #fff; }
+@media (max-width: 520px) { .rate-grid { grid-template-columns: minmax(0, 1fr); } .rbar { grid-template-columns: 96px 1fr 28px; } .rate-score { font-size: 40px; } }
 .gaccs { display: grid; gap: 12px; }
 .gacc > summary .mu { display: inline-flex; align-items: center; gap: 6px; }
 .gacc > summary .at { color: var(--muted); font-size: 13px; }
@@ -835,7 +861,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   <div class="top-in">
     <div class="brand">
       <b><svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="9" fill="var(--ink)"/><path d="M6.5 15h17" stroke="var(--bg)" stroke-width="2" stroke-linecap="round"/><circle cx="11.6" cy="15" r="3.3" fill="var(--gold-fill)"/><circle cx="18.4" cy="15" r="3.3" fill="var(--good-fill)"/></svg><span>Key<i>/</i>Number</span></b>
-      <nav class="seg sports" aria-label="Sport"><span class="seg-ind" aria-hidden="true"></span><a href="#best" data-sport="nfl"><img src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/nfl.png&amp;w=40&amp;h=40" alt="" width="18" height="18" data-fb="">NFL</a><a href="#nba-best" data-sport="nba"><img src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/nba.png&amp;w=40&amp;h=40" alt="" width="18" height="18" data-fb="">NBA</a></nav>
+      <nav class="seg sports" aria-label="Sport"><span class="seg-ind" aria-hidden="true"></span><a href="#best" data-sport="nfl"><img src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/nfl.png&amp;w=40&amp;h=40" alt="" width="18" height="18" data-fb="">NFL</a><a href="#nba-best" data-sport="nba"><img src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/nba.png&amp;w=40&amp;h=40" alt="" width="18" height="18" data-fb="">NBA</a><a href="#ncaab" data-sport="ncaab"><img src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/ncaa.png&amp;w=40&amp;h=40" alt="" width="18" height="18" data-fb="">NCAAB</a></nav>
       <span class="grow"></span><span id="brand-sub"></span>
     </div>
     <div class="nav2"><nav class="seg sections" aria-label="Board"></nav><nav class="tabs" id="subtabs" aria-label="Pages"></nav></div>
@@ -848,6 +874,8 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
 
 <script id="kn-data" type="application/json">__BOARD_DATA__</script>
 <script id="kn-nba" type="application/json">__NBA_DATA__</script>
+<script id="kn-ncaab" type="application/json">__NCAAB_DATA__</script>
+<script id="kn-rating" type="application/json">__RATING__</script>
 <script>
 (function () {
   "use strict";
@@ -1134,23 +1162,28 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     live: [["live", "Live"], ["live-model", "How it works"]],
     "nba-lines": [["nba", "Today"], ["nba-defense", "Defenses"], ["nba-record", "Record"], ["nba-model", "How it works"]],
     "nba-props": [["nba-props", "Today"], ["nba-props-defense", "Defenses"], ["nba-props-record", "Record"], ["nba-props-model", "How it works"]],
+    ncaab: [["ncaab", "Today"], ["ncaab-record", "Record"], ["ncaab-model", "How it works"]],
+    rating: [],
   };
-  const SPORT_SECTIONS = { nfl: [["best", "#best", "Best bets", "Best"], ["lines", "#week", "Game lines", "Lines"], ["props", "#props", "Player props", "Props"], ["live", "#live", "Live", "Live"]],
-                           nba: [["nba-best", "#nba-best", "Best bets", "Best"], ["nba-lines", "#nba", "Game lines", "Lines"], ["nba-props", "#nba-props", "Player props", "Props"]] };
+  const RATE_SEC = ["rating", "#rating", "Model rating", "Rating"];
+  const SPORT_SECTIONS = { nfl: [["best", "#best", "Best bets", "Best"], ["lines", "#week", "Game lines", "Lines"], ["props", "#props", "Player props", "Props"], ["live", "#live", "Live", "Live"], RATE_SEC],
+                           nba: [["nba-best", "#nba-best", "Best bets", "Best"], ["nba-lines", "#nba", "Game lines", "Lines"], ["nba-props", "#nba-props", "Player props", "Props"], RATE_SEC],
+                           ncaab: [["ncaab", "#ncaab", "Tracker", "Tracker"], RATE_SEC] };
   // The public website (board/site.py sets KN_PUBLIC) has no My Picks: it needs claude.ai's storage.
   const PUBLIC = !!window.KN_PUBLIC;
   if (PUBLIC) for (const k of Object.keys(SECTIONS)) SECTIONS[k] = SECTIONS[k].filter(([v]) => v !== "mine" && v !== "props-mine");
-  const sectionOf = (h) => (h === "best" || h === "nba-best" ? h : h.startsWith("nba-props") ? "nba-props" : h.startsWith("nba") ? "nba-lines"
+  const sectionOf = (h) => (h === "best" || h === "nba-best" || h === "rating" ? h : h.startsWith("ncaab") ? "ncaab" : h.startsWith("nba-props") ? "nba-props" : h.startsWith("nba") ? "nba-lines"
     : h.startsWith("props") || h.startsWith("pg-") || h.startsWith("p-") ? "props" : h.startsWith("live") ? "live" : "lines");
   let shownSport = null, shownSec = null;
   function setTab(name) {
-    const sec = sectionOf(name), sport = sec.startsWith("nba") ? "nba" : "nfl";
+    // the rating covers every board: it stays under whichever sport the viewer came from
+    const sec = sectionOf(name), sport = sec === "rating" ? (shownSport || "nfl") : sec === "ncaab" ? "ncaab" : sec.startsWith("nba") ? "nba" : "nfl";
     document.querySelectorAll(".sports a").forEach((a) => a.setAttribute("aria-current", a.dataset.sport === sport ? "true" : "false"));
     const secs = document.querySelector(".sections"), tabs = document.getElementById("subtabs");
     if (sport !== shownSport) {
       shownSport = sport;
       try { localStorage.setItem("kn-sport", sport); } catch (e) { /* remembered for this visit only */ }
-      document.getElementById("brand-sub").innerHTML = sport === "nba" ? nbaSub() : nflSub();
+      document.getElementById("brand-sub").innerHTML = sport === "nba" ? nbaSub() : sport === "ncaab" ? ncaabSub() : nflSub();
       secs.innerHTML = '<span class="seg-ind" aria-hidden="true"></span>' + SPORT_SECTIONS[sport].map(([k, h, l, s]) => `<a href="${h}" data-sec="${k}"><span class="full">${l}</span><span class="short">${s}</span></a>`).join("");
       secs.dataset.fresh = "1";
     }
@@ -1190,7 +1223,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   function landing() {   // no address: the Best bets of the sport looked at last
     let s = "nfl";
     try { s = localStorage.getItem("kn-sport") || "nfl"; } catch (e) { /* NFL */ }
-    return s === "nba" && N ? "nba-best" : "best";
+    return s === "nba" && N ? "nba-best" : s === "ncaab" ? "ncaab" : "best";
   }
   function route(e) {
     const resized = e === "resize";
@@ -3597,6 +3630,11 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       const R = N.record.live, P = ((N.props || {}).record || {}).live || {};
       return `<section class="glance"><h3>NBA ${esc(N.meta.label)} <a href="#nba-record">Record →</a></h3>${row("Game lines", R.all)}${row("Props", P.all)}${row("Picks of the day", R.potd)}${row("Golden parlay", R.parlay)}</section>`;
     }
+    if (shownSport === "ncaab") {
+      if (!C) return "";
+      const G = C.record.angles;
+      return `<section class="glance"><h3>College ${esc(C.meta.season)} <a href="#ncaab-record">Record →</a></h3>${Object.keys(G).map((a) => row(CANG(a), G[a])).join("")}<p class="note">Paper only, at 1u.</p></section>`;
+    }
     const A = D.record.all, P = PR ? PR.record.all : null;
     return `<section class="glance"><h3>NFL ${D.meta.season} <a href="#record">Record →</a></h3>${row("Game lines", A.all)}${row("Props", P && P.all)}${row("Picks of the week", A.potw)}${row("Golden parlay", A.parlay)}</section>`;
   }
@@ -3692,13 +3730,119 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     }
   });
 
+
+  // ---------- college basketball tracker (ncaab/build.py, user 2026-11-14): paper flags, no stake
+  const C = JSON.parse(document.getElementById("kn-ncaab").textContent || "null");
+  const RT = JSON.parse(document.getElementById("kn-rating").textContent || "null");
+  function ncaabSub() {
+    if (!C) return "College basketball tracker";
+    return `College basketball · ${esc(C.meta.season)} · paper tracker · updated ${esc(new Date(C.meta.generated).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" }))} ET`;
+  }
+  function noNcaab() {
+    app.innerHTML = `<section class="hello"><h1>College basketball</h1><p class="lede">The tracker fills in with its first daily build.</p></section>`;
+  }
+  const cLogo = (u) => (u ? `<img class="clogo" src="${esc(u)}" alt="" width="22" height="22" loading="lazy" data-fb="">` : "");
+  const CANG = (a) => (C && C.meta.angles[a] ? C.meta.angles[a].name : a);
+  function cFlag(f) {
+    const res = f.result ? `<span class="res ${f.result}">${{ W: "WIN", L: "LOSS", P: "PUSH" }[f.result]}</span>` : `<span class="mono">${am(f.american)}</span>`;
+    const close = f.close_spread != null ? `<span>Close ${f.close_spread > 0 ? "+" : ""}${f.close_spread} (${f.clv > 0 ? "+" : ""}${num(f.clv, 1)} pts)</span>` : "";
+    return `<div class="pick-row"><span class="n">${cLogo(f.team_logo)}</span><span class="lbl"><b>${esc(f.label)}</b> <span class="tag">${esc(CANG(f.angle))}</span></span>${res}
+      <div class="sub"><span>${esc(f.game)}</span><span>${esc(f.tip_short)} ET</span><span>${esc(f.book || "ESPN")} ${am(f.american)}</span>${close}<span>${esc(f.why)}</span><span>Paper · 0u</span></div></div>`;
+  }
+  function cTally(t) {
+    if (!t || !t.n) return '<span class="note">none graded yet</span>';
+    return `${rec(t)} · <span class="${cls(t.units)}">${units(t.units)}</span> at 1u · ${"EV at the close"} ${evPct(t.ev_close)} · ${t.clv == null ? "" : `${signed(t.clv, 1)} pts vs the close · `}at the closing spread ${t.close.w}-${t.close.l}`;
+  }
+  function renderNcaab() {
+    if (!C) return noNcaab();
+    const byA = Object.keys(C.meta.angles).map((a) => [a, C.today.filter((f) => f.angle === a)]);
+    app.innerHTML = `
+      <section class="hello"><h1>College basketball · ${esc(C.meta.day_label)}</h1>
+        <p class="lede">Early-season leads from this season's games, flagged on today's slate and graded at the closing line. <b>Paper only: no stake.</b> A lead earns a stake only by beating the close for a few weeks.</p></section>
+      <section class="sec"><header><h2>Record so far</h2><a class="more" href="#ncaab-record">Full record →</a></header>
+        ${Object.entries(C.record.angles).map(([a, t]) => `<p class="note"><b>${esc(CANG(a))}:</b> ${cTally(t)}</p>`).join("")}</section>
+      ${byA.map(([a, fs]) => `<section class="sec"><header><h2>${esc(CANG(a))} <em>${fs.length} today</em></h2></header>
+        <p class="note">${esc(C.meta.angles[a].rule)}</p>
+        <div class="box">${fs.length ? fs.map(cFlag).join("") : '<p class="note">Nothing flagged today.</p>'}</div></section>`).join("")}
+      <p class="fine">${C.meta.games_today} Division I games today. Lines are the book of record's at ESPN when the flag locked (each build locks the games with a line that have not started), not necessarily DraftKings' or FanDuel's. Not betting advice.</p>`;
+  }
+  function renderNcaabRecord() {
+    if (!C) return noNcaab();
+    const rows = C.record.rows || [];
+    const months = [...new Set(rows.map((r) => monthOf(r.day)))];
+    const tbl = (rs) => `<div class="scroll"><table class="t"><thead><tr><th>Day</th><th>Lead</th><th>Pick</th><th class="num">Price</th><th class="num">Close</th><th class="num">Pts</th><th class="num">${"EV at close"}</th><th>Result</th><th class="num">Units</th></tr></thead><tbody>
+      ${rs.map((r) => `<tr><td>${esc(dayShort(r.day))}</td><td>${esc(CANG(r.angle))}</td><td><b>${esc(r.label)}</b> <span class="note">${esc(r.game)}</span></td><td class="num">${am(r.american)}</td><td class="num">${r.close_spread == null ? "–" : (r.close_spread > 0 ? "+" : "") + r.close_spread}</td><td class="num">${signed(r.clv, 1)}</td><td class="num">${evPct(r.ev_close)}</td><td>${resChip(r.result)}</td><td class="num ${cls(r.units)}">${units(r.units)}</td></tr>`).join("")}</tbody></table></div>`;
+    app.innerHTML = `
+      <section class="hello"><h1>College tracker record</h1><p class="lede">Every flag at 1u on paper, graded at the line it locked at, beside where that line closed. No stake was placed.</p></section>
+      <section class="sec"><header><h2>Season to date</h2></header>
+        ${Object.entries(C.record.angles).map(([a, t]) => `<p class="note"><b>${esc(CANG(a))}:</b> ${cTally(t)}${t.pending ? ` · ${t.pending} pending` : ""}</p>`).join("")}
+        <p class="note">Judge a lead by ${"EV at the close"} first: it settles at the tip, where wins and losses need months. A lead that beats the close for three or four weeks earns a probe stake.</p></section>
+      <section class="sec"><header><h2>By month</h2></header>${months.length ? `<div class="gaccs">${months.map((m, i) => {
+        const rs = rows.filter((r) => monthOf(r.day) === m);
+        const t = { w: rs.filter((r) => r.result === "W").length, l: rs.filter((r) => r.result === "L").length, p: rs.filter((r) => r.result === "P").length };
+        t.n = t.w + t.l + t.p;
+        const u = rs.reduce((a, r) => a + (r.units || 0), 0);
+        return `<details class="acc"${i === 0 ? " open" : ""}><summary><h3>${esc(monthName(m, true))}</h3><span class="note">${rec(t)} · <span class="${cls(u)}">${units(u)}</span></span>${chev}</summary><div class="acc-body">${tbl(rs)}</div></details>`;
+      }).join("")}</div>` : '<p class="note">Flags show up here once their games are graded.</p>'}</section>`;
+  }
+  function renderNcaabModel() {
+    if (!C) return noNcaab();
+    const A = C.meta.angles;
+    const bt = (a) => `this season through Nov 11: ${A[a].season.w}-${A[a].season.l} (${pct(A[a].season.w / (A[a].season.w + A[a].season.l), 1)}); the same weeks of the last four seasons: ${A[a].past.w}-${A[a].past.l} (${pct(A[a].past.w / (A[a].past.w + A[a].past.l), 1)})`;
+    app.innerHTML = `<section class="hello"><h1>How the college tracker works</h1><p class="lede">A search for short-lived early-season edges in a softer market, kept honest by the closing line.</p></section>
+      <div class="prose">
+        <h3>Where the leads came from</h3>
+        <p>Every Division I game this season with a closing spread (467 through Nov 11) was tagged with facts known before the tip: home or away, favorite or underdog, the size of the spread, both conferences' level, Top 25 or not, how the line moved, rest, games played, each team's last result against the spread and on the scoreboard, its season against the spread, the total, and the day of the week. Every fact and every pair of them was scored: 655 conditions. At that many, about 30 look strong by chance alone, and about 30 did. So a lead had to hold in both halves of this season and lean the same way in the same weeks of the last four seasons. Seven of the eight that passed were one idea.</p>
+        <h3>The leads</h3>
+        <ul><li><b>${esc(A.fade_cover.name)}.</b> ${esc(A.fade_cover.rule)} ${bt("fade_cover")}. Early in the season the market has little to go on and leans on how a team just did against the line.</li>
+          <li><b>${esc(A.big_win.name)}.</b> ${esc(A.big_win.rule)} ${bt("big_win")}: weaker, tracked beside it.</li></ul>
+        <p>Past seasons put the first near 55%, worth about +4% at -110: real but modest. This season's 63% is mostly luck on top of that.</p>
+        <h3>How each flag is made and judged</h3>
+        <ul><li>Twice a day the tracker reads ESPN's scoreboard and lines. A game today that has a line and has not started gets a flag when a lead fires, locked at that moment's spread and price, once.</li>
+          <li>After the game it is graded at the locked spread, at 1u on paper, and beside the closing spread: the points the locked number beat the close by, and the EV at the close (the chance of covering the locked number if the close is fair, a college margin landing within ±${num(C.meta.sigma, 0)} points of the close two times in three).</li>
+          <li>No stake. A lead earns a small probe stake after three or four weeks of beating the close, and loses it when it stops.</li></ul>
+        <h3>Limits</h3>
+        <p>The lines are ESPN's book of record's, not necessarily DraftKings' or FanDuel's, and college lines move a lot on the day. The leads were found on a week and a half of games; the point of tracking is to find out whether they last.</p>
+      </div>`;
+  }
+
+  // ---------- model rating (board/rating.py, user 2026-11-14): every board scored 0-100, like a benchmark card
+  const tierCls = (s) => (s == null ? "t-none" : s >= 85 ? "t-strong" : s >= 70 ? "t-solid" : s >= 55 ? "t-some" : s >= 40 ? "t-unproven" : s >= 20 ? "t-noedge" : "t-worse");
+  function rateBar(c) {
+    const s = c.score;
+    return `<div class="rbar${c.weight ? "" : " shown"}" data-tip="${esc(c.name)}${c.weight ? `, ${c.weight}% of the score` : ", shown, not averaged"}: ${esc(c.text)}${c.z != null ? ` (${num(Math.abs(c.z), 1)} standard errors from no edge)` : ""}">
+      <span class="rn">${esc(c.name)}</span><span class="trk"><i class="mid"></i>${s == null ? "" : `<i class="fill ${tierCls(s)}" style="width:${Math.max(2, s)}%"></i>`}</span><b class="${tierCls(s)}">${s == null ? "–" : Math.round(s)}</b>
+      <span class="rt">${esc(c.text)}</span></div>`;
+  }
+  function renderRating() {
+    if (!RT) { app.innerHTML = '<section class="hello"><h1>Model rating</h1><p class="lede">The rating appears with the next build.</p></section>'; return; }
+    const cards = RT.boards.map((b) => `<article class="rate-card">
+        <div class="rate-top"><span class="tag">${esc(b.sport)}</span><h3>${esc(b.name)}</h3></div>
+        <div class="rate-head"><span class="rate-score ${tierCls(b.overall)}">${b.overall == null ? "–" : Math.round(b.overall)}</span><div><span class="tierpill ${tierCls(b.overall)}">${esc(b.tier)}</span><p class="note">${esc(b.tier_text)}</p></div></div>
+        <div class="rbars">${b.categories.map(rateBar).join("")}</div>
+        <p class="note">${b.n} graded picks with a stake, since ${esc(b.since)}.</p></article>`).join("");
+    const desc = { clv: "EV of each pick at the closing price: the sharpest yardstick, settled at the tip.", roi: "Return per unit staked at 1u.",
+      cal: "Does a pick said to win 55% win 55%? Won minus said, in points.", rank: "Do the bigger stated edges close better than the smaller ones?",
+      filter: "Do the picks the board singles out (Picks of the Day or Week, the bet list) close better than the rest?",
+      recent: "Beats the close over the last three weeks (NFL) or two weeks (NBA, college): edges are short-lived.", evidence: "How many graded picks the rest stands on. Shown, not averaged." };
+    app.innerHTML = `
+      <section class="hello"><h1>Model rating</h1><p class="lede">Every board scored from 0 to 100, the way new AI models are rated across benchmark categories: the rubric to judge changes by. 45 is breaking even. Betting at random at -110 scores about 22.</p></section>
+      <section class="sec"><div class="rate-grid">${cards}</div></section>
+      <section class="sec"><header><h2>The tiers</h2></header><div class="scroll"><table class="t"><thead><tr><th class="num">Score</th><th>Tier</th><th>What it means</th></tr></thead><tbody>
+        ${RT.tiers.map((t, i) => `<tr><td class="num">${t.min}${i ? `–${RT.tiers[i - 1].min - 1}` : "–100"}</td><td><span class="tierpill ${tierCls(t.min + 1)}">${esc(t.name)}</span></td><td>${esc(t.text)}</td></tr>`).join("")}</tbody></table></div></section>
+      <section class="sec"><header><h2>The categories</h2></header><div class="scroll"><table class="t"><thead><tr><th>Category</th><th class="num">Weight</th><th>What it measures</th></tr></thead><tbody>
+        ${Object.keys(RT.weights).map((k) => `<tr><td><b>${esc(RT.names[k])}</b></td><td class="num">${RT.weights[k] ? RT.weights[k] + "%" : "shown"}</td><td>${esc(desc[k])}</td></tr>`).join("")}</tbody></table></div>
+        <p class="note">Each measurement maps onto 0–100 through fixed anchors: on "beats the close", −4.5% (random betting) is about 12, 0 is 45, +2% is 68, +5% is 90. A score moves away from 45 only as far as the evidence allows: fully at two standard errors from no edge, part of the way below that (calibration by sample size). So a board with few picks reads "Unproven" however good its start, and climbs only as the evidence builds. Scored from the latest payloads at every publish, ${esc(RT.as_of)}.</p></section>`;
+  }
+
   const VIEWS = { best: () => renderBest("nfl"), "nba-best": () => renderBest("nba"),
                   week: renderWeek, mine: renderMine, defense: renderDefense, record: renderRecord, model: renderModel,
                   props: renderProps, "props-players": renderPropsPlayers, "props-mine": renderPropsMine, "props-defense": renderDefense,
                   "props-record": renderPropsRecord, "props-model": renderPropsModel, live: renderLive, "live-model": renderLiveModel,
                   nba: renderNba, "nba-record": renderNbaRecord, "nba-model": renderNbaModel,
                   "nba-defense": renderNbaDefense, "nba-props-defense": renderNbaDefense,
-                  "nba-props": renderNbaProps, "nba-props-record": renderNbaPropsRecord, "nba-props-model": renderNbaModel };
+                  "nba-props": renderNbaProps, "nba-props-record": renderNbaPropsRecord, "nba-props-model": renderNbaModel,
+                  ncaab: renderNcaab, "ncaab-record": renderNcaabRecord, "ncaab-model": renderNcaabModel, rating: renderRating };
   // The board updates three times a week (the scheduled build, 10:05am Eastern): say which one is next.
   function nextUpdate(now) {
     const f = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "numeric", hourCycle: "h23" })

@@ -1242,6 +1242,39 @@ shopping (first halves, team totals: the history endpoint already returns them, 
 (3) Kalshi/Polymarket as the reference (lead-lag against Pinnacle); (4) play-by-play lineups for a true
 plus-minus, the remaining 0.25 points to the close being mostly information the box score lacks.
 
+## 14. College basketball tracker; the model rating (user, 2026-11-14)
+
+**NCAAB, the third sport** (`ncaab/build.py`, `.github/workflows/ncaab.yml`, the board's NCAAB switch: Today, Record,
+How it works). Paper only (user's choice): every flag is recorded at 1u, no stake, its own record.
+- The leads come from `ncaab/explore.py` (research.yml job `ncaab-explore`): every fact and pair of facts about a
+  game, scored on this season's games (467 with a close through Nov 11, 655 conditions, ~30 expected by chance),
+  kept only if both halves of the season and the same weeks of the last four seasons agree. Seven of the eight that
+  passed were one idea: **fade the cover** (bet against a team that covered its last game, only when its opponent
+  did not): this season 74-44, the past four seasons' same weeks 399-329 (54.8%). Tracked beside it, weaker:
+  **back the big win** (won its last game by 20+, only when its opponent did not): 94-63, past 427-393 (52.1%).
+- The user's own theory (unranked underdogs cover against the Top 25 early in the season, `ncaab/top25.py`) did not
+  hold: Nov-Dec 2022-26 718-703 (50.5%, -3.6% at -110); this season 27-32.
+- ESPN only (scoreboard, the book of record's lines and closes; reachable from Actions, not from a cloud session).
+  Four firings a day; a game locks once per lead at the first firing that sees it before the tip with a line
+  (`ledger/ncaab_flags.jsonl`, append-only), graded the next firing after it ends (`ncaab_results.jsonl`: result
+  at the locked spread, the closing spread, points of line value, and EV at the close = the chance of covering the
+  locked number if the close is fair, the margin's spread around the close 11 points). Caches in data/ncaab
+  (Actions cache, gitignored).
+- A lead earns a probe stake only after three or four weeks of beating the close; stop tracking it when it stops.
+
+**Model rating** (`board/rating.py`, the "Model rating" tab under every sport; scored in `board/render.py` at every
+publish, stdlib only since pages.yml installs nothing). Each board (NFL lines, NFL props, NBA lines, NBA props,
+college) gets 0-100 and a tier: 85+ Strong edge, 70 Solid, 55 Some, 40 Unproven, 20 No edge (about the vig, not
+predictive), under 20 Worse than random. Categories and weights: beats the close 35, profit 20, calibration 10,
+edge ranking (bigger stated edges close better) 10, filter (Picks of the Day/Week and the bet list close better
+than the rest) 10, recent form (close, last 3 weeks NFL / 14 days NBA and college) 15; evidence (sample size)
+shown, not averaged. Each measure maps onto 0-100 by fixed anchors (EV at the close: -4.5% ~12, 0 = 45, +2% = 68,
++5% = 90) and moves from 45 only as far as its evidence allows (fully at 2 standard errors; calibration by n/300).
+Random betting at -110 scores about 22, a strong synthetic edge about 77. Staked picks only (+EV, not held or
+superseded; NBA props judged at Pinnacle's raw close before 2026-11-11). First scores (2026-11-14): NFL lines 53
+Unproven, NFL props 39 No edge, NBA lines 46 Unproven, NBA props 42 Unproven. Use it as the rubric: a change is an
+improvement when the board's score rises on picks made after it. Never retune the anchors to lift a score.
+
 ## Layout
 
 ```
@@ -1255,7 +1288,8 @@ live/       espn.py, feeds.py, model.py, decide.py, engine.py (+ page.html),
             ledger.py, notify.py (ntfy), replay.py, replay_games.py, board.py
 model/      ratings.py, qb.py, features.py, project.py, probs.py, blend.py
 board/      build.py, market.py (pricing), ledger.py, defense.py, detail.py,
-            weather.py, render.py (both payloads + template.html -> nfl_board.html)
+            weather.py, rating.py (the model rating), render.py (every payload + template.html -> nfl_board.html)
+ncaab/      build.py (the college tracker), explore.py + top25.py (research.yml studies)
 nba/        data.py (hoopR), espn.py, odds.py (OddsPapi), model.py (team ratings) + strength.py
             (the game model: players available, weights), backtest.py, lines.py, props.py, ledger.py,
             build.py, slot.py; players.py (the old APM lineup adjustment, unused since 2026-11-12)

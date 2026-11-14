@@ -1,0 +1,66 @@
+name: ncaab
+
+# The college basketball tracker (python -m ncaab.build): this season's early-season leads flagged on today's
+# slate and graded at the closing line. Paper only, no stake. ESPN (scores and lines) is reachable from Actions,
+# not from a cloud session's container.
+#
+# Four firings a day (10:37am, 1:37pm, 4:37pm and 6:37pm ET in winter): each locks the games with a line that
+# have not started (once per game and lead, whichever firing sees it first) and grades the finished ones. Extra
+# or dropped firings are harmless: nothing locks twice.
+#
+# data/ncaab (the scoreboard and line caches) lives in the Actions cache; every part of it can be read again.
+
+on:
+  schedule:
+    - cron: "37 15,18,21,23 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: ncaab-board
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Restore college data
+        uses: actions/cache@v4
+        with:
+          path: data/ncaab
+          key: ncaab-data-${{ github.run_id }}
+          restore-keys: ncaab-data-
+
+      - name: Build
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python -m ncaab.build
+
+      - name: Save the ledger and the payload
+        run: |
+          git config user.name "key-number-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add board/ncaab_data.json
+          for f in ledger/ncaab_flags.jsonl ledger/ncaab_results.jsonl; do if [ -f "$f" ]; then git add "$f"; fi; done
+          git commit -m "NCAAB build $(TZ=America/New_York date '+%Y-%m-%d %H:%M')" || echo "nothing to commit"
+          for i in 1 2 3 4 5; do git pull --rebase -q && git push && break; sleep 15; done
+
+      # pages.yml renders the page from every sport's committed payload, one deploy at a time
+      - name: Publish the page
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main

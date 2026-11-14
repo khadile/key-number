@@ -8,7 +8,7 @@ name: publish
 on:
   push:
     branches: [main]
-    paths: [board/nfl_data.json, board/nba_data.json, board/template.html]
+    paths: [board/nfl_data.json, board/nba_data.json, board/ncaab_data.json, board/template.html, board/rating.py, board/render.py]
   workflow_dispatch:
 
 permissions:
