@@ -1261,6 +1261,12 @@ How it works). Paper only (user's choice): every flag is recorded at 1u, no stak
   locked number if the close is fair, the margin's spread around the close 11 points). Caches in data/ncaab
   (Actions cache, gitignored).
 - A lead earns a probe stake only after three or four weeks of beating the close; stop tracking it when it stops.
+- The replay (user, 2026-11-14: "replay and record the games that already happened"; `ncaab/build.py replay`): both
+  leads on every finished game before 2026-11-14 (`LIVE_FROM`), locked at ESPN's opening line (the close when no open
+  was kept), graded at that line and at the close. Recomputed every build from the caches, never in the ledger, the
+  record or the model rating (like the NFL's weeks 1-4 replay); its own section on the Record page, split into the
+  days the leads were found on (through `FOUND_TO` 2026-11-11: in-sample) and the days after.
+  `gh workflow run ncaab.yml -f no_lock=true` grades and refreshes the page without locking anything.
 
 **Model rating** (`board/rating.py`; "Ratings" in the top switch beside NFL / NBA / NCAAB, not under any sport (user,
 2026-11-14: one page for every model); each card links to its record; scored in `board/render.py` at every

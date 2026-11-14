@@ -14,6 +14,11 @@ on:
   schedule:
     - cron: "37 15,18,21,23 * * *"
   workflow_dispatch:
+    inputs:
+      no_lock:
+        description: "Grade and refresh the page only, lock nothing (a run by hand outside the firings)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -48,7 +53,7 @@ jobs:
       - name: Build
         env:
           PYTHONIOENCODING: utf-8
-        run: python -m ncaab.build
+        run: python -m ncaab.build ${{ inputs.no_lock && '--no-lock' || '' }}
 
       - name: Save the ledger and the payload
         run: |

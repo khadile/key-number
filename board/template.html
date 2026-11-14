@@ -3637,7 +3637,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     if (shownSport === "ncaab") {
       if (!C) return "";
       const G = C.record.angles;
-      return `<section class="glance"><h3>College ${esc(C.meta.season)} <a href="#ncaab-record">Record →</a></h3>${Object.keys(G).map((a) => row(CANG(a), G[a])).join("")}<p class="note">Paper only, at 1u.</p></section>`;
+      return `<section class="glance"><h3>College ${esc(C.meta.season)} <a href="#ncaab-record">Record →</a></h3>${Object.keys(G).map((a) => row(CANG(a), G[a])).join("")}${C.replay && C.replay.all.n ? Object.keys(C.replay.angles).map((a) => row(`${CANG(a)}, replay`, C.replay.angles[a])).join("") : ""}<p class="note">Paper only, at 1u. The replay ran before tracking began.</p></section>`;
     }
     const A = D.record.all, P = PR ? PR.record.all : null;
     return `<section class="glance"><h3>NFL ${D.meta.season} <a href="#record">Record →</a></h3>${row("Game lines", A.all)}${row("Props", P && P.all)}${row("Picks of the week", A.potw)}${row("Golden parlay", A.parlay)}</section>`;
@@ -3764,30 +3764,46 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <section class="hello"><h1>College basketball · ${esc(C.meta.day_label)}</h1>
         <p class="lede">Early-season leads from this season's games, flagged on today's slate and graded at the closing line. <b>Paper only: no stake.</b> A lead earns a stake only by beating the close for a few weeks.</p></section>
       <section class="sec"><header><h2>Record so far</h2><a class="more" href="#ncaab-record">Full record →</a></header>
-        ${Object.entries(C.record.angles).map(([a, t]) => `<p class="note"><b>${esc(CANG(a))}:</b> ${cTally(t)}</p>`).join("")}</section>
+        ${Object.entries(C.record.angles).map(([a, t]) => `<p class="note"><b>${esc(CANG(a))}:</b> ${cTally(t)}</p>`).join("")}
+        ${C.replay && C.replay.all.n ? `<p class="note"><b>Replay, ${esc(cMd(C.replay.from))}–${esc(cMd(C.replay.to))}</b> (before tracking began; mostly the games the leads were found on): ${Object.entries(C.replay.angles).map(([a, t]) => `${esc(CANG(a))} ${rec(t)}, <span class="${cls(t.units)}">${units(t.units)}</span>`).join(" · ")}. <a href="#ncaab-record">See every game →</a></p>` : ""}</section>
       ${byA.map(([a, fs]) => `<section class="sec"><header><h2>${esc(CANG(a))} <em>${fs.length} today</em></h2></header>
         <p class="note">${esc(C.meta.angles[a].rule)}</p>
         <div class="box">${fs.length ? fs.map(cFlag).join("") : '<p class="note">Nothing flagged today.</p>'}</div></section>`).join("")}
       <p class="fine">${C.meta.games_today} Division I games today. Lines are the book of record's at ESPN when the flag locked (each build locks the games with a line that have not started), not necessarily DraftKings' or FanDuel's. Not betting advice.</p>`;
   }
+  const cMd = (d) => new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const cTbl = (rs, replay) => `<div class="scroll"><table class="t"><thead><tr><th>Day</th><th>Lead</th><th>Pick</th><th class="num">Price</th><th class="num">Close</th><th class="num">Pts</th><th class="num">EV at close</th><th>Result</th><th>At close</th><th class="num">Units</th></tr></thead><tbody>
+      ${rs.map((r) => `<tr><td>${esc(dayShort(r.day))}</td><td>${esc(CANG(r.angle))}</td><td><b>${esc(r.label)}</b>${replay ? ` <span class="note">${r.at === "open" ? "open" : "close, no open kept"}</span>` : ""} <span class="note">${esc(r.game)}</span></td><td class="num">${am(r.american)}</td><td class="num">${r.close_spread == null ? "–" : (r.close_spread > 0 ? "+" : "") + r.close_spread}</td><td class="num">${signed(r.clv, 1)}</td><td class="num">${evPct(r.ev_close)}</td><td>${resChip(r.result)}</td><td>${resChip(r.close_result) || "–"}</td><td class="num ${cls(r.units)}">${units(r.units)}</td></tr>`).join("")}</tbody></table></div>`;
+  function cMonths(rows, replay, openFirst) {
+    const months = [...new Set(rows.map((r) => monthOf(r.day)))];
+    return `<div class="gaccs">${months.map((m, i) => {
+      const rs = rows.filter((r) => monthOf(r.day) === m);
+      const t = { w: rs.filter((r) => r.result === "W").length, l: rs.filter((r) => r.result === "L").length, p: rs.filter((r) => r.result === "P").length };
+      t.n = t.w + t.l + t.p;
+      const u = rs.reduce((a, r) => a + (r.units || 0), 0);
+      return `<details class="acc"${openFirst && i === 0 ? " open" : ""}><summary><h3>${esc(monthName(m, true))}${replay ? " · replay" : ""}</h3><span class="note">${rec(t)} · <span class="${cls(u)}">${units(u)}</span></span>${chev}</summary><div class="acc-body">${cTbl(rs, replay)}</div></details>`;
+    }).join("")}</div>`;
+  }
+  // the replay: the leads run on the season's games before tracking began, never in the ledger (ncaab/build.py replay)
+  function cReplayTable(R) {
+    const row = (name, t) => `<tr><td>${name}</td><td class="num">${t.n}</td><td class="num">${rec(t)}</td><td class="num ${cls(t.units)}">${units(t.units)}</td><td class="num">${t.close.w}-${t.close.l}</td><td class="num">${t.clv == null ? "–" : signed(t.clv, 1)}</td><td class="num">${evPct(t.ev_close)}</td></tr>`;
+    return `<div class="scroll"><table class="t"><thead><tr><th>Lead</th><th class="num">Flags</th><th class="num">At the line</th><th class="num">Units</th><th class="num">At the close</th><th class="num">Pts vs close</th><th class="num">EV at close</th></tr></thead><tbody>
+      ${Object.keys(R.angles).map((a) => `${row(`<b>${esc(CANG(a))}</b> · ${esc(cMd(R.from))}–${esc(cMd(R.to))}`, R.angles[a])}
+        ${row(`<span class="note">found on: ${esc(cMd(R.from))}–${esc(cMd(R.found_to))}</span>`, R.found[a])}${row(`<span class="note">after: ${esc(cMd(R.after_from))}–${esc(cMd(R.to))}</span>`, R.after[a])}`).join("")}</tbody></table></div>`;
+  }
+  const cReplayNote = (R) => `Each lead run on every game before tracking began, locked at ESPN's opening line (${R.at_open} of ${R.all.n + (R.all.pending || 0)} flags; the close where no open was kept), graded at that line and at the close. It is not in the record above or the model rating. Through ${esc(cMd(R.found_to))} these are the very games the leads were found on, so they look good by construction; only the days after are a fair test, and they are few.`;
   function renderNcaabRecord() {
     if (!C) return noNcaab();
-    const rows = C.record.rows || [];
-    const months = [...new Set(rows.map((r) => monthOf(r.day)))];
-    const tbl = (rs) => `<div class="scroll"><table class="t"><thead><tr><th>Day</th><th>Lead</th><th>Pick</th><th class="num">Price</th><th class="num">Close</th><th class="num">Pts</th><th class="num">${"EV at close"}</th><th>Result</th><th class="num">Units</th></tr></thead><tbody>
-      ${rs.map((r) => `<tr><td>${esc(dayShort(r.day))}</td><td>${esc(CANG(r.angle))}</td><td><b>${esc(r.label)}</b> <span class="note">${esc(r.game)}</span></td><td class="num">${am(r.american)}</td><td class="num">${r.close_spread == null ? "–" : (r.close_spread > 0 ? "+" : "") + r.close_spread}</td><td class="num">${signed(r.clv, 1)}</td><td class="num">${evPct(r.ev_close)}</td><td>${resChip(r.result)}</td><td class="num ${cls(r.units)}">${units(r.units)}</td></tr>`).join("")}</tbody></table></div>`;
+    const rows = C.record.rows || [], R = C.replay;
     app.innerHTML = `
       <section class="hello"><h1>College tracker record</h1><p class="lede">Every flag at 1u on paper, graded at the line it locked at, beside where that line closed. No stake was placed.</p></section>
       <section class="sec"><header><h2>Season to date</h2></header>
         ${Object.entries(C.record.angles).map(([a, t]) => `<p class="note"><b>${esc(CANG(a))}:</b> ${cTally(t)}${t.pending ? ` · ${t.pending} pending` : ""}</p>`).join("")}
-        <p class="note">Judge a lead by ${"EV at the close"} first: it settles at the tip, where wins and losses need months. A lead that beats the close for three or four weeks earns a probe stake.</p></section>
-      <section class="sec"><header><h2>By month</h2></header>${months.length ? `<div class="gaccs">${months.map((m, i) => {
-        const rs = rows.filter((r) => monthOf(r.day) === m);
-        const t = { w: rs.filter((r) => r.result === "W").length, l: rs.filter((r) => r.result === "L").length, p: rs.filter((r) => r.result === "P").length };
-        t.n = t.w + t.l + t.p;
-        const u = rs.reduce((a, r) => a + (r.units || 0), 0);
-        return `<details class="acc"${i === 0 ? " open" : ""}><summary><h3>${esc(monthName(m, true))}</h3><span class="note">${rec(t)} · <span class="${cls(u)}">${units(u)}</span></span>${chev}</summary><div class="acc-body">${tbl(rs)}</div></details>`;
-      }).join("")}</div>` : '<p class="note">Flags show up here once their games are graded.</p>'}</section>`;
+        <p class="note">Judge a lead by EV at the close first: it settles at the tip, where wins and losses need months. A lead that beats the close for three or four weeks earns a probe stake.</p></section>
+      <section class="sec"><header><h2>By month</h2></header>${rows.length ? cMonths(rows, false, true) : '<p class="note">Flags show up here once their games are graded. Until then, the replay below has the season so far.</p>'}</section>
+      ${R && R.rows && R.rows.length ? `<section class="sec"><header><h2>Replay <em>${esc(cMd(R.from))}–${esc(cMd(R.to))}, before tracking began</em></h2></header>
+        <p class="note">${cReplayNote(R)}</p>${cReplayTable(R)}
+        ${cMonths(R.rows, true, !rows.length)}</section>` : ""}`;
   }
   function renderNcaabModel() {
     if (!C) return noNcaab();
@@ -3805,6 +3821,8 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
         <ul><li>Twice a day the tracker reads ESPN's scoreboard and lines. A game today that has a line and has not started gets a flag when a lead fires, locked at that moment's spread and price, once.</li>
           <li>After the game it is graded at the locked spread, at 1u on paper, and beside the closing spread: the points the locked number beat the close by, and the EV at the close (the chance of covering the locked number if the close is fair, a college margin landing within ±${num(C.meta.sigma, 0)} points of the close two times in three).</li>
           <li>No stake. A lead earns a small probe stake after three or four weeks of beating the close, and loses it when it stops.</li></ul>
+        <h3>The replay</h3>
+        <p>So there is something to look at from day one, both leads are also run on every game from the start of the season to the day before tracking began, each locked at ESPN's opening line and graded the same way. It lives on the Record page under its own heading, never in the ledger, the record or the model rating: through Nov 11 those are the games the leads were found on, so the replay is bound to look good there.</p>
         <h3>Limits</h3>
         <p>The lines are ESPN's book of record's, not necessarily DraftKings' or FanDuel's, and college lines move a lot on the day. The leads were found on a week and a half of games; the point of tracking is to find out whether they last.</p>
       </div>`;

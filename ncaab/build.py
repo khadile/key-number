@@ -19,10 +19,15 @@ Each build (ncaab.yml, twice a day on Actions; ESPN is not reachable from a clou
   appended to ledger/ncaab_flags.jsonl and never changed,
 - grades finished flags into ledger/ncaab_results.jsonl: the result at the locked spread, the closing spread, the
   points of line value, and the EV at the close (the chance of covering the locked number if the close is fair),
+- replays the leads on the season's games before tracking began (2026-11-03 to 11-13; `replay`): each game locked
+  at ESPN's opening line (its close when no open was kept), graded the same way, shown on the page as its own
+  labeled record. Never in the ledger. Through Nov 11 these are the games the leads were found on (in-sample);
+  Nov 12-13 came after,
 - writes board/ncaab_data.json for the page.
 
     python -m ncaab.build            # on Actions
     python -m ncaab.build --dry-run  # computes everything, writes no ledger lines
+    python -m ncaab.build --no-lock  # grades and refreshes the page, locks nothing (a run by hand at night)
 """
 import argparse
 import json
@@ -48,6 +53,8 @@ OUT = ROOT / "board" / "ncaab_data.json"
 SB = DIR / "scoreboard.parquet"
 LINES = DIR / "lines.parquet"
 SIGMA = 11.0     # how far a college final margin lands from the closing spread (points, one standard deviation)
+LIVE_FROM = date(2026, 11, 14)   # the tracker's first day: games before it are the replay
+FOUND_TO = "2026-11-11"          # the explore study's last day: replayed games through it are in-sample
 ANGLES = {
     "fade_cover": {"name": "Fade the cover", "rule": "Bet against a team that covered the spread in its last game (only when its opponent did not).",
                    "season": {"w": 74, "l": 44}, "past": {"w": 399, "l": 329}, "p": 0.548},
@@ -223,6 +230,35 @@ def grade(flags: list[dict], sb: pl.DataFrame, L: pl.DataFrame, done_ids: set) -
     return out
 
 
+def replay(sb: pl.DataFrame, L: pl.DataFrame, seq: pl.DataFrame, now: datetime) -> list[dict]:
+    """The leads on every finished game before tracking began, each locked at ESPN's opening line (its close when
+    the open was not kept) and graded like a live flag. Recomputed every build, never written to the ledger."""
+    by_line = {r["game_id"]: r for r in L.iter_rows(named=True)}
+    hist: dict[int, list[dict]] = {}
+    for r in seq.iter_rows(named=True):          # sorted by team, then tip
+        hist.setdefault(r["tid"], []).append(r)
+    games = sb.filter(pl.col("done") & pl.col("home_score").is_not_null() & (pl.col("day") < LIVE_FROM.isoformat()))
+    flags = []
+    for g in games.iter_rows(named=True):
+        ln = by_line.get(g["game_id"]) or {}
+        at = "open" if ln.get("open_spread_home") is not None else "close"
+        line = {"provider": ln.get("provider")}
+        for side in ("home", "away"):
+            line[f"current_spread_{side}"], line[f"current_price_{side}"] = ln.get(f"{at}_spread_{side}"), ln.get(f"{at}_price_{side}")
+        prev = {}
+        for tid in (g["home_id"], g["away_id"]):
+            before = [r for r in hist.get(tid, []) if r["tip"] < g["tip"]]
+            if before:
+                prev[tid] = before[-1]
+        for f in flags_for(g, prev, line, now):
+            f.update(replay=True, at=at, locked_at=None)
+            flags.append(f)
+    res = {r["id"]: r for r in grade(flags, sb, L, set())}
+    keep = ("id", "angle", "day", "tip", "label", "game", "spread", "american", "book", "at", "why", "result", "units", "margin",
+            "close_spread", "clv", "ev_close", "close_result")
+    return [{k: v for k, v in {**f, **res.get(f["id"], {})}.items() if k in keep} for f in flags]
+
+
 # ---------------------------------------------------------------- record and page
 
 def _tally(rows: list[dict]) -> dict:
@@ -238,7 +274,18 @@ def _tally(rows: list[dict]) -> dict:
             "close": {"w": cw, "l": clo}, "pending": len(rows) - len(g)}
 
 
-def payload(flags: list[dict], results: list[dict], sb: pl.DataFrame, today: date, now: datetime) -> dict:
+def _replay_block(rp: list[dict]) -> dict:
+    found = [r for r in rp if r["day"] <= FOUND_TO]
+    after = [r for r in rp if r["day"] > FOUND_TO]
+    by = lambda rows: {a: _tally([r for r in rows if r["angle"] == a]) for a in ANGLES}
+    return {"from": min((r["day"] for r in rp), default=None), "to": (LIVE_FROM - timedelta(days=1)).isoformat(), "found_to": FOUND_TO,
+            "after_from": (date.fromisoformat(FOUND_TO) + timedelta(days=1)).isoformat(),
+            "at_open": sum(r.get("at") == "open" for r in rp), "all": _tally(rp), "angles": by(rp),
+            "found": by(found), "after": by(after),
+            "rows": sorted([r for r in rp if r.get("result")], key=lambda r: (r["day"], r["tip"]), reverse=True)}
+
+
+def payload(flags: list[dict], results: list[dict], sb: pl.DataFrame, today: date, now: datetime, rp: list[dict] | None = None) -> dict:
     res = {r["id"]: r for r in results}
     rows = [{**f, **res.get(f["id"], {})} for f in flags]
     for r in rows:
@@ -252,12 +299,14 @@ def payload(flags: list[dict], results: list[dict], sb: pl.DataFrame, today: dat
         "today": sorted(today_rows, key=lambda r: (r["tip"], r["angle"])),
         "record": {"all": _tally(rows), "angles": {a: _tally([r for r in rows if r["angle"] == a]) for a in ANGLES},
                    "rows": sorted([r for r in rows if r.get("result")], key=lambda r: (r["day"], r["tip"]), reverse=True)},
+        "replay": _replay_block(rp or []),
     }
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--no-lock", action="store_true", help="grade and refresh the page, lock nothing")
     a = ap.parse_args()
     now = datetime.now(timezone.utc)
     today = now.astimezone(ET).date()
@@ -275,6 +324,8 @@ def main() -> None:
         prev = {r["tid"]: r for r in before.filter(pl.col("tid").is_in([g["home_id"], g["away_id"]])).iter_rows(named=True)}
         line = next(iter(L.filter(pl.col("game_id") == g["game_id"]).iter_rows(named=True)), {})
         new += [f for f in flags_for(g, prev, line, now) if f["id"] not in have]
+    if a.no_lock:
+        new = []
     done_ids = {r["id"] for r in read(RESULTS)}
     graded = grade(flags + new, sb, L, done_ids)
     if a.dry_run:
@@ -283,11 +334,16 @@ def main() -> None:
         append(FLAGS, new)
         append(RESULTS, graded)
         print(f"locked {len(new)} flags, graded {len(graded)}")
-    data = payload(flags + new, read(RESULTS) + (graded if a.dry_run else []), sb, today, now)
+    rp = replay(sb, L, seq, now)
+    data = payload(flags + new, read(RESULTS) + (graded if a.dry_run else []), sb, today, now, rp)
     OUT.write_text(json.dumps(data, separators=(",", ":"), default=str), encoding="utf-8")
     rec = data["record"]
     print(f"record: {rec['all']['w']}-{rec['all']['l']}-{rec['all']['p']}, {rec['all']['units']:+.2f}u; " +
           "; ".join(f"{a}: {t['w']}-{t['l']}" for a, t in rec["angles"].items()) + f"; today {len(data['today'])} flags of {data['meta']['games_today']} games")
+    R = data["replay"]
+    print(f"replay {R['from']} to {R['to']} ({R['at_open']} at the open): " + "; ".join(
+        f"{a}: {t['w']}-{t['l']}-{t['p']} at the line, {t['close']['w']}-{t['close']['l']} at the close, EV at the close {t['ev_close'] if t['ev_close'] is None else round(100 * t['ev_close'], 1)}%"
+        for a, t in R["angles"].items()))
 
 
 if __name__ == "__main__":
