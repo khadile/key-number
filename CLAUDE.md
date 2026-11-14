@@ -1262,7 +1262,8 @@ How it works). Paper only (user's choice): every flag is recorded at 1u, no stak
   (Actions cache, gitignored).
 - A lead earns a probe stake only after three or four weeks of beating the close; stop tracking it when it stops.
 
-**Model rating** (`board/rating.py`, the "Model rating" tab under every sport; scored in `board/render.py` at every
+**Model rating** (`board/rating.py`; "Ratings" in the top switch beside NFL / NBA / NCAAB, not under any sport (user,
+2026-11-14: one page for every model); each card links to its record; scored in `board/render.py` at every
 publish, stdlib only since pages.yml installs nothing). Each board (NFL lines, NFL props, NBA lines, NBA props,
 college) gets 0-100 and a tier: 85+ Strong edge, 70 Solid, 55 Some, 40 Unproven, 20 No edge (about the vig, not
 predictive), under 20 Worse than random. Categories and weights: beats the close 35, profit 20, calibration 10,

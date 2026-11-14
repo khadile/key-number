@@ -432,6 +432,8 @@ tr.tot td { border-top: 2px solid var(--line); background: var(--surface-2); }
 .rate-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: grid; gap: 12px; align-content: start; min-width: 0; }
 .rate-top { display: flex; align-items: center; gap: 10px; }
 .rate-top h3 { font-size: 18px; font-weight: 700; }
+.rate-top .more { margin-left: auto; font-size: 13px; white-space: nowrap; }
+.sports .rate-link svg { flex: none; }
 .rate-head { display: flex; align-items: center; gap: 14px; }
 .rate-head .note { margin: 4px 0 0; }
 .rate-score { font: 800 46px/1 var(--f-display); letter-spacing: -0.03em; min-width: 64px; }
@@ -861,7 +863,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   <div class="top-in">
     <div class="brand">
       <b><svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="9" fill="var(--ink)"/><path d="M6.5 15h17" stroke="var(--bg)" stroke-width="2" stroke-linecap="round"/><circle cx="11.6" cy="15" r="3.3" fill="var(--gold-fill)"/><circle cx="18.4" cy="15" r="3.3" fill="var(--good-fill)"/></svg><span>Key<i>/</i>Number</span></b>
-      <nav class="seg sports" aria-label="Sport"><span class="seg-ind" aria-hidden="true"></span><a href="#best" data-sport="nfl"><img src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/nfl.png&amp;w=40&amp;h=40" alt="" width="18" height="18" data-fb="">NFL</a><a href="#nba-best" data-sport="nba"><img src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/nba.png&amp;w=40&amp;h=40" alt="" width="18" height="18" data-fb="">NBA</a><a href="#ncaab" data-sport="ncaab"><img src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/ncaa.png&amp;w=40&amp;h=40" alt="" width="18" height="18" data-fb="">NCAAB</a></nav>
+      <nav class="seg sports" aria-label="Sport"><span class="seg-ind" aria-hidden="true"></span><a href="#best" data-sport="nfl"><img src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/nfl.png&amp;w=40&amp;h=40" alt="" width="18" height="18" data-fb="">NFL</a><a href="#nba-best" data-sport="nba"><img src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/nba.png&amp;w=40&amp;h=40" alt="" width="18" height="18" data-fb="">NBA</a><a href="#ncaab" data-sport="ncaab"><img src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/ncaa.png&amp;w=40&amp;h=40" alt="" width="18" height="18" data-fb="">NCAAB</a><a href="#rating" data-sport="rating" class="rate-link"><svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><rect x="2" y="9" width="3" height="7" rx="1" fill="currentColor" opacity="0.45"/><rect x="7.5" y="5" width="3" height="11" rx="1" fill="currentColor" opacity="0.7"/><rect x="13" y="2" width="3" height="14" rx="1" fill="currentColor"/></svg>Ratings</a></nav>
       <span class="grow"></span><span id="brand-sub"></span>
     </div>
     <div class="nav2"><nav class="seg sections" aria-label="Board"></nav><nav class="tabs" id="subtabs" aria-label="Pages"></nav></div>
@@ -1165,10 +1167,10 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     ncaab: [["ncaab", "Today"], ["ncaab-record", "Record"], ["ncaab-model", "How it works"]],
     rating: [],
   };
-  const RATE_SEC = ["rating", "#rating", "Model rating", "Rating"];
-  const SPORT_SECTIONS = { nfl: [["best", "#best", "Best bets", "Best"], ["lines", "#week", "Game lines", "Lines"], ["props", "#props", "Player props", "Props"], ["live", "#live", "Live", "Live"], RATE_SEC],
-                           nba: [["nba-best", "#nba-best", "Best bets", "Best"], ["nba-lines", "#nba", "Game lines", "Lines"], ["nba-props", "#nba-props", "Player props", "Props"], RATE_SEC],
-                           ncaab: [["ncaab", "#ncaab", "Tracker", "Tracker"], RATE_SEC] };
+  const SPORT_SECTIONS = { nfl: [["best", "#best", "Best bets", "Best"], ["lines", "#week", "Game lines", "Lines"], ["props", "#props", "Player props", "Props"], ["live", "#live", "Live", "Live"]],
+                           nba: [["nba-best", "#nba-best", "Best bets", "Best"], ["nba-lines", "#nba", "Game lines", "Lines"], ["nba-props", "#nba-props", "Player props", "Props"]],
+                           ncaab: [["ncaab", "#ncaab", "Tracker", "Tracker"]],
+                           rating: [] };
   // The public website (board/site.py sets KN_PUBLIC) has no My Picks: it needs claude.ai's storage.
   const PUBLIC = !!window.KN_PUBLIC;
   if (PUBLIC) for (const k of Object.keys(SECTIONS)) SECTIONS[k] = SECTIONS[k].filter(([v]) => v !== "mine" && v !== "props-mine");
@@ -1176,14 +1178,15 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
     : h.startsWith("props") || h.startsWith("pg-") || h.startsWith("p-") ? "props" : h.startsWith("live") ? "live" : "lines");
   let shownSport = null, shownSec = null;
   function setTab(name) {
-    // the rating covers every board: it stays under whichever sport the viewer came from
-    const sec = sectionOf(name), sport = sec === "rating" ? (shownSport || "nfl") : sec === "ncaab" ? "ncaab" : sec.startsWith("nba") ? "nba" : "nfl";
+    // the rating covers every board, so it sits beside the sports in the top switch, with no sections of its own
+    const sec = sectionOf(name), sport = sec === "rating" ? "rating" : sec === "ncaab" ? "ncaab" : sec.startsWith("nba") ? "nba" : "nfl";
     document.querySelectorAll(".sports a").forEach((a) => a.setAttribute("aria-current", a.dataset.sport === sport ? "true" : "false"));
     const secs = document.querySelector(".sections"), tabs = document.getElementById("subtabs");
     if (sport !== shownSport) {
       shownSport = sport;
-      try { localStorage.setItem("kn-sport", sport); } catch (e) { /* remembered for this visit only */ }
-      document.getElementById("brand-sub").innerHTML = sport === "nba" ? nbaSub() : sport === "ncaab" ? ncaabSub() : nflSub();
+      if (sport !== "rating") try { localStorage.setItem("kn-sport", sport); } catch (e) { /* remembered for this visit only */ }
+      document.getElementById("brand-sub").innerHTML = sport === "nba" ? nbaSub() : sport === "ncaab" ? ncaabSub() : sport === "rating" ? ratingSub() : nflSub();
+      secs.hidden = !SPORT_SECTIONS[sport].length;
       secs.innerHTML = '<span class="seg-ind" aria-hidden="true"></span>' + SPORT_SECTIONS[sport].map(([k, h, l, s]) => `<a href="${h}" data-sec="${k}"><span class="full">${l}</span><span class="short">${s}</span></a>`).join("");
       secs.dataset.fresh = "1";
     }
@@ -3624,6 +3627,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <p class="fine">Hit chances multiply each pick's own, treating different games as independent. Not betting advice.</p></section>`;
   }
   function glance() {   // the season beside the slip: the record next to the picks being weighed
+    if (shownSport === "rating") return "";
     const row = (k, r) => `<div class="gr"><span>${k}</span><b>${r && r.n ? `${rec(r)} · <span class="${cls(r.units)}">${units(r.units)}</span>` : "–"}</b></div>`;
     if (shownSport === "nba") {
       if (!N) return "";
@@ -3814,10 +3818,12 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <span class="rn">${esc(c.name)}</span><span class="trk"><i class="mid"></i>${s == null ? "" : `<i class="fill ${tierCls(s)}" style="width:${Math.max(2, s)}%"></i>`}</span><b class="${tierCls(s)}">${s == null ? "–" : Math.round(s)}</b>
       <span class="rt">${esc(c.text)}</span></div>`;
   }
+  const RATE_REC = { "nfl-lines": "#record", "nfl-props": "#props-record", "nba-lines": "#nba-record", "nba-props": "#nba-props-record", ncaab: "#ncaab-record" };
+  const ratingSub = () => (RT ? `Every model, scored 0–100 · ${esc(RT.as_of)}` : "Every model, scored 0–100");
   function renderRating() {
     if (!RT) { app.innerHTML = '<section class="hello"><h1>Model rating</h1><p class="lede">The rating appears with the next build.</p></section>'; return; }
     const cards = RT.boards.map((b) => `<article class="rate-card">
-        <div class="rate-top"><span class="tag">${esc(b.sport)}</span><h3>${esc(b.name)}</h3></div>
+        <div class="rate-top"><span class="tag">${esc(b.sport)}</span><h3>${esc(b.name)}</h3>${RATE_REC[b.key] ? `<a class="more" href="${RATE_REC[b.key]}">Record →</a>` : ""}</div>
         <div class="rate-head"><span class="rate-score ${tierCls(b.overall)}">${b.overall == null ? "–" : Math.round(b.overall)}</span><div><span class="tierpill ${tierCls(b.overall)}">${esc(b.tier)}</span><p class="note">${esc(b.tier_text)}</p></div></div>
         <div class="rbars">${b.categories.map(rateBar).join("")}</div>
         <p class="note">${b.n} graded picks with a stake, since ${esc(b.since)}.</p></article>`).join("");
