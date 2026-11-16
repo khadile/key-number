@@ -124,3 +124,13 @@
 {"id": "2026_09:props:golden", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-11-09T15:25:01.251409+00:00"}
 {"id": "2026_09:props:lottery", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-11-09T15:25:01.251409+00:00"}
 {"id": "2026_09_BUF_MIN:00-0037261:receptions", "result": "W", "units": 0.685, "actual": 4.0, "clv": 1.0, "graded_at": "2026-11-10T15:23:49.172251+00:00"}
+{"id": "2026_10_HOU_CLE:00-0038977:rec_yds", "result": "W", "units": 0.909, "actual": 21.0, "clv": 0.0, "graded_at": "2026-11-16T15:26:23.010620+00:00"}
+{"id": "2026_10_LA_ARI:00-0041070:rec_yds", "result": "W", "units": 0.877, "actual": 0.0, "clv": 5.0, "graded_at": "2026-11-16T15:26:23.010620+00:00"}
+{"id": "2026_10_LA_ARI:00-0036331:rec_yds", "result": "L", "units": -1.0, "actual": 35.0, "clv": 2.0, "graded_at": "2026-11-16T15:26:23.010620+00:00"}
+{"id": "2026_10_LA_ARI:00-0040590:receptions", "result": "L", "units": -1.0, "actual": 3.0, "clv": 0.0, "graded_at": "2026-11-16T15:26:23.010620+00:00"}
+{"id": "2026_10_MIA_IND:00-0035021:receptions", "result": "W", "units": 0.8200000000000001, "actual": 1.0, "clv": 0.0, "graded_at": "2026-11-16T15:26:23.010620+00:00"}
+{"id": "2026_10_MIN_GB:00-0037525:receptions", "result": "W", "units": 0.5, "actual": 0.0, "clv": 0.0, "graded_at": "2026-11-16T15:26:23.010620+00:00"}
+{"id": "2026_10_SF_DAL:00-0036997:rec_yds", "result": "W", "units": 0.877, "actual": 4.0, "clv": 2.0, "graded_at": "2026-11-16T15:26:23.010620+00:00"}
+{"id": "2026_10_SF_DAL:00-0039530:rec_yds", "result": "L", "units": -1.0, "actual": 26.0, "clv": 1.0, "graded_at": "2026-11-16T15:26:23.010620+00:00"}
+{"id": "2026_10:props:golden", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-11-16T15:26:23.010620+00:00"}
+{"id": "2026_10:props:lottery", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-11-16T15:26:23.010620+00:00"}
