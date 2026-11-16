@@ -432,6 +432,10 @@ tr.tot td { border-top: 2px solid var(--line); background: var(--surface-2); }
 .rate-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: grid; gap: 12px; align-content: start; min-width: 0; }
 .rate-top { display: flex; align-items: center; gap: 10px; }
 .rate-top h3 { font-size: 18px; font-weight: 700; }
+details.acc.cday { background: var(--surface-2); }
+details.acc.cday > summary { padding: 11px 14px; }
+details.acc.cday > summary h3 { font-size: 15px; }
+details.acc.cday > .acc-body { padding: 4px 12px 12px; }
 .rate-top .more { margin-left: auto; font-size: 13px; white-space: nowrap; }
 .sports .rate-link svg { flex: none; }
 .rate-head { display: flex; align-items: center; gap: 14px; }
@@ -3772,16 +3776,39 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <p class="fine">${C.meta.games_today} Division I games today. Lines are the book of record's at ESPN when the flag locked (each build locks the games with a line that have not started), not necessarily DraftKings' or FanDuel's. Not betting advice.</p>`;
   }
   const cMd = (d) => new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const cTbl = (rs, replay) => `<div class="scroll"><table class="t"><thead><tr><th>Day</th><th>Lead</th><th>Pick</th><th class="num">Price</th><th class="num">Close</th><th class="num">Pts</th><th class="num">EV at close</th><th>Result</th><th>At close</th><th class="num">Units</th></tr></thead><tbody>
-      ${rs.map((r) => `<tr><td>${esc(dayShort(r.day))}</td><td>${esc(CANG(r.angle))}</td><td><b>${esc(r.label)}</b>${replay ? ` <span class="note">${r.at === "open" ? "open" : "close, no open kept"}</span>` : ""} <span class="note">${esc(r.game)}</span></td><td class="num">${am(r.american)}</td><td class="num">${r.close_spread == null ? "–" : (r.close_spread > 0 ? "+" : "") + r.close_spread}</td><td class="num">${signed(r.clv, 1)}</td><td class="num">${evPct(r.ev_close)}</td><td>${resChip(r.result)}</td><td>${resChip(r.close_result) || "–"}</td><td class="num ${cls(r.units)}">${units(r.units)}</td></tr>`).join("")}</tbody></table></div>`;
+  const cTip = (t) => (t ? new Date(t).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }) : "–");
+  const cTbl = (rs, replay) => `<div class="scroll"><table class="t"><thead><tr><th>Tip (ET)</th><th>Pick</th><th class="num">Price</th><th class="num">Close</th><th class="num">Pts</th><th class="num">EV at close</th><th>Result</th><th>At close</th><th class="num">Units</th></tr></thead><tbody>
+      ${rs.map((r) => `<tr><td>${esc(cTip(r.tip))}</td><td><b>${esc(r.label)}</b>${replay ? ` <span class="note">${r.at === "open" ? "open" : "close, no open kept"}</span>` : ""} <span class="note">${esc(r.game)}</span></td><td class="num">${am(r.american)}</td><td class="num">${r.close_spread == null ? "–" : (r.close_spread > 0 ? "+" : "") + r.close_spread}</td><td class="num">${signed(r.clv, 1)}</td><td class="num">${evPct(r.ev_close)}</td><td>${resChip(r.result)}</td><td>${resChip(r.close_result) || "–"}</td><td class="num ${cls(r.units)}">${units(r.units)}</td></tr>`).join("")}</tbody></table></div>`;
+  // a set of graded flags: record, units, at the closing spread, EV at the close
+  function cSum(rs) {
+    const g = rs.filter((r) => r.result);
+    const t = { w: g.filter((r) => r.result === "W").length, l: g.filter((r) => r.result === "L").length, p: g.filter((r) => r.result === "P").length };
+    t.n = t.w + t.l + t.p;
+    t.units = g.reduce((a, r) => a + (r.units || 0), 0);
+    t.cw = g.filter((r) => r.close_result === "W").length; t.cl = g.filter((r) => r.close_result === "L").length;
+    const ev = g.filter((r) => r.ev_close != null);
+    t.ev = ev.length ? ev.reduce((a, r) => a + r.ev_close, 0) / ev.length : null;
+    return t;
+  }
+  const cSumText = (t) => `${rec(t)} · <span class="${cls(t.units)}">${units(t.units)}</span> · ${t.cw}-${t.cl} at the close${t.ev == null ? "" : ` · ${evPct(t.ev)} EV at close`}`;
+  // months, newest first; inside each, a day-by-day table and one dropdown per day (newest first, the latest open)
   function cMonths(rows, replay, openFirst) {
-    const months = [...new Set(rows.map((r) => monthOf(r.day)))];
+    const months = [...new Set(rows.map((r) => monthOf(r.day)))].sort().reverse();
     return `<div class="gaccs">${months.map((m, i) => {
       const rs = rows.filter((r) => monthOf(r.day) === m);
-      const t = { w: rs.filter((r) => r.result === "W").length, l: rs.filter((r) => r.result === "L").length, p: rs.filter((r) => r.result === "P").length };
-      t.n = t.w + t.l + t.p;
-      const u = rs.reduce((a, r) => a + (r.units || 0), 0);
-      return `<details class="acc"${openFirst && i === 0 ? " open" : ""}><summary><h3>${esc(monthName(m, true))}${replay ? " · replay" : ""}</h3><span class="note">${rec(t)} · <span class="${cls(u)}">${units(u)}</span></span>${chev}</summary><div class="acc-body">${cTbl(rs, replay)}</div></details>`;
+      const days = [...new Set(rs.map((r) => r.day))].sort().reverse();
+      const per = days.map((d) => [d, rs.filter((r) => r.day === d)]);
+      const angles = C ? Object.keys(C.meta.angles) : [];
+      const head = `<thead><tr><th>Day</th>${angles.map((a) => `<th class="num">${esc(CANG(a))}</th>`).join("")}<th class="num">All</th><th class="num">Units</th><th class="num">At the close</th><th class="num">EV at close</th></tr></thead>`;
+      const trow = (lab, xs, tot) => { const t = cSum(xs); return `<tr${tot ? ' class="tot"' : ""}><td>${tot ? `<b>${lab}</b>` : lab}</td>${angles.map((a) => `<td class="num">${rec(cSum(xs.filter((r) => r.angle === a)))}</td>`).join("")}<td class="num">${rec(t)}</td><td class="num ${cls(t.units)}">${units(t.units)}</td><td class="num">${t.cw}-${t.cl}</td><td class="num">${evPct(t.ev)}</td></tr>`; };
+      const table = `<div class="scroll"><table class="t">${head}<tbody>${per.map(([d, xs]) => trow(esc(dayShort(d)), xs)).join("")}${per.length > 1 ? trow("Month", rs, true) : ""}</tbody></table></div>`;
+      const dayAccs = per.map(([d, xs], j) => {
+        const byA = angles.map((a) => [a, xs.filter((r) => r.angle === a)]).filter(([, g]) => g.length);
+        return `<details class="acc cday"${openFirst && i === 0 && j === 0 ? " open" : ""}><summary><h3>${esc(dayShort(d))}</h3><span class="note">${xs.length} flag${xs.length === 1 ? "" : "s"} · ${cSumText(cSum(xs))}</span>${chev}</summary>
+          <div class="acc-body">${byA.map(([a, g]) => `<div class="box"><h3>${esc(CANG(a))} <span class="note">${cSumText(cSum(g))}</span></h3>${cTbl(g.sort((x, y) => (x.tip || "").localeCompare(y.tip || "")), replay)}</div>`).join("")}</div></details>`;
+      }).join("");
+      return `<details class="acc"${openFirst && i === 0 ? " open" : ""}><summary><h3>${esc(monthName(m, true))}${replay ? " · replay" : ""}</h3><span class="note">${cSumText(cSum(rs))} · ${days.length} day${days.length === 1 ? "" : "s"}</span>${chev}</summary>
+        <div class="acc-body">${table}<div class="gaccs">${dayAccs}</div></div></details>`;
     }).join("")}</div>`;
   }
   // the replay: the leads run on the season's games before tracking began, never in the ledger (ncaab/build.py replay)
@@ -3800,7 +3827,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <section class="sec"><header><h2>Season to date</h2></header>
         ${Object.entries(C.record.angles).map(([a, t]) => `<p class="note"><b>${esc(CANG(a))}:</b> ${cTally(t)}${t.pending ? ` · ${t.pending} pending` : ""}</p>`).join("")}
         <p class="note">Judge a lead by EV at the close first: it settles at the tip, where wins and losses need months. A lead that beats the close for three or four weeks earns a probe stake.</p></section>
-      <section class="sec"><header><h2>By month</h2></header>${rows.length ? cMonths(rows, false, true) : '<p class="note">Flags show up here once their games are graded. Until then, the replay below has the season so far.</p>'}</section>
+      <section class="sec"><header><h2>By month and day</h2></header>${rows.length ? cMonths(rows, false, true) : '<p class="note">Flags show up here once their games are graded. Until then, the replay below has the season so far.</p>'}</section>
       ${R && R.rows && R.rows.length ? `<section class="sec"><header><h2>Replay <em>${esc(cMd(R.from))}–${esc(cMd(R.to))}, before tracking began</em></h2></header>
         <p class="note">${cReplayNote(R)}</p>${cReplayTable(R)}
         ${cMonths(R.rows, true, false)}</section>` : ""}`;

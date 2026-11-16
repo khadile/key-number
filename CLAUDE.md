@@ -1268,6 +1268,8 @@ How it works). Paper only (user's choice): every flag is recorded at 1u, no stak
   record or the model rating (like the NFL's weeks 1-4 replay); its own section on the Record page, split into the
   days the leads were found on (through `FOUND_TO` 2026-11-11: in-sample) and the days after.
   `gh workflow run ncaab.yml -f no_lock=true` grades and refreshes the page without locking anything.
+- Record page (user, 2026-11-16): months, each with a day-by-day table and one dropdown per day (newest first), each
+  day split by lead; the replay uses the same layout.
 - Matching the study exactly (the first replay did not: 156 fade-the-cover flags through Nov 11 against its 118).
   Flags and grades only Division I vs Division I games (`d1_teams`: the 365 teams hoopR's schedule gives a
   conference; the study fetched lines only for those). A team's last game is its last game of any kind: one against
