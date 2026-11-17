@@ -38,6 +38,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      # The college tracker's own schedule fires only once or twice a day (GitHub drops most scheduled firings of
+      # a quiet workflow), while this one fires every 15 minutes in its windows: each firing also starts it.
+      # It locks each game once and commits only on news, so extra runs are harmless.
+      - name: Start the college tracker
+        if: github.event_name == 'schedule'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run ncaab.yml -R ${{ github.repository }} --ref main
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
