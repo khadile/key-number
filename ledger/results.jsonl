@@ -206,3 +206,7 @@
 {"id": "2026_10_PIT_CIN:spread", "result": "W", "units": 0.9099999999999999, "clv": 1.0, "graded_at": "2026-11-16T15:26:02.507260+00:00"}
 {"id": "2026_10_PIT_CIN:total", "result": "W", "units": 0.9259999999999999, "clv": 1.0, "graded_at": "2026-11-16T15:26:02.507260+00:00"}
 {"id": "2026_10:golden", "result": "L", "units": -0.5, "clv": null, "graded_at": "2026-11-16T15:26:02.507260+00:00"}
+{"id": "2026_10_LAC_BAL:spread", "result": "W", "units": 0.893, "clv": 1.0, "graded_at": "2026-11-17T15:25:31.175426+00:00"}
+{"id": "2026_10_LAC_BAL:total", "result": "L", "units": -1.0, "clv": -1.0, "graded_at": "2026-11-17T15:25:31.175426+00:00"}
+{"id": "2026_10_LAC_BAL:ml", "result": "W", "units": 1.94, "clv": null, "graded_at": "2026-11-17T15:25:31.175426+00:00"}
+{"id": "2026_10:lottery", "result": "L", "units": -0.5, "clv": null, "graded_at": "2026-11-17T15:25:31.175426+00:00"}
