@@ -1269,6 +1269,10 @@ How it works). Paper only (user's choice): every flag is recorded at 1u, no stak
   record or the model rating (like the NFL's weeks 1-4 replay); its own section on the Record page, split into the
   days the leads were found on (through `FOUND_TO` 2026-11-11: in-sample) and the days after.
   `gh workflow run ncaab.yml -f no_lock=true` grades and refreshes the page without locking anything.
+- Both leads on one game (user, 2026-11-18, keep fade the cover): every pick shows "Both agree" (green, same team) or
+  "Leads disagree" (red, opposite teams) when the other lead flagged the game; Today counts tonight's of each and both
+  pages tally them (agreeing games once, disagreeing by side). Through Nov 17 after the ideas were found: agree 8-7,
+  disagree 9-9 either side, fade the cover alone 19-35, big win alone 23-17.
 - Record page (user, 2026-11-16): months, each with a day-by-day table and one dropdown per day (newest first), each
   day split by lead; the replay uses the same layout.
 - Matching the study exactly (the first replay did not: 156 fade-the-cover flags through Nov 11 against its 118).
