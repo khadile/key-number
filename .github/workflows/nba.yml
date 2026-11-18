@@ -39,10 +39,9 @@ jobs:
     timeout-minutes: 60
     steps:
       # The college tracker's own schedule fires only once or twice a day (GitHub drops most scheduled firings of
-      # a quiet workflow), while this one fires every 15 minutes in its windows: each firing also starts it.
+      # a quiet workflow). Every run of this one, scheduled or dispatched (most are dispatched at :45), starts it.
       # It locks each game once and commits only on news, so extra runs are harmless.
       - name: Start the college tracker
-        if: github.event_name == 'schedule'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}

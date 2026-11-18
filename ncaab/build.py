@@ -112,7 +112,7 @@ def _day(d: date) -> list[dict]:
             continue
         comp = (ev.get("competitions") or [{}])[0]
         st = _dig(ev, "status", "type") or {}
-        row = {"game_id": int(ev["id"]), "day": d.isoformat(), "tip": ev.get("date"), "state": st.get("state"), "done": bool(st.get("completed")),
+        row = {"game_id": int(ev["id"]), "day": d.isoformat(), "tip": ev.get("date"), "state": st.get("state"), "done": bool(st.get("completed")), "status": st.get("name"),
                "neutral": bool(comp.get("neutralSite"))}
         for c in comp.get("competitors", []):
             side = c.get("homeAway")
@@ -238,13 +238,26 @@ def _phi(x: float) -> float:
     return 0.5 * (1 + math.erf(x / math.sqrt(2)))
 
 
-def grade(flags: list[dict], sb: pl.DataFrame, L: pl.DataFrame, done_ids: set) -> list[dict]:
-    games = {r["game_id"]: r for r in sb.filter(pl.col("done")).iter_rows(named=True)}
+VOID = {"STATUS_POSTPONED", "STATUS_CANCELED", "STATUS_CANCELLED", "STATUS_FORFEIT", "STATUS_SUSPENDED", "STATUS_ABANDONED"}
+
+
+def grade(flags: list[dict], sb: pl.DataFrame, L: pl.DataFrame, done_ids: set, today: date | None = None) -> list[dict]:
+    """A finished game grades at the locked spread; one that was postponed or cancelled, or still has no final two
+    days after its date (ESPN often leaves a postponed game "scheduled"), is no action ("V", 0u, out of the record)."""
+    every = {r["game_id"]: r for r in sb.iter_rows(named=True)}
+    games = {k: r for k, r in every.items() if r.get("done")}
     close = {r["game_id"]: r for r in L.iter_rows(named=True)}
     out = []
     for f in flags:
+        if f["id"] in done_ids:
+            continue
+        a = every.get(f["game_id"]) or {}
+        stale = today is not None and f["day"] <= (today - timedelta(days=2)).isoformat() and not a.get("done") and a.get("state") != "in"
+        if a.get("status") in VOID or stale:
+            out.append({"id": f["id"], "result": "V", "units": 0.0, "void": a.get("status") or "no final", "graded_at": datetime.now(timezone.utc).isoformat()})
+            continue
         g = games.get(f["game_id"])
-        if f["id"] in done_ids or not g or g.get("home_score") is None:
+        if not g or g.get("home_score") is None:
             continue
         side, opp = f["side"], "away" if f["side"] == "home" else "home"
         margin = g[f"{side}_score"] - g[f"{opp}_score"]
@@ -306,7 +319,7 @@ def _tally(rows: list[dict]) -> dict:
     clo = sum(r.get("close_result") == "L" for r in g)
     return {"n": len(g), "w": w, "l": l, "p": p, "units": round(u, 2), "roi": round(u / len(g), 4) if g else None,
             "ev_close": round(sum(ec) / len(ec), 4) if ec else None, "ev_close_n": len(ec), "clv": round(sum(cl) / len(cl), 2) if cl else None,
-            "close": {"w": cw, "l": clo}, "pending": len(rows) - len(g)}
+            "close": {"w": cw, "l": clo}, "pending": sum(1 for r in rows if not r.get("result")), "void": sum(r.get("result") == "V" for r in rows)}
 
 
 def _replay_block(rp: list[dict]) -> dict:
@@ -365,7 +378,7 @@ def main() -> None:
     if a.no_lock:
         new = []
     done_ids = {r["id"] for r in read(RESULTS)}
-    graded = grade(flags + new, sb, L, done_ids)
+    graded = grade(flags + new, sb, L, done_ids, today)
     if a.dry_run:
         print(f"dry run: would lock {len(new)} flags and grade {len(graded)}")
     else:

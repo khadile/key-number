@@ -3775,7 +3775,7 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
   const cLogo = (u) => (u ? `<img class="clogo" src="${esc(u)}" alt="" width="22" height="22" loading="lazy" data-fb="">` : "");
   const CANG = (a) => (C && C.meta.angles[a] ? C.meta.angles[a].name : a);
   function cFlag(f) {
-    const res = f.result ? `<span class="res ${f.result}">${{ W: "WIN", L: "LOSS", P: "PUSH" }[f.result]}</span>` : `<span class="mono">${am(f.american)}</span>`;
+    const res = f.result ? cRes(f.result) : `<span class="mono">${am(f.american)}</span>`;
     const close = f.close_spread != null ? `<span>Close ${f.close_spread > 0 ? "+" : ""}${f.close_spread} (${f.clv > 0 ? "+" : ""}${num(f.clv, 1)} pts)</span>` : "";
     return `<div class="pick-row"><span class="n">${cLogo(f.team_logo)}</span><span class="lbl"><b>${esc(f.label)}</b> <span class="tag">${esc(CANG(f.angle))}</span>${cRelTag(f)}</span>${res}
       <div class="sub"><span>${esc(f.game)}</span><span>${esc(f.tip_short)} ET</span><span>${esc(f.book || "ESPN")} ${am(f.american)}</span>${close}<span>${esc(f.why)}</span><span>Paper · 0u</span></div></div>`;
@@ -3802,9 +3802,10 @@ svg.chart .xh-d { stroke: var(--surface); stroke-width: 2; }
       <p class="fine">${C.meta.games_today} Division I games today. Lines are the book of record's at ESPN when the flag locked (each build locks the games with a line that have not started), not necessarily DraftKings' or FanDuel's. Not betting advice.</p>`;
   }
   const cMd = (d) => new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const cRes = (r) => (r === "V" ? '<span class="res P" data-tip="Postponed or cancelled: no action">NO ACTION</span>' : resChip(r));
   const cTip = (t) => (t ? new Date(t).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }) : "–");
   const cTbl = (rs, replay) => `<div class="scroll"><table class="t"><thead><tr><th>Tip (ET)</th><th>Pick</th><th class="num">Price</th><th class="num">Close</th><th class="num">Pts</th><th class="num">EV at close</th><th>Result</th><th>At close</th><th class="num">Units</th></tr></thead><tbody>
-      ${rs.map((r) => `<tr><td>${esc(cTip(r.tip))}</td><td><b>${esc(r.label)}</b>${cRelTag(r)}${replay ? ` <span class="note">${r.at === "open" ? "open" : "close, no open kept"}</span>` : ""} <span class="note">${esc(r.game)}</span></td><td class="num">${am(r.american)}</td><td class="num">${r.close_spread == null ? "–" : (r.close_spread > 0 ? "+" : "") + r.close_spread}</td><td class="num">${signed(r.clv, 1)}</td><td class="num">${evPct(r.ev_close)}</td><td>${resChip(r.result)}</td><td>${resChip(r.close_result) || "–"}</td><td class="num ${cls(r.units)}">${units(r.units)}</td></tr>`).join("")}</tbody></table></div>`;
+      ${rs.map((r) => `<tr><td>${esc(cTip(r.tip))}</td><td><b>${esc(r.label)}</b>${cRelTag(r)}${replay ? ` <span class="note">${r.at === "open" ? "open" : "close, no open kept"}</span>` : ""} <span class="note">${esc(r.game)}</span></td><td class="num">${am(r.american)}</td><td class="num">${r.close_spread == null ? "–" : (r.close_spread > 0 ? "+" : "") + r.close_spread}</td><td class="num">${signed(r.clv, 1)}</td><td class="num">${evPct(r.ev_close)}</td><td>${cRes(r.result)}</td><td>${resChip(r.close_result) || "–"}</td><td class="num ${cls(r.units)}">${units(r.units)}</td></tr>`).join("")}</tbody></table></div>`;
   // the record when both leads flag a game: agreeing games once (one bet), disagreeing games each side
   function cRelSummary(rows) {
     const g = rows.filter((r) => r.result);
