@@ -90,3 +90,12 @@
 {"id":"401918970:fade_cover","result":"W","units":0.8696,"margin":-4.0,"close_spread":23.5,"graded_at":"2026-11-18T04:10:22.908940+00:00","clv":2.0,"ev_close":0.0696,"close_result":"W"}
 {"id":"401921826:big_win","result":"W","units":0.8696,"margin":46.0,"close_spread":-41.5,"graded_at":"2026-11-18T04:10:22.908949+00:00","clv":-1.0,"ev_close":-0.1329,"close_result":"W"}
 {"id":"401920720:fade_cover","result":"W","units":0.9524,"margin":4.0,"close_spread":12.5,"graded_at":"2026-11-18T04:10:22.908959+00:00","clv":0.0,"ev_close":-0.0238,"close_result":"W"}
+{"id":"401926073:fade_cover","result":"V","units":0.0,"void":"STATUS_POSTPONED","graded_at":"2026-11-18T18:20:46.905072+00:00"}
+{"id":"401926073:big_win","result":"V","units":0.0,"void":"STATUS_POSTPONED","graded_at":"2026-11-18T18:20:46.905083+00:00"}
+{"id":"401925879:big_win","result":"W","units":0.9259,"margin":-12.0,"close_spread":23.5,"graded_at":"2026-11-18T18:20:46.905096+00:00","clv":-1.0,"ev_close":-0.1068,"close_result":"W"}
+{"id":"401911521:fade_cover","result":"L","units":-1.0,"margin":-7.0,"close_spread":-12.5,"graded_at":"2026-11-18T18:20:46.905112+00:00","clv":0.0,"ev_close":0.0,"close_result":"L"}
+{"id":"401921729:big_win","result":"W","units":0.9259,"margin":-4.0,"close_spread":6.5,"graded_at":"2026-11-18T18:20:46.905122+00:00","clv":0.0,"ev_close":-0.037,"close_result":"W"}
+{"id":"401909787:fade_cover","result":"W","units":0.9524,"margin":25.0,"close_spread":-15.5,"graded_at":"2026-11-18T18:20:46.905129+00:00","clv":-2.0,"ev_close":-0.1646,"close_result":"W"}
+{"id":"401909787:big_win","result":"W","units":0.9524,"margin":25.0,"close_spread":-15.5,"graded_at":"2026-11-18T18:20:46.905134+00:00","clv":-2.0,"ev_close":-0.1646,"close_result":"W"}
+{"id":"401906851:fade_cover","result":"W","units":0.9524,"margin":15.0,"close_spread":2.5,"graded_at":"2026-11-18T18:20:46.905140+00:00","clv":0.0,"ev_close":-0.0238,"close_result":"W"}
+{"id":"401906851:big_win","result":"L","units":-1.0,"margin":-15.0,"close_spread":-2.5,"graded_at":"2026-11-18T18:20:46.905144+00:00","clv":0.0,"ev_close":-0.0652,"close_result":"L"}
