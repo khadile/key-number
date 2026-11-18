@@ -1097,3 +1097,35 @@
 {"id": "401910001:4601023:ast", "result": "L", "units": -1.0, "actual": 3.0, "clv": 0.0, "ev_close": 0.006, "p_close": 0.4791, "ev_close_raw": -0.0187, "graded_at": "2026-11-17T15:52:38.102657+00:00"}
 {"id": "401910001:3136193:pra", "result": "L", "units": -0.0, "actual": 32.0, "clv": 0.0, "ev_close": 0.0139, "p_close": 0.5289, "ev_close_raw": -0.0173, "graded_at": "2026-11-17T15:52:38.102657+00:00"}
 {"id": "401910001:4278585:pra", "result": "W", "units": 0.96, "actual": 16.0, "clv": 0.0, "ev_close": 0.0447, "p_close": 0.533, "ev_close_raw": 0.0128, "graded_at": "2026-11-17T15:52:38.102657+00:00"}
+{"id": "401910002:4395625:pa", "result": "L", "units": -1.0, "actual": 27.0, "clv": 1.0, "ev_close": 0.0754, "p_close": 0.5867, "ev_close_raw": 0.057, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910002:5093267:pra", "result": "W", "units": 0.8799999999999999, "actual": 12.0, "clv": 0.0, "ev_close": 0.0316, "p_close": 0.5487, "ev_close_raw": 0.0035, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910002:4395724:pr", "result": "W", "units": 0.8200000000000001, "actual": 15.0, "clv": 2.0, "ev_close": 0.0694, "p_close": 0.5876, "ev_close_raw": 0.0489, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910002:4432241:ast", "result": "L", "units": -1.0, "actual": 6.0, "clv": 0.0, "ev_close": 0.1164, "p_close": 0.494, "ev_close_raw": 0.1004, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910002:3136195:pts", "result": "L", "units": -0.0, "actual": 16.0, "clv": 0.0, "ev_close": -0.0958, "p_close": 0.4613, "ev_close_raw": -0.0821, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910002:3147657:pts", "result": "L", "units": -1.0, "actual": 17.0, "clv": -1.0, "ev_close": 0.023, "p_close": 0.5064, "ev_close_raw": 0.0089, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910002:3914044:reb", "result": "W", "units": 0.0, "actual": 1.0, "ev_close": 0.045, "p_close": 0.6821, "ev_close_raw": 0.0368, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910003:4432847:pra", "result": "W", "units": 0.0, "actual": 17.0, "clv": 1.0, "ev_close": 0.0783, "p_close": 0.5501, "ev_close_raw": 0.0488, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910003:4431736:ast", "result": "W", "units": 0.935, "actual": 1.0, "clv": 0.0, "ev_close": 0.0062, "p_close": 0.52, "ev_close_raw": -0.0075, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910003:4683021:pr", "result": "V", "units": 0.0, "actual": null, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910003:5105565:pr", "result": "W", "units": 0.794, "actual": 24.0, "clv": 1.0, "ev_close": -0.0103, "p_close": 0.5516, "ev_close_raw": -0.0307, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910003:6606:pr", "result": "L", "units": -1.0, "actual": 28.0, "clv": -3.0, "ev_close": -0.2604, "p_close": 0.384, "ev_close_raw": -0.2807, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910003:5081727:pra", "result": "W", "units": 0.813, "actual": 12.0, "clv": 0.0, "ev_close": -0.1091, "p_close": 0.4914, "ev_close_raw": -0.1358, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910003:3995:pra", "result": "L", "units": -1.0, "actual": 34.0, "clv": 0.0, "ev_close": -0.041, "p_close": 0.5328, "ev_close_raw": -0.0675, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910004:5104157:fg3", "result": "W", "units": 1.2799999999999998, "actual": 1.0, "clv": 0.0, "ev_close": -0.0223, "p_close": 0.4288, "ev_close_raw": 0.0086, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910004:4066259:pra", "result": "W", "units": 0.962, "actual": 10.0, "clv": -1.0, "ev_close": 0.0383, "p_close": 0.5292, "ev_close_raw": 0.0094, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910004:5107199:ast", "result": "L", "units": -1.0, "actual": 5.0, "clv": 0.0, "ev_close": -0.0012, "p_close": 0.4711, "ev_close_raw": -0.0162, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910004:4278562:ast", "result": "L", "units": -1.0, "actual": 5.0, "clv": 0.0, "ev_close": 0.0068, "p_close": 0.4435, "ev_close_raw": -0.009, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910004:4066372:ast", "result": "W", "units": 1.2799999999999998, "actual": 1.0, "clv": 0.0, "ev_close": -0.0002, "p_close": 0.4385, "ev_close_raw": -0.0161, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910006:3936099:fg3", "result": "L", "units": -0.0, "actual": 0.0, "clv": 0.0, "ev_close": 0.021, "p_close": 0.3897, "ev_close_raw": -0.0131, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910006:4066648:pra", "result": "L", "units": -0.0, "actual": 26.0, "clv": 0.0, "ev_close": 0.0186, "p_close": 0.5418, "ev_close_raw": -0.0093, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910006:3448:pra", "result": "L", "units": -1.0, "actual": 31.0, "clv": 0.0, "ev_close": 0.0481, "p_close": 0.5347, "ev_close_raw": 0.0192, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910006:4433627:ast", "result": "L", "units": -1.0, "actual": 11.0, "clv": 0.0, "ev_close": 0.0187, "p_close": 0.5382, "ev_close_raw": 0.0054, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910006:5041955:ast", "result": "W", "units": 0.77, "actual": 2.0, "clv": 0.0, "ev_close": -0.0491, "p_close": 0.5372, "ev_close_raw": -0.0616, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910006:5105839:pr", "result": "L", "units": -1.0, "actual": 51.0, "clv": 0.0, "ev_close": 0.0006, "p_close": 0.5418, "ev_close_raw": -0.0207, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910005:4592691:ast", "result": "W", "units": 0.585, "actual": 2.0, "clv": 0.0, "ev_close": 0.0464, "p_close": 0.6602, "ev_close_raw": 0.0355, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910005:4397014:pra", "result": "L", "units": -0.0, "actual": 56.0, "clv": 0.0, "ev_close": -0.043, "p_close": 0.501, "ev_close_raw": -0.0712, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910005:4278580:pa", "result": "L", "units": -1.0, "actual": 5.0, "clv": -2.0, "ev_close": -0.2768, "p_close": 0.3722, "ev_close_raw": -0.2578, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910005:4602025:reb", "result": "L", "units": -1.0, "actual": 6.0, "clv": 0.0, "ev_close": -0.0124, "p_close": 0.4489, "ev_close_raw": -0.0246, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "401910005:3135045:pts", "result": "V", "units": 0.0, "actual": null, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "2026-11-17:props:lottery", "result": "L", "units": -0.5, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
+{"id": "2026-11-17:props:golden", "result": "W", "units": 0.921745, "graded_at": "2026-11-18T15:52:56.761990+00:00"}
