@@ -1237,17 +1237,28 @@ at 1u made the record read -31u while the 50 staked picks were -4.1u (+1.5% at t
 (they carry the model's morning numbers that k learns from, and `with_model`), shown with no stake, tallied apart
 (`split.neg`, `model_v2`: the rebuilt model's sides since the rebuild). The NFL record keeps its 2026-10-18 rule.
 
-**NBA moneylines from the spread and the model, NFL-style: tested, not adopted** (user, 2026-11-19: "I would like to
-see how the model has a say on NBA moneylines as how the nfl has a say"; `nba/ml_study.py`, research.yml job nba-ml,
-reports/nba_ml_study.json). Walk-forward on 3,680 games 2023-24 to 2025-26 with ESPN's moneyline prices: a win
-curve on the closing spread (fit on the four seasons before) moved k toward the rebuilt model. At the CLOSE the
-moneyline's own Shin chance wins (log loss 0.5772; curve 0.5778, k 0.1/0.2/0.3 0.5783/0.5790/0.5799); joint fit:
-curve minus market +0.17 +- 0.35, model minus close -0.36 +- 0.19 per 10 points (the model's gap points the wrong
-way); every bet set at the close loses (k 0 at EV 0%+ -3.6% +- 4.6, underdogs -8%; k 0.2 -11%). Underdogs the curve
-rates 2+ points above the moneyline won 18.7% (moneyline said 17.4%, curve 20.7%). At the OPEN the model side shows
-something: k 0.2 at 5%+ EV +10.6% +- 9.3 (564), k 0.3 at 2%+ +6.1% +- 5.2 (1,211), mostly underdogs, but 2025-26
-was flat (-8% to 0%), 12 variants were tried, and every interval includes zero. The board locks at 10:30am, not at
-the open. NBA moneylines stay on the market's Shin chance; the open hint is the user's call (a paper track).
+**NBA moneylines: a dozen ways to price them, none beats the market** (user, 2026-11-19: "how the model has a say
+on NBA moneylines as how the nfl has a say", then "test different measures to see the best results"; `nba/ml_study.py`,
+research.yml job nba-ml, its own cache data/nba_mlstudy, reports/nba_ml_study.json). ESPN's book of record 2023-24 to
+2025-26 (open and close moneyline and spread), the rebuilt model's walk-forward margin, rest; tested on 2024-25 and
+2025-26 with weights from the seasons before (about 2,450 games each at the close and the open); then this season at
+the 10:30am lock (208 games, the best DraftKings/FanDuel price, judged at Pinnacle's close). Pass rule set before the
+run: log loss better than the market's by 2 standard errors, or 50+ bets at 2%+ beating the close by 2 SE and positive
+in both test seasons (the 50-bet floor added after a 2-0 two-bet set "passed"). Nothing passed.
+- At the close the market's own Shin chance is the best of all (log loss 0.5764). Worse: proportional no-vig +0.0006,
+  recalibration +0.0005 (slope on the market's log-odds 1.01 +- 0.04: no favorite-longshot bias left after Shin), the
+  NFL-style spread curve +0.0017, market + curve +0.0011, model alone +0.0106, market + model +0.0015 (the model's gap
+  weighs -0.15 +- 0.18), market + rest +0.0004, all three +0.0015. Bets: the curve -17% and the model alone -13% at 2%+,
+  the rest within noise of zero.
+- At the open the model's lineup part leaks in the backtest (it knows who played), so it is tested without it (team
+  ratings and rest). Honest: a 10% log-odds blend of that with the opening moneyline predicts a little better than
+  the open (-0.0009 +- 0.0005), 20% -0.0013 +- 0.0010; but their 2%+ bets do not beat the close (20%: 360 bets,
+  -0.3% +- 1.4 EV at the close; 10%: 33 bets). Learned stacks lose to the close (-2.9%). The leaky version looks great
+  (+27% EV at the close): the first study's "open-price hint" was that leak.
+- Small signs, all inside noise: home underdogs at the close +0.17 +- 0.12 log-odds, home teams on a second night
+  -0.14 +- 0.13. This season at the lock: the board's own rule (+EV DraftKings/FanDuel moneylines against Pinnacle)
+  15 bets, +3.8% +- 3.3 EV at Pinnacle's close; recalibration and curve add nothing (log loss -0.0015 +- 0.0013).
+- Verdict: NBA moneylines stay on the market's Shin chance with line shopping; the model gets no say in their price.
 
 **Next for NBA lines, in order:** (1) read k after two weeks; (2) softer markets than the main line for line
 shopping (first halves, team totals: the history endpoint already returns them, the archive drops them);
