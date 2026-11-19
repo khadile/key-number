@@ -33,8 +33,9 @@ and judged at Pinnacle's close and on results. Also the model as a FILTER: today
 split by whether the model agrees.
 
 Pre-declared pass rule (printed as "passed"): a measure is worth adopting only if its log loss beats the market's by
-more than two standard errors out of sample, or its 2%+ bets return (at the open: beat the close) by two standard
-errors pooled AND are positive in every test season. With ~40 bet sets, one or two will look good by chance.
+more than two standard errors out of sample, or its 2%+ bets (at least 50 of them) return (at the open: beat the
+close) by two standard errors pooled AND are positive in every test season. With ~40 bet sets, one or two will look
+good by chance. (The 50-bet floor was added after the first run, where a 2-bet set went 2-0 and "passed".)
 
     python -m nba.ml_study      # on Actions (research.yml job nba-ml); prints tallies only, writes reports/nba_ml_study.json
 """
@@ -360,7 +361,7 @@ def passed(A: dict) -> list[str]:
             b = e["bets"]["2%"]
             key = "clv" if mom == "open" else "all"
             m, se = b[key]["mean"], b[key]["se"]
-            if m is not None and se and m > 2 * se and b["by_season"] and all(v > 0 for v in b["by_season"].values()):
+            if m is not None and se and b[key]["n"] >= 50 and m > 2 * se and b["by_season"] and all(v > 0 for v in b["by_season"].values()):
                 ok.append(f"{mom} {name}: 2%+ bets {'EV at the close' if mom == 'open' else 'return'} {m:+.3f} +- {se:.3f}")
     return ok
 
