@@ -5,6 +5,8 @@ name: research
 #
 #   exchange-probe   python -m pipeline.exchange_probe  (free OddsPapi calls: do the exchanges carry props?)
 #   nba-line-timing  python -m nba.line_timing          (the board's NBA line rule at other lock times)
+#   nba-ml           python -m nba.ml_study             (NBA moneylines from the spread and the model, as the NFL's:
+#                    walk-forward on 2023-24 to 2025-26 moneyline prices; commits reports/nba_ml_study.json)
 #   ncaab-top25      python -m ncaab.top25                (unranked teams against the Top 25, at the closing spread)
 #   exchange-test    python -m nba.exchange_test        (exchange prop prices against FanDuel's, on results)
 #   nfl-dry-run      python -m board.build --dry-run --relock-study  (the whole NFL build, nothing written:
@@ -19,6 +21,7 @@ on:
         options:
           - exchange-probe
           - nba-line-timing
+          - nba-ml
           - nfl-dry-run
           - exchange-test
           - ncaab-top25
@@ -60,7 +63,7 @@ jobs:
 
       # read only: the builds own this cache, a study never writes it back
       - name: Restore NBA data
-        if: inputs.job == 'nba-line-timing' || inputs.job == 'exchange-test'
+        if: inputs.job == 'nba-line-timing' || inputs.job == 'exchange-test' || inputs.job == 'nba-ml'
         uses: actions/cache/restore@v4
         with:
           path: data/nba
@@ -104,6 +107,23 @@ jobs:
           git add -f reports/nfl_relock_study.json
           git commit -m "NFL held-pick replay $(TZ=America/New_York date +%Y-%m-%d)" -- reports/nfl_relock_study.json || echo "nothing to commit"
           git checkout -q -- .   # drop what the dry run rewrote (payload, reports): only the replay's tallies are kept
+          for i in 1 2 3 4 5; do git pull --rebase -q && git push && break; sleep 15; done
+
+      - name: NBA moneyline study
+        if: inputs.job == 'nba-ml'
+        env:
+          PYTHONIOENCODING: utf-8
+          PYTHONUNBUFFERED: "1"
+        run: python -m nba.ml_study
+
+      - name: Save the moneyline study
+        if: inputs.job == 'nba-ml'
+        run: |
+          git config user.name "key-number-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f reports/nba_ml_study.json
+          git commit -m "NBA moneyline study $(TZ=America/New_York date +%Y-%m-%d)" -- reports/nba_ml_study.json || echo "nothing to commit"
+          git checkout -q -- .
           for i in 1 2 3 4 5; do git pull --rebase -q && git push && break; sleep 15; done
 
       - name: Restore exchange snapshots
