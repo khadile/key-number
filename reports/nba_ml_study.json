@@ -3551,7 +3551,5 @@
    }
   }
  },
- "passed": [
-  "close blend 0.1: 2%+ bets return +2.825 +- 0.575"
- ]
+ "passed": []
 }
