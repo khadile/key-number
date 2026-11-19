@@ -134,3 +134,12 @@
 {"id":"401926838:big_win","result":"L","units":-1.0,"margin":-18.0,"close_spread":-3.5,"graded_at":"2026-11-19T03:48:38.755039+00:00","clv":0.0,"ev_close":-0.037,"close_result":"L"}
 {"id":"401919848:fade_cover","result":"L","units":-1.0,"margin":-20.0,"close_spread":1.5,"graded_at":"2026-11-19T03:48:38.755046+00:00","clv":0.0,"ev_close":-0.0238,"close_result":"L"}
 {"id":"401920515:big_win","result":"L","units":-1.0,"margin":4.0,"close_spread":-7.5,"graded_at":"2026-11-19T03:48:38.755056+00:00","clv":-1.0,"ev_close":-0.1146,"close_result":"L"}
+{"id":"401917535:fade_cover","result":"L","units":-1.0,"margin":-9.0,"close_spread":6.5,"graded_at":"2026-11-19T15:45:35.440621+00:00","clv":0.0,"ev_close":-0.0455,"close_result":"L"}
+{"id":"401917535:big_win","result":"W","units":0.9091,"margin":9.0,"close_spread":-6.5,"graded_at":"2026-11-19T15:45:35.440645+00:00","clv":0.0,"ev_close":-0.0455,"close_result":"W"}
+{"id":"401920158:fade_cover","result":"W","units":0.8696,"margin":-4.0,"close_spread":31.5,"graded_at":"2026-11-19T15:45:35.440656+00:00","clv":1.0,"ev_close":0.0025,"close_result":"W"}
+{"id":"401929004:big_win","result":"W","units":0.8696,"margin":16.0,"close_spread":1.5,"graded_at":"2026-11-19T15:45:35.440665+00:00","clv":0.0,"ev_close":-0.0652,"close_result":"W"}
+{"id":"401909494:fade_cover","result":"W","units":0.8696,"margin":-23.0,"close_spread":24.5,"graded_at":"2026-11-19T15:45:35.440696+00:00","clv":0.0,"ev_close":-0.0652,"close_result":"W"}
+{"id":"401909494:big_win","result":"W","units":0.8696,"margin":-23.0,"close_spread":24.5,"graded_at":"2026-11-19T15:45:35.440711+00:00","clv":0.0,"ev_close":-0.0652,"close_result":"W"}
+{"id":"401921734:big_win","result":"L","units":-1.0,"margin":3.0,"close_spread":-22.5,"graded_at":"2026-11-19T15:45:35.440720+00:00","clv":0.0,"ev_close":-0.0536,"close_result":"L"}
+{"id":"401921816:fade_cover","result":"L","units":-1.0,"margin":-61.0,"close_spread":40.5,"graded_at":"2026-11-19T15:45:35.440731+00:00","clv":2.0,"ev_close":0.1019,"close_result":"L"}
+{"id":"401911473:fade_cover","result":"L","units":-1.0,"margin":6.0,"close_spread":-6.5,"graded_at":"2026-11-19T15:45:35.440737+00:00","clv":0.0,"ev_close":-0.037,"close_result":"L"}
