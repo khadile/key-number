@@ -5,8 +5,8 @@ name: research
 #
 #   exchange-probe   python -m pipeline.exchange_probe  (free OddsPapi calls: do the exchanges carry props?)
 #   nba-line-timing  python -m nba.line_timing          (the board's NBA line rule at other lock times)
-#   nba-ml           python -m nba.ml_study             (NBA moneylines from the spread and the model, as the NFL's:
-#                    walk-forward on 2023-24 to 2025-26 moneyline prices; commits reports/nba_ml_study.json)
+#   nba-ml           python -m nba.ml_study             (NBA moneylines: a dozen ways to price them, with and without
+#                    the model, walk-forward on 2023-26 prices and at this season's lock; commits reports/nba_ml_study.json)
 #   ncaab-top25      python -m ncaab.top25                (unranked teams against the Top 25, at the closing spread)
 #   exchange-test    python -m nba.exchange_test        (exchange prop prices against FanDuel's, on results)
 #   nfl-dry-run      python -m board.build --dry-run --relock-study  (the whole NFL build, nothing written:
@@ -109,12 +109,28 @@ jobs:
           git checkout -q -- .   # drop what the dry run rewrote (payload, reports): only the replay's tallies are kept
           for i in 1 2 3 4 5; do git pull --rebase -q && git push && break; sleep 15; done
 
+      # the study's own cache (ESPN's moneylines 2021-26 and the model's walk-forward margins), never the builds'
+      - name: Restore the moneyline study's data
+        if: inputs.job == 'nba-ml'
+        uses: actions/cache/restore@v4
+        with:
+          path: data/nba_mlstudy
+          key: nba-mlstudy-${{ github.run_id }}
+          restore-keys: nba-mlstudy-
+
       - name: NBA moneyline study
         if: inputs.job == 'nba-ml'
         env:
           PYTHONIOENCODING: utf-8
           PYTHONUNBUFFERED: "1"
         run: python -m nba.ml_study
+
+      - name: Keep the moneyline study's data
+        if: always() && inputs.job == 'nba-ml'
+        uses: actions/cache/save@v4
+        with:
+          path: data/nba_mlstudy
+          key: nba-mlstudy-${{ github.run_id }}
 
       - name: Save the moneyline study
         if: inputs.job == 'nba-ml'
