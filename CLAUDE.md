@@ -1237,6 +1237,18 @@ at 1u made the record read -31u while the 50 staked picks were -4.1u (+1.5% at t
 (they carry the model's morning numbers that k learns from, and `with_model`), shown with no stake, tallied apart
 (`split.neg`, `model_v2`: the rebuilt model's sides since the rebuild). The NFL record keeps its 2026-10-18 rule.
 
+**NBA moneylines from the spread and the model, NFL-style: tested, not adopted** (user, 2026-11-19: "I would like to
+see how the model has a say on NBA moneylines as how the nfl has a say"; `nba/ml_study.py`, research.yml job nba-ml,
+reports/nba_ml_study.json). Walk-forward on 3,680 games 2023-24 to 2025-26 with ESPN's moneyline prices: a win
+curve on the closing spread (fit on the four seasons before) moved k toward the rebuilt model. At the CLOSE the
+moneyline's own Shin chance wins (log loss 0.5772; curve 0.5778, k 0.1/0.2/0.3 0.5783/0.5790/0.5799); joint fit:
+curve minus market +0.17 +- 0.35, model minus close -0.36 +- 0.19 per 10 points (the model's gap points the wrong
+way); every bet set at the close loses (k 0 at EV 0%+ -3.6% +- 4.6, underdogs -8%; k 0.2 -11%). Underdogs the curve
+rates 2+ points above the moneyline won 18.7% (moneyline said 17.4%, curve 20.7%). At the OPEN the model side shows
+something: k 0.2 at 5%+ EV +10.6% +- 9.3 (564), k 0.3 at 2%+ +6.1% +- 5.2 (1,211), mostly underdogs, but 2025-26
+was flat (-8% to 0%), 12 variants were tried, and every interval includes zero. The board locks at 10:30am, not at
+the open. NBA moneylines stay on the market's Shin chance; the open hint is the user's call (a paper track).
+
 **Next for NBA lines, in order:** (1) read k after two weeks; (2) softer markets than the main line for line
 shopping (first halves, team totals: the history endpoint already returns them, the archive drops them);
 (3) Kalshi/Polymarket as the reference (lead-lag against Pinnacle); (4) play-by-play lineups for a true
