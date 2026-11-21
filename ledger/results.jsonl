@@ -210,3 +210,6 @@
 {"id": "2026_10_LAC_BAL:total", "result": "L", "units": -1.0, "clv": -1.0, "graded_at": "2026-11-17T15:25:31.175426+00:00"}
 {"id": "2026_10_LAC_BAL:ml", "result": "W", "units": 1.94, "clv": null, "graded_at": "2026-11-17T15:25:31.175426+00:00"}
 {"id": "2026_10:lottery", "result": "L", "units": -0.5, "clv": null, "graded_at": "2026-11-17T15:25:31.175426+00:00"}
+{"id": "2026_11_IND_HOU:spread", "result": "L", "units": -1.0, "clv": 0.0, "graded_at": "2026-11-21T15:28:18.402996+00:00"}
+{"id": "2026_11_IND_HOU:total", "result": "L", "units": -1.0, "clv": -0.5, "graded_at": "2026-11-21T15:28:18.402996+00:00"}
+{"id": "2026_11_IND_HOU:ml", "result": "L", "units": -1.0, "clv": null, "graded_at": "2026-11-21T15:28:18.402996+00:00"}

@@ -134,3 +134,6 @@
 {"id": "2026_10_SF_DAL:00-0039530:rec_yds", "result": "L", "units": -1.0, "actual": 26.0, "clv": 1.0, "graded_at": "2026-11-16T15:26:23.010620+00:00"}
 {"id": "2026_10:props:golden", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-11-16T15:26:23.010620+00:00"}
 {"id": "2026_10:props:lottery", "result": "L", "units": -0.5, "actual": null, "clv": null, "graded_at": "2026-11-16T15:26:23.010620+00:00"}
+{"id": "2026_11_IND_HOU:00-0035685:rec_yds", "result": "L", "units": -1.0, "actual": 17.0, "clv": -1.0, "graded_at": "2026-11-21T15:28:45.727945+00:00"}
+{"id": "2026_11_IND_HOU:00-0036223:rec_yds", "result": "W", "units": 0.8799999999999999, "actual": 6.0, "clv": 0.0, "graded_at": "2026-11-21T15:28:45.727945+00:00"}
+{"id": "2026_11_IND_HOU:00-0032951:rec_yds", "result": "W", "units": 0.909, "actual": 0.0, "clv": 0.0, "graded_at": "2026-11-21T15:28:45.727945+00:00"}
