@@ -224,3 +224,13 @@
 {"id":"401911337:big_win","result":"W","units":0.9259,"margin":22.0,"close_spread":-5.5,"graded_at":"2026-11-22T01:09:04.518596+00:00","clv":-1.0,"ev_close":-0.1068,"close_result":"W"}
 {"id":"401925709:fade_cover","result":"W","units":0.9259,"margin":-5.0,"close_spread":6.5,"graded_at":"2026-11-22T01:09:04.518604+00:00","clv":0.0,"ev_close":-0.037,"close_result":"W"}
 {"id":"401909517:big_win","result":"L","units":-1.0,"margin":24.0,"close_spread":-31.5,"graded_at":"2026-11-22T01:09:04.518615+00:00","clv":0.0,"ev_close":-0.0238,"close_result":"L"}
+{"id":"401926217:fade_cover","result":"W","units":0.9524,"margin":28.0,"close_spread":-7.5,"graded_at":"2026-11-22T15:45:35.629391+00:00","clv":-1.0,"ev_close":-0.0945,"close_result":"W"}
+{"id":"401926217:big_win","result":"W","units":0.9524,"margin":28.0,"close_spread":-7.5,"graded_at":"2026-11-22T15:45:35.629431+00:00","clv":-1.0,"ev_close":-0.0945,"close_result":"W"}
+{"id":"401928998:fade_cover","result":"L","units":-1.0,"margin":-5.0,"close_spread":4.5,"graded_at":"2026-11-22T15:45:35.629446+00:00","clv":-9.0,"ev_close":-0.6055,"close_result":"L"}
+{"id":"401928998:big_win","result":"L","units":-1.0,"margin":-5.0,"close_spread":4.5,"graded_at":"2026-11-22T15:45:35.629457+00:00","clv":-9.0,"ev_close":-0.6055,"close_result":"L"}
+{"id":"401920975:fade_cover","result":"W","units":0.9091,"margin":8.0,"close_spread":7.5,"graded_at":"2026-11-22T15:45:35.629469+00:00","clv":1.0,"ev_close":0.0237,"close_result":"W"}
+{"id":"401911394:fade_cover","result":"W","units":0.9804,"margin":-3.0,"close_spread":8.5,"graded_at":"2026-11-22T15:45:35.629480+00:00","clv":-1.0,"ev_close":-0.0815,"close_result":"W"}
+{"id":"401917539:big_win","result":"L","units":-1.0,"margin":-7.0,"close_spread":13.5,"graded_at":"2026-11-22T15:45:35.629490+00:00","clv":-28.0,"ev_close":-0.9893,"close_result":"W"}
+{"id":"401925897:fade_cover","result":"L","units":-1.0,"margin":9.0,"close_spread":-11.5,"graded_at":"2026-11-22T15:45:35.629501+00:00","clv":-1.0,"ev_close":-0.1068,"close_result":"L"}
+{"id":"401921776:big_win","result":"L","units":-1.0,"margin":-6.0,"close_spread":-3.5,"graded_at":"2026-11-22T15:45:35.629510+00:00","clv":-1.0,"ev_close":-0.0815,"close_result":"L"}
+{"id":"401917537:big_win","result":"L","units":-1.0,"margin":1.0,"close_spread":-8.5,"graded_at":"2026-11-22T15:45:35.629518+00:00","clv":0.0,"ev_close":-0.0763,"close_result":"L"}
