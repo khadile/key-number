@@ -576,7 +576,7 @@ def main() -> None:
         odds.archive(ahead_hours=30)   # the rest of today's slate from any build time (16 hours missed tonight's games at 1am)
         try:   # OddsPapi serves finished games only (2026-11-20): today's prices come from PropLine
             from pipeline.propline_snap import snapshot_nba
-            snapshot_nba(ahead_hours=30)
+            snapshot_nba(ts=now - timedelta(seconds=1), ahead_hours=30)
         except Exception as e:   # noqa: BLE001  (a failed snapshot leaves the last prices; never stops the build)
             print(f"propline NBA snapshot failed: {type(e).__name__}: {e}")
         try:   # the exchange's props (the level's lead book, nba/props.py REF_W); without them the US books set it

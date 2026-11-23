@@ -147,8 +147,10 @@ def _match(events: list, idx: pl.DataFrame, abbr) -> dict:
     return out
 
 
-def snapshot_nfl(horizon_days: int = 8) -> None:
-    """Every NFL game starting in the next `horizon_days`: game lines into history/, the tracked props into props/."""
+def snapshot_nfl(ts: datetime | None = None, horizon_days: int = 8) -> None:
+    """Every NFL game starting in the next `horizon_days`: game lines into history/, the tracked props into props/.
+    `ts`: the time the rows carry. A build passes a moment just before its own clock, which it read before this
+    ran: rows stamped after it would be invisible to that build's "lines as of now"."""
     if not available():
         print("propline: no PROPLINE_KEY, pregame prices not refreshed")
         return
@@ -156,6 +158,7 @@ def snapshot_nfl(horizon_days: int = 8) -> None:
     from live.feeds import MARKETS
     from pipeline.odds_history import HIST, PROPS, TEAMS, fixture_index
     now = datetime.now(timezone.utc)
+    stamp = ts or now
     idx = (fixture_index().with_columns(start=pl.col("start").str.to_datetime(time_zone="UTC"))
            .rename({"home_team": "home", "away_team": "away"})
            .filter((pl.col("start") > now) & (pl.col("start") <= now + timedelta(days=horizon_days))))
@@ -186,7 +189,7 @@ def snapshot_nfl(horizon_days: int = 8) -> None:
         if o is None:
             n["failed"] += 1
             continue
-        g, p = convert(o, fid, e["home_team"], e["away_team"], NFL_PROPS, player_of, now)
+        g, p = convert(o, fid, e["home_team"], e["away_team"], NFL_PROPS, player_of, stamp)
         n["lines"] += merge(HIST / f"{fid}.parquet", g, HIST_SCHEMA, ["book", "market", "handicap", "outcome"], GAME_MARKETS)
         n["props"] += merge(PROPS / f"{fid}.parquet", p, PROPS_SCHEMA,
                             ["book", "market", "handicap", "outcome", "player"], NFL_PROPS.values())
@@ -195,22 +198,29 @@ def snapshot_nfl(horizon_days: int = 8) -> None:
           f"not listed {n['missing']}, failed {n['failed']}")
 
 
-def snapshot_nba(ahead_hours: int = 30) -> None:
-    """Every NBA game starting in the next `ahead_hours`: game lines and the eight tracked prop markets."""
+def snapshot_nba(ts: datetime | None = None, ahead_hours: int = 30) -> None:
+    """Every NBA game starting in the next `ahead_hours`: game lines and the eight tracked prop markets. `ts`: as in
+    snapshot_nfl."""
     if not available():
         print("propline: no PROPLINE_KEY, pregame prices not refreshed")
         return
     from nba import odds as NO
     now = datetime.now(timezone.utc)
+    stamp = ts or now
     idx = NO.fixture_index().filter((pl.col("start") > now) & (pl.col("start") <= now + timedelta(hours=ahead_hours)))
     if idx.height == 0:
         print("propline: no NBA games ahead")
         return
-    abbr = NO.team_abbr()
+    names = NO.team_abbr()
+    nicks = {n.split()[-1]: a for n, a in names.items()}
+
+    def abbr(name: str | None) -> str | None:   # "Los Angeles Clippers" here, "LA Clippers" in hoopR
+        return names.get(name) or (nicks.get(name.split()[-1]) if name else None)
+
     op = NO.op_ids_by_name()
 
     def player_of(x):
-        key, team = NO.norm(x.get("description")), abbr.get(x.get("player_team"))
+        key, team = NO.norm(x.get("description")), abbr(x.get("player_team"))
         return op["team"].get((key, team)) or op["unique"].get(key)
 
     try:
@@ -218,7 +228,7 @@ def snapshot_nba(ahead_hours: int = 30) -> None:
     except SystemExit as e:
         print(f"propline: {e}")
         return
-    found = _match(events if isinstance(events, list) else [], idx, abbr.get)
+    found = _match(events if isinstance(events, list) else [], idx, abbr)
     n = {"games": 0, "lines": 0, "props": 0, "missing": idx.height - len(found), "failed": 0}
     markets = ",".join(list(NBA_PROPS) + ["h2h", "spreads", "totals"])
     for fid, e in found.items():
@@ -230,7 +240,7 @@ def snapshot_nba(ahead_hours: int = 30) -> None:
         if o is None:
             n["failed"] += 1
             continue
-        g, p = convert(o, fid, e["home_team"], e["away_team"], NBA_PROPS, player_of, now)
+        g, p = convert(o, fid, e["home_team"], e["away_team"], NBA_PROPS, player_of, stamp)
         n["lines"] += merge(NO.HIST / f"{fid}.parquet", g, HIST_SCHEMA, ["book", "market", "handicap", "outcome"], GAME_MARKETS)
         n["props"] += merge(NO.PROPS / f"{fid}.parquet", p, PROPS_SCHEMA,
                             ["book", "market", "handicap", "outcome", "player"], NBA_PROPS.values())

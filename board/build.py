@@ -261,7 +261,7 @@ def main() -> None:
         archive()
         try:   # OddsPapi serves finished games only (2026-11-20): today's prices come from PropLine
             from pipeline.propline_snap import snapshot_nfl
-            snapshot_nfl()
+            snapshot_nfl(ts=now - timedelta(seconds=1))
         except Exception as e:   # noqa: BLE001  (a failed snapshot leaves the last prices; never stops the build)
             print(f"propline NFL snapshot failed: {type(e).__name__}: {e}")
 
