@@ -258,3 +258,6 @@
 {"id":"401925013:fade_cover","result":"L","units":-1.0,"margin":-4.0,"close_spread":-2.5,"graded_at":"2026-11-23T01:33:49.808523+00:00","clv":0.0,"ev_close":-0.0455,"close_result":"L"}
 {"id":"401925013:big_win","result":"L","units":-1.0,"margin":-4.0,"close_spread":-2.5,"graded_at":"2026-11-23T01:33:49.808531+00:00","clv":0.0,"ev_close":-0.0455,"close_result":"L"}
 {"id":"401928999:fade_cover","result":"W","units":0.9804,"margin":10.0,"close_spread":9.5,"graded_at":"2026-11-23T01:33:49.808540+00:00","clv":-2.0,"ev_close":-0.1527,"close_result":"W"}
+{"id":"401917541:fade_cover","result":"W","units":0.8929,"margin":8.0,"close_spread":5.5,"graded_at":"2026-11-23T15:45:39.409924+00:00","clv":-13.0,"ev_close":-0.7754,"close_result":"W"}
+{"id":"401926774:big_win","result":"L","units":-1.0,"margin":26.0,"close_spread":-31.5,"graded_at":"2026-11-23T15:45:39.409952+00:00","clv":-1.0,"ev_close":-0.1221,"close_result":"L"}
+{"id":"401917542:big_win","result":"L","units":-1.0,"margin":-26.0,"close_spread":1.5,"graded_at":"2026-11-23T15:45:39.409967+00:00","clv":-3.0,"ev_close":-0.2071,"close_result":"L"}
