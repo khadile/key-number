@@ -80,6 +80,7 @@ jobs:
         if: steps.slot.outputs.due == 'true'
         env:
           ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
+          PROPLINE_KEY: ${{ secrets.PROPLINE_KEY }}
           PYTHONIOENCODING: utf-8
         run: |
           python -m nba.build ${{ inputs.lock_now && '--lock-now' || '' }}
