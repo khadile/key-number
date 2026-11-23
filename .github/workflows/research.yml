@@ -9,6 +9,7 @@ name: research
 #                    the model, walk-forward on 2023-26 prices and at this season's lock; commits reports/nba_ml_study.json)
 #   ncaab-top25      python -m ncaab.top25                (unranked teams against the Top 25, at the closing spread)
 #   exchange-test    python -m nba.exchange_test        (exchange prop prices against FanDuel's, on results)
+#   oddspapi-diag    python -m pipeline.oddspapi_diag  (5 free calls: why upcoming games come back empty)
 #   nfl-dry-run      python -m board.build --dry-run --relock-study  (the whole NFL build, nothing written:
 #                    a test of new rules on real data, plus the held-pick replay)
 
@@ -23,6 +24,7 @@ on:
           - nba-line-timing
           - nba-ml
           - nfl-dry-run
+          - oddspapi-diag
           - exchange-test
           - ncaab-top25
           - ncaab-explore
@@ -79,7 +81,7 @@ jobs:
           restore-keys: nflverse-
 
       - name: Restore the odds archive
-        if: inputs.job == 'nfl-dry-run'
+        if: inputs.job == 'nfl-dry-run' || inputs.job == 'oddspapi-diag'
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -206,6 +208,13 @@ jobs:
           git add reports/ncaab_*.json
           git commit -m "College Top 25 study $(TZ=America/New_York date +%Y-%m-%d)" || echo "nothing to commit"
           for i in 1 2 3 4 5; do git pull --rebase -q && git push && break; sleep 15; done
+
+      - name: OddsPapi diagnostic
+        if: inputs.job == 'oddspapi-diag'
+        env:
+          ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
+          PYTHONIOENCODING: utf-8
+        run: python -m pipeline.oddspapi_diag
 
       - name: Exchange probe
         if: inputs.job == 'exchange-probe'
