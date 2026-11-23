@@ -259,6 +259,11 @@ def main() -> None:
         prop_players.main()
         print("archiving lines and props ...")
         archive()
+        try:   # OddsPapi serves finished games only (2026-11-20): today's prices come from PropLine
+            from pipeline.propline_snap import snapshot_nfl
+            snapshot_nfl()
+        except Exception as e:   # noqa: BLE001  (a failed snapshot leaves the last prices; never stops the build)
+            print(f"propline NFL snapshot failed: {type(e).__name__}: {e}")
 
     inp, games = load_inputs()
     season = int(games.filter(pl.col("result").is_null())["season"].min())

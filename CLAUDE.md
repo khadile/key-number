@@ -92,6 +92,22 @@ for CLV. Never type a line in by hand.
   closing prop lines came from SportsGameOdds instead (2e). The live engine does this itself when it joins
   a game after kickoff, to start from that game's closing prop lines.
 
+## 2c'. OddsPapi serves finished games only; PropLine prices the lock (2026-11-23)
+
+- From about 2026-11-20 OddsPapi's free plan answers 403 RESTRICTED_ACCESS for any fixture that has not finished
+  ("Historical odds are only available for finished fixtures on the free plan"); finished games still come back
+  whole (every price change and the close). Found by `research.yml -f job=oddspapi-diag` (pipeline/oddspapi_diag.py).
+  Cost before the fix: no NBA picks 2026-11-20 to 11-23; the NFL Saturday 11-21 props lock and the Monday 11-23 lock
+  priced on 11-19 prices (locked picks stand; ledgers are append-only).
+- Now (pipeline/propline_snap.py): each NFL and NBA build makes one PropLine call per upcoming game (NFL next 8 days,
+  NBA next 30 hours) and appends Pinnacle/DraftKings/FanDuel main game lines and tracked props to the same archive
+  files, in OddsPapi's terms, stamped with the call time; lines the snapshot no longer shows are marked pulled. After
+  a game ends OddsPapi's full timeline replaces the file, so closes, line value and EV at the close stay OddsPapi's.
+  OddsPapi is no longer asked for unfinished games (archive, nba archive, Novig): Novig's pregame price is gone, so
+  NBA props' level is FanDuel/DraftKings (REF_W without novig) until an exchange source returns.
+- Needs the `PROPLINE_KEY` repo secret (added 2026-11-23). About 17 calls an NFL build and 12 an NBA build, inside
+  PropLine's daily cap shared with the live engine. No key: the build prints so and prices on what the files hold.
+
 ## 2d. PropLine budget (free plan: 1,000 requests a day, reset 00:00 UTC)
 
 - SportsGameOdds was tried for live prices on 2026-10-11 and failed: its in-game quotes were

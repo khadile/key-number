@@ -181,6 +181,8 @@ def archive(groups: tuple[str, ...] = ("core",), horizon_days: int = 14,
         need_props = ppath is not None and not complete(ppath)
         if not need_lines and not need_props:
             return "skipped"
+        if datetime.now(timezone.utc) < ended:   # the free plan serves finished games only (2026-11-20):
+            return "upcoming"                    # PropLine has the price now (pipeline/propline_snap.py)
         h = _fetch(fid, BOOK_GROUPS[group])
         if not h:
             return "missing"
@@ -196,7 +198,8 @@ def archive(groups: tuple[str, ...] = ("core",), horizon_days: int = 14,
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         results = Counter(pool.map(one, sorted(todo, key=lambda j: j[0]["startTime"])))
-    print(f"history: saved {results['saved']}, already archived {results['skipped']}, unavailable {results['missing']}")
+    print(f"history: saved {results['saved']}, already archived {results['skipped']}, unavailable {results['missing']}, "
+          f"not finished {results['upcoming']} (OddsPapi's free plan: finished games only; PropLine prices them)")
 
 
 def fixture_index() -> pl.DataFrame:

@@ -89,13 +89,16 @@ def archive(only: list[int] | None = None, past_hours: int = 40, ahead_hours: in
     else:
         idx = idx.filter((pl.col("start") <= now + timedelta(hours=ahead_hours)) & (pl.col("start") >= now - timedelta(hours=past_hours)))
     mmap, pmap, lmap = _markets(False), _markets(True), _markets(True, milestones=True)
-    n = {"saved": 0, "skipped": 0, "missing": 0}
+    n = {"saved": 0, "skipped": 0, "missing": 0, "upcoming": 0}
     for r in idx.iter_rows(named=True):
         fid, ended = r["fixture_id"], r["start"] + timedelta(hours=4)
         hp, pp, lp = HIST / f"{fid}.parquet", PROPS / f"{fid}.parquet", MILESTONES / f"{fid}.parquet"
         done = lambda p: p.exists() and datetime.fromtimestamp(p.stat().st_mtime, timezone.utc) > ended
         if done(hp) and done(pp) and done(lp) and not only:
             n["skipped"] += 1
+            continue
+        if now < ended:   # the free plan serves finished games only (2026-11-20); PropLine has the price now
+            n["upcoming"] += 1
             continue
         h = _fetch(fid, CORE)
         if not h:
@@ -108,7 +111,8 @@ def archive(only: list[int] | None = None, past_hours: int = 40, ahead_hours: in
         if lrow := _prop_rows(fid, h, lmap):
             _write(lp, pl.DataFrame(lrow, schema=PROP_SCHEMA, orient="row").with_columns(pl.col("ts").str.to_datetime(time_zone="UTC")))
         n["saved"] += 1
-    print(f"nba odds: saved {n['saved']}, already complete {n['skipped']}, unavailable {n['missing']}")
+    print(f"nba odds: saved {n['saved']}, already complete {n['skipped']}, unavailable {n['missing']}, "
+          f"not finished {n['upcoming']} (OddsPapi's free plan: finished games only; PropLine prices them)")
 
 
 def _snapshot(h: dict, pmap: dict, fid: str, cut: datetime) -> list[tuple]:
@@ -144,7 +148,7 @@ def archive_exchange(past_hours: int = 40, ahead_hours: int = 30) -> None:
     now = datetime.now(timezone.utc)
     idx = idx.filter((pl.col("start") <= now + timedelta(hours=ahead_hours)) & (pl.col("start") >= now - timedelta(hours=past_hours)))
     pmap = _markets(True)
-    n = {"snapshots": 0, "closes": 0, "skipped": 0, "missing": 0}
+    n = {"snapshots": 0, "closes": 0, "skipped": 0, "missing": 0, "upcoming": 0}
     for r in idx.iter_rows(named=True):
         fid, tip = r["fixture_id"], r["tip"]
         f = NOVIG / f"{fid}.parquet"
@@ -152,6 +156,9 @@ def archive_exchange(past_hours: int = 40, ahead_hours: int = 30) -> None:
         started = tip <= now
         if started and old is not None and (old["snap"] == "close").any():
             n["skipped"] += 1
+            continue
+        if now < tip + timedelta(hours=4):   # finished games only on the free plan (2026-11-20): the close comes after
+            n["upcoming"] += 1
             continue
         h = None
         for i in range(2):
@@ -171,7 +178,8 @@ def archive_exchange(past_hours: int = 40, ahead_hours: int = 30) -> None:
                  .with_columns(snap=pl.lit("close" if started else "live")))
         _write(f, pl.concat([old, new]).unique(["market", "handicap", "outcome", "player", "ts"], keep="last") if old is not None else new)
         n["closes" if started else "snapshots"] += 1
-    print(f"novig props: {n['snapshots']} snapshots, {n['closes']} closes, already closed {n['skipped']}, unavailable {n['missing']}")
+    print(f"novig props: {n['snapshots']} snapshots, {n['closes']} closes, already closed {n['skipped']}, "
+          f"unavailable {n['missing']}, not finished {n['upcoming']}")
 
 
 OVERROUND = (1.0, 1.15)   # a real two-way market: both sides' implied chances sum to 100-115%
@@ -256,6 +264,29 @@ def norm(name: str | None) -> str:
 def _flip(name: str) -> str:
     last, _, first = name.partition(",")
     return f"{first.strip()} {last.strip()}".strip() if first else name.strip()
+
+
+def team_abbr() -> dict[str, str]:
+    """Full team name (as OddsPapi and PropLine write it) -> hoopR abbreviation."""
+    s = hoopr("schedule").filter(pl.col("season") >= 2025)
+    return dict(zip(s["home_display_name"], s["home_abbreviation"]))
+
+
+def op_ids_by_name() -> dict:
+    """OddsPapi player ids by normalized name: {"team": {(name, team): op_id}, "unique": {name: op_id}} (a name
+    only one OddsPapi player has). PropLine's prop snapshots are written under these ids (pipeline/propline_snap.py)."""
+    raw = json.loads(PLAYERS.read_text(encoding="utf-8"))["participants"]
+    fx = json.loads(FIXTURES.read_text(encoding="utf-8"))
+    abbr = team_abbr()
+    team_of = {str(f[f"participant{k}Id"]): abbr.get(f[f"participant{k}Name"]) for f in fx for k in ("1", "2")}
+    by_team, names = {}, {}
+    for tid, v in raw.items():
+        for p in v["players"]:
+            if p.get("playerName"):
+                key = norm(_flip(p["playerName"]))
+                by_team[(key, team_of.get(tid))] = p["playerId"]
+                names.setdefault(key, set()).add(p["playerId"])
+    return {"team": by_team, "unique": {k: next(iter(v)) for k, v in names.items() if len(v) == 1}}
 
 
 def player_map(people: pl.DataFrame) -> pl.DataFrame:
