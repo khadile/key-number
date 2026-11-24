@@ -539,3 +539,25 @@
 {"id": "401910021:total", "result": "L", "units": -1.0, "clv": 0.0, "ev_close": -0.0456, "p_close": 0.4932, "close_margin": -1.0, "close_total": 216.22, "graded_at": "2026-11-20T15:55:28.395388+00:00"}
 {"id": "401910022:spread", "result": "W", "units": 0.9299999999999999, "clv": 0.0, "ev_close": -0.0531, "p_close": 0.4906, "close_margin": 15.82, "close_total": 224.82, "graded_at": "2026-11-20T15:55:28.395388+00:00"}
 {"id": "401910022:total", "result": "L", "units": -1.0, "clv": 1.0, "ev_close": -0.0051, "p_close": 0.5142, "close_margin": 15.82, "close_total": 224.82, "graded_at": "2026-11-20T15:55:28.395388+00:00"}
+{"id": "401910036:spread", "result": "W", "units": 0.8929, "clv": 0.5, "ev_close": -0.0409, "p_close": 0.5067, "close_margin": -2.72, "close_total": 214.28, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910036:total", "result": "W", "units": 0.9434, "clv": 2.0, "ev_close": 0.0451, "p_close": 0.5378, "close_margin": -2.72, "close_total": 214.28, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910037:spread", "result": "W", "units": 0.8474999999999999, "clv": 3.5, "ev_close": 0.0226, "p_close": 0.5535, "close_margin": -0.1, "close_total": 231.4, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910037:total", "result": "W", "units": 0.9091, "clv": 1.0, "ev_close": -0.006, "p_close": 0.5207, "close_margin": -0.1, "close_total": 231.4, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910037:ml", "result": "W", "units": 1.2200000000000002, "ev_close": 0.1152, "p_close": 0.5023, "close_margin": -0.1, "close_total": 231.4, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910038:spread", "result": "W", "units": 0.9523999999999999, "clv": 1.0, "ev_close": 0.058, "p_close": 0.5419, "close_margin": -4.21, "close_total": 225.7, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910038:total", "result": "W", "units": 0.9523999999999999, "clv": 0.0, "ev_close": -0.0152, "p_close": 0.5044, "close_margin": -4.21, "close_total": 225.7, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910038:ml", "result": "W", "units": 1.9, "ev_close": 0.1095, "p_close": 0.3826, "close_margin": -4.21, "close_total": 225.7, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910039:spread", "result": "W", "units": 0.8929, "clv": 0.5, "ev_close": -0.0309, "p_close": 0.5119, "close_margin": 10.14, "close_total": 222.6, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910039:total", "result": "W", "units": 0.9091, "clv": 0.0, "ev_close": -0.041, "p_close": 0.5023, "close_margin": 10.14, "close_total": 222.6, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910040:spread", "result": "W", "units": 0.8547, "clv": 0.0, "ev_close": -0.0684, "p_close": 0.5023, "close_margin": 10.57, "close_total": 222.82, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910040:total", "result": "L", "units": -1.0, "clv": 0.5, "ev_close": -0.0143, "p_close": 0.5163, "close_margin": 10.57, "close_total": 222.82, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910041:spread", "result": "L", "units": -1.0, "clv": 0.0, "ev_close": -0.0344, "p_close": 0.5058, "close_margin": -8.66, "close_total": 239.9, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910041:total", "result": "W", "units": 0.885, "clv": 2.5, "ev_close": 0.0408, "p_close": 0.5522, "close_margin": -8.66, "close_total": 239.9, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910042:spread", "result": "W", "units": 0.8474999999999999, "clv": 1.0, "ev_close": -0.036, "p_close": 0.5218, "close_margin": -3.2, "close_total": 232.0, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910042:total", "result": "L", "units": -1.0, "clv": 1.5, "ev_close": -0.003, "p_close": 0.5333, "close_margin": -3.2, "close_total": 232.0, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910043:spread", "result": "W", "units": 0.9091, "clv": -1.0, "ev_close": -0.0837, "p_close": 0.48, "close_margin": 13.16, "close_total": 223.72, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910043:total", "result": "W", "units": 0.9091, "clv": 0.0, "ev_close": -0.0541, "p_close": 0.4955, "close_margin": 13.16, "close_total": 223.72, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910044:spread", "result": "L", "units": -1.0, "clv": 0.5, "ev_close": -0.0032, "p_close": 0.5129, "close_margin": 13.07, "close_total": 224.38, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910044:total", "result": "L", "units": -1.0, "clv": -1.0, "ev_close": -0.0776, "p_close": 0.4768, "close_margin": 13.07, "close_total": 224.38, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910045:spread", "result": "W", "units": 0.9174, "clv": -4.0, "ev_close": -0.3042, "p_close": 0.3629, "close_margin": -8.31, "close_total": 222.39, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401910045:total", "result": "L", "units": -1.0, "clv": 2.0, "ev_close": 0.043, "p_close": 0.5463, "close_margin": -8.31, "close_total": 222.39, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
