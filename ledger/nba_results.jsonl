@@ -561,3 +561,9 @@
 {"id": "401910044:total", "result": "L", "units": -1.0, "clv": -1.0, "ev_close": -0.0776, "p_close": 0.4768, "close_margin": 13.07, "close_total": 224.38, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
 {"id": "401910045:spread", "result": "W", "units": 0.9174, "clv": -4.0, "ev_close": -0.3042, "p_close": 0.3629, "close_margin": -8.31, "close_total": 222.39, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
 {"id": "401910045:total", "result": "L", "units": -1.0, "clv": 2.0, "ev_close": 0.043, "p_close": 0.5463, "close_margin": -8.31, "close_total": 222.39, "graded_at": "2026-11-24T15:53:51.193940+00:00"}
+{"id": "401909314:spread", "result": "L", "units": -1.0, "clv": 6.0, "ev_close": 0.204, "p_close": 0.6334, "close_margin": 3.43, "close_total": 210.0, "graded_at": "2026-11-25T16:48:49.009839+00:00"}
+{"id": "401909314:total", "result": "L", "units": -1.0, "clv": -2.5, "ev_close": -0.1768, "p_close": 0.4385, "close_margin": 3.43, "close_total": 210.0, "graded_at": "2026-11-25T16:48:49.009839+00:00"}
+{"id": "401909315:spread", "result": "L", "units": -1.0, "clv": -0.5, "ev_close": -0.0638, "p_close": 0.4795, "close_margin": -11.14, "close_total": 218.8, "graded_at": "2026-11-25T16:48:49.009839+00:00"}
+{"id": "401909315:total", "result": "W", "units": 0.9091, "clv": 1.5, "ev_close": 0.0103, "p_close": 0.5292, "close_margin": -11.14, "close_total": 218.8, "graded_at": "2026-11-25T16:48:49.009839+00:00"}
+{"id": "401909316:spread", "result": "L", "units": -1.0, "clv": 0.0, "ev_close": -0.0532, "p_close": 0.5023, "close_margin": 7.56, "close_total": 233.9, "graded_at": "2026-11-25T16:48:49.009839+00:00"}
+{"id": "401909316:total", "result": "W", "units": 0.9009, "clv": -0.5, "ev_close": -0.0664, "p_close": 0.4911, "close_margin": 7.56, "close_total": 233.9, "graded_at": "2026-11-25T16:48:49.009839+00:00"}
