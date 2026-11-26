@@ -1240,3 +1240,15 @@
 {"id": "401909316:6442:fg3", "result": "L", "units": -1.0, "actual": 1.0, "clv": 0.0, "ev_close": -0.0642, "p_close": 0.4178, "ev_close_raw": -0.1032, "graded_at": "2026-11-25T16:48:49.014792+00:00"}
 {"id": "2026-11-24:props:lottery", "result": "L", "units": -0.5, "graded_at": "2026-11-25T16:48:49.014792+00:00"}
 {"id": "2026-11-24:props:golden", "result": "L", "units": -0.5, "graded_at": "2026-11-25T16:48:49.014792+00:00"}
+{"id": "401909317:4066261:fg3", "result": "L", "units": -0.0, "actual": 1.0, "clv": 0.0, "ev_close": -0.0685, "p_close": 0.3387, "ev_close_raw": -0.1043, "graded_at": "2026-11-26T15:53:54.238945+00:00"}
+{"id": "401909318:2583632:fg3", "result": "L", "units": -1.0, "actual": 0.0, "clv": 0.0, "ev_close": -0.0076, "p_close": 0.4962, "ev_close_raw": -0.0369, "graded_at": "2026-11-26T15:53:54.238945+00:00"}
+{"id": "401909318:4711294:fg3", "result": "L", "units": -0.0, "actual": 0.0, "clv": 0.0, "ev_close": -0.0338, "p_close": 0.4515, "ev_close_raw": -0.0648, "graded_at": "2026-11-26T15:53:54.238945+00:00"}
+{"id": "401909318:2990984:reb", "result": "L", "units": -1.0, "actual": 4.0, "clv": 0.0, "ev_close": 0.0389, "p_close": 0.5395, "ev_close_raw": 0.0259, "graded_at": "2026-11-26T15:53:54.238945+00:00"}
+{"id": "401909318:4871145:fg3", "result": "L", "units": -0.0, "actual": 0.0, "clv": 0.0, "ev_close": 0.0085, "p_close": 0.4385, "ev_close_raw": -0.0246, "graded_at": "2026-11-26T15:53:54.238945+00:00"}
+{"id": "401909319:5041951:fg3", "result": "W", "units": 0.0, "actual": 2.0, "clv": 0.0, "ev_close": -0.0096, "p_close": 0.4716, "ev_close_raw": -0.0403, "graded_at": "2026-11-26T15:53:54.238945+00:00"}
+{"id": "401909320:4278073:fg3", "result": "L", "units": -1.0, "actual": 1.0, "clv": 0.0, "ev_close": -0.0082, "p_close": 0.3785, "ev_close_raw": -0.0459, "graded_at": "2026-11-26T15:53:54.238945+00:00"}
+{"id": "401909320:3133626:fg3", "result": "W", "units": 1.54, "actual": 3.0, "clv": 0.0, "ev_close": -0.0603, "p_close": 0.37, "ev_close_raw": -0.099, "graded_at": "2026-11-26T15:53:54.238945+00:00"}
+{"id": "401909323:4437244:fg3", "result": "L", "units": -1.0, "actual": 0.0, "clv": 0.0, "ev_close": 0.0569, "p_close": 0.4677, "ev_close_raw": 0.024, "graded_at": "2026-11-26T15:53:54.238945+00:00"}
+{"id": "401909324:4065732:reb", "result": "L", "units": -1.0, "actual": 7.0, "clv": 0.0, "ev_close": 0.0247, "p_close": 0.495, "ev_close_raw": 0.0106, "graded_at": "2026-11-26T15:53:54.238945+00:00"}
+{"id": "2026-11-25:props:lottery", "result": "L", "units": -0.5, "graded_at": "2026-11-26T15:53:54.238945+00:00"}
+{"id": "2026-11-25:props:golden", "result": "L", "units": -0.5, "graded_at": "2026-11-26T15:53:54.238945+00:00"}
