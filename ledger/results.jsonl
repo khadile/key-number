@@ -240,3 +240,6 @@
 {"id": "2026_11:lottery", "result": "L", "units": -0.5, "clv": null, "graded_at": "2026-11-23T15:30:08.188481+00:00"}
 {"id": "2026_11_CIN_WAS:spread", "result": "W", "units": 1.0, "clv": -0.5, "graded_at": "2026-11-24T15:16:06.785700+00:00"}
 {"id": "2026_11_CIN_WAS:total", "result": "L", "units": -1.0, "clv": 2.0, "graded_at": "2026-11-24T15:16:06.785700+00:00"}
+{"id": "2026_12_GB_LA:spread", "result": "W", "units": 0.9174, "clv": 0.0, "graded_at": "2026-11-26T15:15:53.768796+00:00"}
+{"id": "2026_12_GB_LA:total", "result": "L", "units": -1.0, "clv": -1.5, "graded_at": "2026-11-26T15:15:53.768796+00:00"}
+{"id": "2026_12_GB_LA:ml", "result": "W", "units": 0.7463, "clv": null, "graded_at": "2026-11-26T15:15:53.768796+00:00"}

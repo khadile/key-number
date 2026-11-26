@@ -155,3 +155,10 @@
 {"kind": "game", "id": "2026_12_NE_LAC:ml", "game_id": "2026_12_NE_LAC", "verdict": "good", "failed": [], "at": "2026-11-24T15:15:37.117765+00:00"}
 {"kind": "prop", "id": "2026_12_GB_LA:00-0038996:receptions", "game_id": "2026_12_GB_LA", "verdict": "good", "failed": [], "at": "2026-11-24T15:15:37.117765+00:00"}
 {"kind": "prop", "id": "2026_12_GB_LA:00-0040590:receptions", "game_id": "2026_12_GB_LA", "verdict": "ev", "failed": ["who"], "at": "2026-11-24T15:15:37.117765+00:00"}
+{"kind": "game", "id": "2026_12_NE_LAC:ml", "game_id": "2026_12_NE_LAC", "verdict": "ev", "failed": ["market"], "at": "2026-11-26T15:15:33.059436+00:00"}
+{"kind": "prop", "id": "2026_12_CHI_DET:00-0039139:rec_yds", "game_id": "2026_12_CHI_DET", "verdict": "good", "failed": [], "at": "2026-11-26T15:15:33.059436+00:00"}
+{"kind": "prop", "id": "2026_12_DEN_PIT:00-0039732:pass_yds", "game_id": "2026_12_DEN_PIT", "verdict": "good", "failed": [], "at": "2026-11-26T15:15:33.059436+00:00"}
+{"kind": "prop", "id": "2026_12_DEN_PIT:00-0036894:rec_yds", "game_id": "2026_12_DEN_PIT", "verdict": "good", "failed": [], "at": "2026-11-26T15:15:33.059436+00:00"}
+{"kind": "prop", "id": "2026_12_KC_BUF:00-0038997:rec_yds", "game_id": "2026_12_KC_BUF", "verdict": "ev", "failed": ["who"], "at": "2026-11-26T15:15:33.059436+00:00"}
+{"kind": "prop", "id": "2026_12_PHI_DAL:00-0039530:rec_yds", "game_id": "2026_12_PHI_DAL", "verdict": "good", "failed": [], "at": "2026-11-26T15:15:33.059436+00:00"}
+{"kind": "prop", "id": "2026_12_PHI_DAL:00-0034844:rush_yds", "game_id": "2026_12_PHI_DAL", "verdict": "good", "failed": [], "at": "2026-11-26T15:15:33.059436+00:00"}
